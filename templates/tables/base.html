@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}In-Store Pickup{% endblock %} — {{ BRAND_SHORT }} · {{ BRAND_NAME }}</title>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'css/design-tokens.css' %}">
+  <!-- Open Graph / Social Media Preview -->
+  <meta property="og:title" content="{{ BRAND_NAME }} — {{ BRAND_TAGLINE }}" />
+  <meta property="og:description" content="Fresh groceries, daily essentials, organic fruits & vegetables, and pantry staples delivered directly to your doorstep." />
+  <meta property="og:image" content="https://www.freshmart.in/static/images/share-preview.jpg" />
+  <meta property="og:url" content="https://www.freshmart.in" />
+  <meta property="og:type" content="website" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="{{ BRAND_NAME }} — {{ BRAND_TAGLINE }}" />
+  <meta name="twitter:description" content="Fresh groceries, daily essentials, organic produce, and pantry staples delivered fast." />
+  <meta name="twitter:image" content="https://www.freshmart.in/static/images/share-preview.jpg" />
+
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  <script defer src="https://unpkg.com/alpinejs@3.13.3/dist/cdn.min.js"></script>
+</head>
+<body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+  {% comment %}
+  Body-level hx-headers attaches the CSRF token to EVERY HTMX POST on every
+  dine-in page (menu add, place order, add items, request bill), including
+  fragments swapped into #main-content. Rendering {{ csrf_token }} here also
+  guarantees the csrftoken cookie is set. Mirrors templates/agent/dashboard.html.
+  {% endcomment %}
+  <header class="app-header">
+    <div>
+      <h1 class="app-header__title">{{ BRAND_SHORT }} · {{ BRAND_NAME }}</h1>
+      <span class="app-header__subtitle">In-Store Pickup</span>
+    </div>
+    <div class="flex items-center gap-2">
+      {% include "partials/share_modal.html" %}
+      {% if table %}
+      <div class="table-badge">
+        Counter {{ table.number }}
+      </div>
+      {% endif %}
+    </div>
+  </header>
+
+  <main class="container" id="main-content">
+    {% block content %}{% endblock %}
+  </main>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

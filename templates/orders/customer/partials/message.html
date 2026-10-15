@@ -1,0 +1,11 @@
+{% comment %}
+One chat bubble on a delivery order. The id lets the WebSocket handler skip a
+message it has already appended (the sender sees their own bubble via this HTMX
+fragment; the socket echo is de-duped by this same id). Body is auto-escaped.
+{% endcomment %}
+<li id="msg-{{ message.pk }}" class="mb-2" style="background-color: var(--bg-input); padding: var(--space-2) var(--space-3); border-radius: var(--radius-md);">
+  <span class="text-xs text-muted block mb-1">
+    {% if message.sender %}{{ message.sender.username }}{% else %}Customer{% endif %}
+  </span>
+  <span class="text-sm text-primary">{{ message.body }}</span>
+</li>

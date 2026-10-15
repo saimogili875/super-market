@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Product Catalog — Admin{% endblock %}
+
+{% block header_subtitle %}Manage grocery products, prices, and stock{% endblock %}
+
+{% block header_actions %}
+{% include "partials/admin_nav.html" with active_nav="menu" %}
+{% endblock %}
+
+{% block container_class %}app-container--wide{% endblock %}
+
+{% block content %}
+{% include "partials/admin_messages.html" %}
+<div class="mb-6 flex justify-between items-center gap-4" style="flex-wrap: wrap;">
+  <div class="flex items-center gap-2" style="flex: 1; min-width: 240px;">
+    <input
+      type="search"
+      name="q"
+      value="{{ q|default:'' }}"
+      hx-get="{% url 'menu:management' %}"
+      hx-trigger="keyup changed delay:300ms, search"
+      hx-target="#menu-results"
+      hx-include="[name='category']"
+      hx-push-url="false"
+      class="form-input"
+      placeholder="Search products…"
+      aria-label="Search products"
+      style="max-width: 260px;">
+    <select
+      name="category"
+      hx-get="{% url 'menu:management' %}"
+      hx-trigger="change"
+      hx-target="#menu-results"
+      hx-include="[name='q']"
+      class="form-input"
+      aria-label="Filter by department"
+      style="max-width: 200px;">
+      <option value="all">All departments</option>
+      {% for cat in all_categories %}
+      <option value="{{ cat.pk }}" {% if cat.pk|stringformat:"s" == category %}selected{% endif %}>{{ cat.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="flex gap-2">
+    <a href="{% url 'menu:category_create' %}" class="btn btn-secondary icon-text">{% include "partials/icon.html" with name="plus" %} Add Department</a>
+    <a href="{% url 'menu:item_create' %}" class="btn btn-primary icon-text">{% include "partials/icon.html" with name="plus" %} Add Product</a>
+  </div>
+</div>
+
+<div id="menu-results" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+  {% include "menu/admin/partials/results.html" %}
+</div>
+{% endblock %}

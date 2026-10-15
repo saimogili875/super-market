@@ -1,0 +1,818 @@
+{% load currency %}
+<input type="hidden" name="category" value="{{ category|default:'all' }}">
+
+<!-- Standard Menu Partial (Active in Dark Mode via .standard-menu-only) -->
+<div class="standard-menu-only">
+  <style>
+    .category-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(1, 1fr);
+      gap: 1.5rem;
+      margin-bottom: 2.25rem;
+    }
+    @media (min-width: 640px) {
+      .category-cards-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    @media (min-width: 1024px) {
+      .category-cards-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    .category-card {
+      background: var(--rdh-surface-container);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-xl);
+      overflow: hidden;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.25s ease;
+      text-decoration: none;
+      color: var(--text-primary);
+    }
+    .category-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--rdh-primary);
+      box-shadow: var(--shadow-lg), var(--glow-gold);
+    }
+
+    .category-card__image-wrap {
+      position: relative;
+      height: 165px;
+      width: 100%;
+      overflow: hidden;
+      background: #1a1918;
+    }
+    .category-card__bg-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.4s ease;
+    }
+    .category-card:hover .category-card__bg-img {
+      transform: scale(1.05);
+    }
+
+    .category-card__overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(0, 0, 0, 0.15) 0%, rgba(0, 0, 0, 0.45) 50%, rgba(19, 19, 19, 0.95) 100%);
+    }
+
+    .category-card__badge {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: rgba(19, 19, 19, 0.85);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #ffffff;
+      padding: 0.25rem 0.7rem;
+      border-radius: var(--radius-full);
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      z-index: 2;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    }
+
+    .category-card__title-box {
+      position: absolute;
+      bottom: 12px;
+      left: 16px;
+      right: 16px;
+      z-index: 2;
+    }
+
+    .category-card__name {
+      font-family: var(--font-display);
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #ffffff;
+      margin: 0;
+      line-height: 1.2;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.75);
+    }
+
+    .category-card__tag {
+      font-family: var(--font-body);
+      font-style: italic;
+      font-size: 0.85rem;
+      color: #f2ca50;
+      margin-top: 3px;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
+      font-weight: 500;
+    }
+
+    .category-card__stats {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.85rem 1.15rem;
+      background: var(--rdh-surface-container-low);
+      border-top: 1px solid var(--border-subtle);
+      border-bottom: 1px solid var(--border-subtle);
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    .stat-available {
+      color: var(--color-success);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .stat-unavailable {
+      color: var(--color-danger);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .stat-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+    .stat-dot.green {
+      background: var(--color-success);
+      box-shadow: 0 0 6px rgba(52, 211, 153, 0.5);
+    }
+    .stat-dot.red {
+      background: var(--color-danger);
+      opacity: 0.7;
+    }
+
+    .category-card__footer {
+      padding: 0.85rem 1.15rem;
+      background: var(--rdh-surface-container);
+    }
+
+    .btn-view-menu {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.65rem;
+      width: 100%;
+      padding: 0.65rem 1.25rem;
+      min-height: 42px;
+      background: var(--rdh-surface-container-high);
+      color: var(--rdh-primary);
+      font-weight: 700;
+      font-size: 0.88rem;
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-md);
+      transition: all 0.2s ease;
+    }
+    .category-card:hover .btn-view-menu {
+      background: var(--rdh-primary);
+      color: var(--rdh-on-primary);
+      border-color: var(--rdh-primary);
+      box-shadow: var(--glow-gold);
+    }
+  </style>
+
+  <!-- Category Pills Bar -->
+  <div class="flex gap-3 mb-6" style="overflow-x: auto; padding: 0.25rem 0.25rem 0.75rem 0.25rem; display: flex; gap: 0.75rem; margin-bottom: 1.75rem; scrollbar-width: thin;">
+    <a 
+      href="{% url 'orders_customer:menu' %}?category=all&search={{ search|default:'' }}"
+      hx-get="{% url 'orders_customer:menu' %}?category=all"
+      hx-include="[name='search']"
+      hx-target="#menu-content"
+      hx-push-url="false"
+      class="btn btn-sm {% if category == 'all' or not category %}btn-primary{% else %}btn-outline{% endif %}"
+      {% if category == 'all' or not category %}
+        style="background: var(--rdh-primary); color: var(--rdh-on-primary); font-weight: 700; border-radius: var(--radius-full); border: none; padding: 0.55rem 1.35rem; font-size: 0.88rem; text-decoration: none; white-space: nowrap; box-shadow: var(--shadow-sm);"
+      {% else %}
+        style="background: var(--rdh-surface-container); color: var(--rdh-on-surface-variant); border: 1px solid var(--border-subtle); border-radius: var(--radius-full); padding: 0.55rem 1.35rem; font-size: 0.88rem; text-decoration: none; white-space: nowrap;"
+      {% endif %}>
+      All Categories
+    </a>
+    {% for cat in all_categories %}
+    <a 
+      href="{% url 'orders_customer:menu' %}?category={{ cat.name|urlencode }}&search={{ search|default:'' }}"
+      hx-get="{% url 'orders_customer:menu' %}?category={{ cat.name|urlencode }}"
+      hx-include="[name='search']"
+      hx-target="#menu-content"
+      hx-push-url="false"
+      class="btn btn-sm {% if category == cat.name %}btn-primary{% else %}btn-outline{% endif %}"
+      {% if category == cat.name %}
+        style="background: var(--rdh-primary); color: var(--rdh-on-primary); font-weight: 700; border-radius: var(--radius-full); border: none; padding: 0.55rem 1.35rem; font-size: 0.88rem; text-decoration: none; white-space: nowrap; box-shadow: var(--shadow-sm);"
+      {% else %}
+        style="background: var(--rdh-surface-container); color: var(--rdh-on-surface-variant); border: 1px solid var(--border-subtle); border-radius: var(--radius-full); padding: 0.55rem 1.35rem; font-size: 0.88rem; text-decoration: none; white-space: nowrap;"
+      {% endif %}>
+      {{ cat.name }}
+    </a>
+    {% endfor %}
+  </div>
+
+  <!-- Category Cards Grid (Shown when browsing 'all' and no active search filter) -->
+  {% if category == 'all' and not search %}
+  <div class="mb-8">
+    <div class="flex justify-between items-center mb-5">
+      <h2 style="font-family: var(--font-display); font-size: 1.45rem; font-weight: 700; color: var(--rdh-on-surface); margin: 0; display: flex; align-items: center; gap: 0.6rem;">
+        <span style="color: var(--rdh-primary);">✦</span> Grocery Departments
+      </h2>
+      <span class="text-sm" style="color: var(--rdh-on-surface-variant); font-size: 0.85rem; font-weight: 500;">
+        Tap a card to view products
+      </span>
+    </div>
+
+    <div class="category-cards-grid">
+      {% for cat in all_categories %}
+      <div class="category-card" 
+           hx-get="{% url 'orders_customer:menu' %}?category={{ cat.name|urlencode }}"
+           hx-target="#menu-content"
+           hx-include="[name='search']"
+           hx-push-url="false"
+           role="button"
+           tabindex="0">
+        
+        <!-- Photo Header -->
+        <div class="category-card__image-wrap">
+          <img src="{{ cat.header_image_url }}" alt="{{ cat.name }}" class="category-card__bg-img" loading="lazy">
+          <div class="category-card__overlay"></div>
+          
+          <span class="category-card__badge">
+            {{ cat.total_items_count }} ITEMS
+          </span>
+          
+          <div class="category-card__title-box">
+            <h3 class="category-card__name">{{ cat.name }}</h3>
+            {% if cat.tag %}
+            <div class="category-card__tag">{{ cat.tag }}</div>
+            {% endif %}
+          </div>
+        </div>
+        
+        <!-- Availability Row -->
+        <div class="category-card__stats">
+          <span class="stat-available">
+            <span class="stat-dot green"></span>
+            {{ cat.available_items_count }} Available
+          </span>
+          <span class="stat-unavailable">
+            <span class="stat-dot red"></span>
+            {{ cat.unavailable_items_count }} Unavailable
+          </span>
+        </div>
+
+        <div class="category-card__footer">
+          <div class="btn-view-menu">
+            View Products
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+              <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Standard No Results Banner -->
+  {% if search or category != 'all' %}
+    {% if not has_results %}
+    <div class="card card-body text-center" style="background: var(--rdh-surface-container); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: 3.5rem 1.5rem; text-align: center;">
+      <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">🔍</div>
+      <div class="headline-sm mb-2" style="font-size: 1.25rem; font-weight: 700; color: var(--rdh-on-surface);">No grocery products match your filter</div>
+      <p class="text-sm text-muted" style="color: var(--rdh-on-surface-variant); margin: 0 0 1.25rem 0;">Try clearing your search or selecting a different department.</p>
+      <a href="{% url 'orders_customer:menu' %}?category=all"
+         hx-get="{% url 'orders_customer:menu' %}?category=all"
+         hx-target="#menu-content"
+         class="btn btn-sm btn-primary" style="display: inline-flex; padding: 0.6rem 1.25rem;">View All Departments</a>
+    </div>
+    {% endif %}
+  {% endif %}
+
+  <!-- Standard Customer Item Cards per Category -->
+  <div class="flex flex-col gap-6" style="gap: 1.5rem; {% if category == 'all' and not search %}display: none;{% else %}display: flex; flex-direction: column;{% endif %}">
+    {% for cat in categories %}
+      {% with items=cat.items.all %}
+      {% if items %}
+        <div class="category-section" id="cat-sec-std-{{ cat.pk }}">
+          {% if category != 'all' or search %}
+          <div class="flex justify-between items-center mb-5 pb-3" style="border-bottom: 1px solid var(--border-subtle); flex-wrap: wrap; gap: 0.75rem;">
+            <div class="flex items-center gap-3" style="display: flex; align-items: center; gap: 0.75rem;">
+              <a href="{% url 'orders_customer:menu' %}?category=all"
+                 hx-get="{% url 'orders_customer:menu' %}?category=all"
+                 hx-target="#menu-content"
+                 class="btn btn-sm btn-outline" style="border: 1px solid var(--border-strong); color: var(--rdh-on-surface-variant); font-size: 0.85rem; padding: 0.4rem 0.85rem; border-radius: var(--radius-md); text-decoration: none; font-weight: 600;">
+                ← Back to All Departments
+              </a>
+              <h3 style="font-family: var(--font-display); font-size: 1.35rem; font-weight: 700; color: var(--rdh-primary); margin: 0;">
+                {{ cat.name }}
+              </h3>
+              {% if cat.tag %}
+              <span style="font-style: italic; font-size: 0.88rem; color: var(--rdh-on-surface-variant);">
+                ({{ cat.tag }})
+              </span>
+              {% endif %}
+            </div>
+            <span class="text-xs text-muted" style="color: var(--rdh-on-surface-variant); font-weight: 600;">
+              {{ items|length }} products
+            </span>
+          </div>
+          {% endif %}
+
+          <div class="grid gap-4" style="display: flex; flex-direction: column; gap: 1rem;">
+            {% for item in items %}
+              <div class="card glow-hover {% if item.is_orderable %}{% else %}opacity-50{% endif %}" style="background: var(--rdh-surface-container); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); transition: transform 0.2s ease, border-color 0.2s ease;">
+                <div class="card-body flex justify-between items-center" style="padding: 1.25rem 1.35rem; display: flex; justify-content: space-between; align-items: center; gap: 1.25rem;">
+                  {% if item.image %}
+                  <div style="flex-shrink: 0;">
+                    <img src="{{ item.image.url }}" alt="{{ item.name }}" style="width: 84px; height: 84px; object-fit: cover; border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
+                  </div>
+                  {% endif %}
+                  <div style="flex: 1; padding-right: 0.5rem;">
+                    <h4 class="text-lg text-bold" style="margin: 0 0 0.35rem 0; font-size: 1.1rem; font-weight: 700; color: var(--rdh-on-surface); font-family: var(--font-body);">{{ item.name }}</h4>
+                    {% if item.description %}
+                    <p class="text-sm text-muted mb-2" style="color: var(--rdh-on-surface-variant); font-size: 0.88rem; margin-bottom: 0.6rem; line-height: 1.45;">{{ item.description }}</p>
+                    {% endif %}
+                    <div class="flex items-center gap-3" style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+                      <span class="text-sm text-muted icon-text" style="color: var(--rdh-on-surface-variant); font-size: 0.82rem;">{% include "partials/icon.html" with name="clock" %} {{ item.prep_minutes }} mins</span>
+                      <span class="amount amount-lg" style="font-weight: 700; font-size: 1.15rem; color: var(--rdh-primary);">{{ item.effective_price|money }}</span>
+                      {% if item.offer_percent > 0 %}
+                      <span class="badge" style="background: rgba(239, 68, 68, 0.15); color: #EF4444; border: 1px solid rgba(239, 68, 68, 0.3); font-size: 0.72rem; font-weight: 700; padding: 0.25rem 0.6rem; border-radius: var(--radius-full);">{{ item.offer_percent }}% OFF</span>
+                      {% endif %}
+                      {% if not item.is_orderable %}
+                        {% if not item.is_available %}
+                          <span class="badge" style="background: rgba(255, 255, 255, 0.1); color: var(--text-muted); border: 1px solid var(--border-subtle); font-size: 0.72rem; font-weight: 700; padding: 0.25rem 0.6rem; border-radius: var(--radius-full);">Unavailable</span>
+                        {% else %}
+                          <span class="badge" style="background: rgba(239, 68, 68, 0.15); color: #EF4444; border: 1px solid rgba(239, 68, 68, 0.3); font-size: 0.72rem; font-weight: 700; padding: 0.25rem 0.6rem; border-radius: var(--radius-full);">Sold out</span>
+                        {% endif %}
+                      {% elif item.track_stock and item.stock_quantity <= 5 %}
+                        <span class="badge" style="background: rgba(251, 191, 36, 0.15); color: #FBBF24; border: 1px solid rgba(251, 191, 36, 0.3); font-size: 0.72rem; font-weight: 700; padding: 0.25rem 0.6rem; border-radius: var(--radius-full);">Only {{ item.stock_quantity }} left</span>
+                      {% endif %}
+                    </div>
+                  </div>
+
+                  <div style="flex-shrink: 0;">
+                    {% if item.is_orderable %}
+                      {% with qty=cart_items|cart_qty:item.pk %}
+                        {% if qty > 0 %}
+                        <div class="flex items-center gap-1" style="background: var(--rdh-surface-container-low); border: 1px solid var(--rdh-primary); border-radius: var(--radius-md); padding: 0.2rem; display: flex; align-items: center;">
+                          <form hx-post="{% url 'orders_customer:cart_update' %}" hx-target="#cart-bar-container" hx-swap="innerHTML" style="display: inline; margin: 0;">
+                            {% csrf_token %}
+                            <input type="hidden" name="menu_item_id" value="{{ item.pk }}">
+                            <input type="hidden" name="action" value="decrement">
+                            <button type="submit" class="btn btn-sm" aria-label="Decrease quantity" style="background: none; border: none; color: var(--rdh-primary); font-weight: 700; font-size: 1.05rem; padding: 0.25rem 0.65rem; cursor: pointer;">-</button>
+                          </form>
+                          <span class="text-bold text-sm" style="min-width: 1.5rem; text-align: center; display: inline-block; font-weight: 700; color: var(--rdh-on-surface);">{{ qty }}</span>
+                          <form hx-post="{% url 'orders_customer:cart_update' %}" hx-target="#cart-bar-container" hx-swap="innerHTML" style="display: inline; margin: 0;">
+                            {% csrf_token %}
+                            <input type="hidden" name="menu_item_id" value="{{ item.pk }}">
+                            <input type="hidden" name="action" value="increment">
+                            <button type="submit" class="btn btn-sm" aria-label="Increase quantity" style="background: none; border: none; color: var(--rdh-primary); font-weight: 700; font-size: 1.05rem; padding: 0.25rem 0.65rem; cursor: pointer;">+</button>
+                          </form>
+                        </div>
+                        {% else %}
+                        <form hx-post="{% url 'orders_customer:cart_add' %}" hx-target="#cart-bar-container" hx-swap="innerHTML" style="margin: 0;">
+                          {% csrf_token %}
+                          <input type="hidden" name="menu_item_id" value="{{ item.pk }}">
+                          <input type="hidden" name="quantity" value="1">
+                          <button type="submit" class="btn btn-sm glow-hover" style="background: var(--rdh-primary); color: var(--rdh-on-primary); font-weight: 700; border-radius: var(--radius-md); padding: 0.55rem 1.25rem; min-width: 90px; border: none; cursor: pointer;">+ Add</button>
+                        </form>
+                        {% endif %}
+                      {% endwith %}
+                    {% else %}
+                    <button type="button" class="btn btn-secondary btn-sm" disabled style="cursor: not-allowed; opacity: 0.4; background: var(--rdh-surface-container-low); color: var(--text-muted); border: none; border-radius: var(--radius-md); padding: 0.55rem 1.25rem; min-width: 90px;">+ Add</button>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
+      {% endwith %}
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Decorative Poster Partial (Active in Light Mode via .poster-only) -->
+<div class="poster-only">
+  <style>
+    /* Category Pills Styling */
+    .poster-pills-bar {
+      display: flex;
+      gap: 0.6rem;
+      overflow-x: auto;
+      padding: 0.35rem 0.25rem 1.25rem 0.25rem;
+      margin-bottom: 2rem;
+      scrollbar-width: thin;
+      justify-content: center;
+      flex-wrap: wrap;
+      position: relative;
+      z-index: 4;
+    }
+
+    .poster-pill {
+      background: rgba(255, 255, 255, 0.08);
+      color: rgba(255, 255, 255, 0.82);
+      border: 1.5px solid rgba(242, 202, 80, 0.3);
+      border-radius: 9999px;
+      padding: 0.45rem 1.2rem;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-decoration: none;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    }
+    .poster-pill:hover {
+      border-color: #f2ca50;
+      color: #f2ca50;
+      transform: translateY(-1px);
+    }
+    .poster-pill--active {
+      background: #f2ca50 !important;
+      color: #131313 !important;
+      border-color: #f2ca50 !important;
+      font-weight: 800 !important;
+      box-shadow: 0 4px 14px rgba(242, 202, 80, 0.35) !important;
+    }
+
+    /* Category Block & Alternating Header */
+    .poster-category-section {
+      margin-bottom: 3.5rem;
+      position: relative;
+      z-index: 4;
+    }
+
+    .poster-category-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 1.75rem;
+      gap: 1.25rem;
+    }
+
+    .poster-category-header--reverse {
+      flex-direction: row-reverse;
+    }
+
+    .poster-category-tag {
+      background: #f2ca50;
+      color: #131313;
+      font-family: var(--font-body);
+      font-weight: 800;
+      font-size: 1rem;
+      padding: 0.5rem 1.4rem;
+      border-radius: 8px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      box-shadow: 0 4px 14px rgba(242, 202, 80, 0.25);
+      white-space: nowrap;
+      display: inline-block;
+    }
+
+    .poster-category-line {
+      flex: 1;
+      height: 1.5px;
+      background: linear-gradient(90deg, rgba(255,255,255,0.4) 0%, rgba(242,202,80,0.6) 50%, rgba(255,255,255,0.4) 100%);
+    }
+
+    .poster-photo-wrapper {
+      position: relative;
+      width: 145px;
+      height: 145px;
+      border-radius: 50%;
+      border: 3.5px solid #ffffff;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.75), inset 0 0 15px rgba(0,0,0,0.5);
+      overflow: visible;
+      flex-shrink: 0;
+      background: #1a1918;
+    }
+
+    .poster-photo-img {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      object-fit: cover;
+      transition: transform 0.4s ease;
+    }
+
+    .poster-photo-wrapper:hover .poster-photo-img {
+      transform: scale(1.08);
+    }
+
+    .poster-leaf-overlay {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      width: 42px;
+      height: 42px;
+      z-index: 5;
+      pointer-events: none;
+      filter: drop-shadow(0 3px 6px rgba(0,0,0,0.6));
+    }
+    .poster-category-header--reverse .poster-leaf-overlay {
+      right: auto;
+      left: -8px;
+      transform: scaleX(-1);
+    }
+
+    @media (max-width: 640px) {
+      .poster-photo-wrapper {
+        width: 100px;
+        height: 100px;
+        border-width: 2.5px;
+      }
+      .poster-category-tag {
+        font-size: 0.85rem;
+        padding: 0.4rem 1rem;
+      }
+      .poster-leaf-overlay {
+        width: 32px;
+        height: 32px;
+      }
+    }
+
+    /* Items Grid & Item Rows */
+    .poster-items-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .poster-item-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.75rem 0.5rem;
+      border-bottom: 1px dotted rgba(255, 255, 255, 0.18);
+      gap: 1rem;
+      transition: background 0.2s ease;
+    }
+    .poster-item-row:hover {
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: 6px;
+    }
+
+    .poster-item-left {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .poster-item-name {
+      font-family: var(--font-body);
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: #ffffff;
+      line-height: 1.35;
+    }
+
+    .poster-item-desc {
+      font-size: 0.82rem;
+      color: rgba(255, 255, 255, 0.55);
+      margin-top: 3px;
+      line-height: 1.35;
+    }
+
+    .poster-item-right {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      flex-shrink: 0;
+    }
+
+    .poster-item-price {
+      font-family: var(--font-display);
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: 0.02em;
+      min-width: 50px;
+      text-align: right;
+    }
+
+    .poster-stock-badge {
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 0.2rem 0.55rem;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      white-space: nowrap;
+    }
+    .poster-stock-badge.lowstock {
+      background: rgba(251, 191, 36, 0.2);
+      color: #fbbf24;
+      border: 1px solid rgba(251, 191, 36, 0.4);
+    }
+    .poster-stock-badge.soldout, .poster-stock-badge.unavailable {
+      background: rgba(239, 68, 68, 0.2);
+      color: #ef4444;
+      border: 1px solid rgba(239, 68, 68, 0.4);
+    }
+
+    .poster-btn-add {
+      background: #f2ca50;
+      color: #131313;
+      font-weight: 800;
+      font-size: 0.85rem;
+      padding: 0.4rem 0.95rem;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+      min-width: 68px;
+    }
+    .poster-btn-add:hover {
+      background: #ffe088;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(242, 202, 80, 0.3);
+    }
+    .poster-btn-add:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+      background: rgba(255,255,255,0.15);
+      color: rgba(255,255,255,0.4);
+      box-shadow: none;
+    }
+
+    .poster-qty-picker {
+      display: flex;
+      align-items: center;
+      background: rgba(0, 0, 0, 0.7);
+      border: 1.5px solid #f2ca50;
+      border-radius: 6px;
+      padding: 0.15rem;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+    }
+    .poster-qty-btn {
+      background: none;
+      border: none;
+      color: #f2ca50;
+      font-weight: 800;
+      font-size: 1rem;
+      padding: 0.15rem 0.55rem;
+      cursor: pointer;
+      line-height: 1;
+      transition: color 0.15s ease;
+    }
+    .poster-qty-btn:hover {
+      color: #ffffff;
+    }
+    .poster-qty-num {
+      font-size: 0.88rem;
+      font-weight: 800;
+      color: #ffffff;
+      min-width: 1.3rem;
+      text-align: center;
+    }
+  </style>
+
+  <!-- Category Filter Pills Bar -->
+  <div class="poster-pills-bar">
+    <a 
+      href="{% url 'orders_customer:menu' %}?category=all&search={{ search|default:'' }}"
+      hx-get="{% url 'orders_customer:menu' %}?category=all"
+      hx-include="[name='search']"
+      hx-target="#menu-content"
+      hx-push-url="false"
+      class="poster-pill {% if category == 'all' or not category %}poster-pill--active{% endif %}">
+      ALL CATEGORIES
+    </a>
+    {% for cat in all_categories %}
+    <a 
+      href="{% url 'orders_customer:menu' %}?category={{ cat.name|urlencode }}&search={{ search|default:'' }}"
+      hx-get="{% url 'orders_customer:menu' %}?category={{ cat.name|urlencode }}"
+      hx-include="[name='search']"
+      hx-target="#menu-content"
+      hx-push-url="false"
+      class="poster-pill {% if category == cat.name %}poster-pill--active{% endif %}">
+      {{ cat.name|upper }}
+    </a>
+    {% endfor %}
+  </div>
+
+  <!-- Reset Filter Bar if Filter Active -->
+  {% if search or category != 'all' %}
+  <div class="flex justify-between items-center mb-6 pb-3" style="border-bottom: 1px solid rgba(242, 202, 80, 0.25); z-index: 4; position: relative;">
+    <a href="{% url 'orders_customer:menu' %}?category=all"
+       hx-get="{% url 'orders_customer:menu' %}?category=all"
+       hx-target="#menu-content"
+       class="poster-pill" style="border-color: rgba(242, 202, 80, 0.5); color: #f2ca50; background: rgba(0,0,0,0.4);">
+      ← Back to All Departments
+    </a>
+    <span class="text-sm" style="color: rgba(255,255,255,0.7); font-weight: 600;">
+      {% if search %}Results for "{{ search }}"{% else %}Department: {{ category }}{% endif %}
+    </span>
+  </div>
+  {% endif %}
+
+  <!-- No Results Banner -->
+  {% if search or category != 'all' %}
+    {% if not has_results %}
+    <div style="background: rgba(0,0,0,0.4); border: 1px dashed rgba(242, 202, 80, 0.4); border-radius: 14px; padding: 3rem 1.5rem; text-align: center; margin-bottom: 2rem; z-index: 4; position: relative;">
+      <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">🔍</div>
+      <div style="font-family: var(--font-display); font-size: 1.3rem; font-weight: 700; color: #ffffff; margin-bottom: 0.5rem;">No products match your filter</div>
+      <p style="color: rgba(255,255,255,0.6); margin-bottom: 1.25rem; font-size: 0.9rem;">Try clearing your search or selecting a different department.</p>
+      <a href="{% url 'orders_customer:menu' %}?category=all"
+         hx-get="{% url 'orders_customer:menu' %}?category=all"
+         hx-target="#menu-content"
+         class="poster-btn-add" style="display: inline-block; padding: 0.6rem 1.4rem; text-decoration: none;">View All Departments</a>
+    </div>
+    {% endif %}
+  {% endif %}
+
+  <!-- Menu Categories (Alternating Zigzag Layout) -->
+  <div class="poster-categories-container" style="position: relative; z-index: 4;">
+    {% for cat in categories %}
+      {% with items=cat.items.all %}
+      {% if items %}
+        <div class="poster-category-section" id="cat-sec-{{ cat.pk }}">
+          
+          <!-- Category Header: Alternating Tag + Line + Circular Photo -->
+          <div class="poster-category-header {% if forloop.counter0|divisibleby:2 %}{% else %}poster-category-header--reverse{% endif %}">
+            <div class="poster-category-tag">{{ cat.name }}</div>
+            <div class="poster-category-line"></div>
+            <div class="poster-photo-wrapper">
+              <img src="{{ cat.header_image_url }}" alt="{{ cat.name }}" class="poster-photo-img" loading="lazy">
+              <svg class="poster-leaf-overlay" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M 5 35 C 5 35 12 15 35 5 C 35 5 28 25 5 35 Z" fill="#6ba342" stroke="#3d6622" stroke-width="1.5"/>
+                <path d="M 5 35 Q 20 20 35 5" stroke="#87c758" stroke-width="1.2"/>
+              </svg>
+            </div>
+          </div>
+
+          <!-- Category Items List -->
+          <div class="poster-items-grid">
+            {% for item in items %}
+              <div class="poster-item-row {% if not item.is_orderable %}opacity-50{% endif %}">
+                <div class="poster-item-left">
+                  <div class="poster-item-name">{{ item.name }}</div>
+                  {% if item.description %}
+                    <div class="poster-item-desc">{{ item.description }}</div>
+                  {% endif %}
+                </div>
+
+                <div class="poster-item-right">
+                  {% if not item.is_orderable %}
+                    {% if not item.is_available %}
+                      <span class="poster-stock-badge unavailable">Unavailable</span>
+                    {% else %}
+                      <span class="poster-stock-badge soldout">Sold out</span>
+                    {% endif %}
+                  {% elif item.track_stock and item.stock_quantity <= 5 %}
+                    <span class="poster-stock-badge lowstock">Only {{ item.stock_quantity }} left</span>
+                  {% endif %}
+
+                  <span class="poster-item-price">{{ item.effective_price|money }}</span>
+
+                  <div class="poster-item-action">
+                    {% if item.is_orderable %}
+                      {% with qty=cart_items|cart_qty:item.pk %}
+                        {% if qty > 0 %}
+                          <div class="poster-qty-picker">
+                            <form hx-post="{% url 'orders_customer:cart_update' %}" hx-target="#cart-bar-container" hx-swap="innerHTML" style="display: inline; margin: 0;">
+                              {% csrf_token %}
+                              <input type="hidden" name="menu_item_id" value="{{ item.pk }}">
+                              <input type="hidden" name="action" value="decrement">
+                              <button type="submit" class="poster-qty-btn" aria-label="Decrease quantity">-</button>
+                            </form>
+                            <span class="poster-qty-num">{{ qty }}</span>
+                            <form hx-post="{% url 'orders_customer:cart_update' %}" hx-target="#cart-bar-container" hx-swap="innerHTML" style="display: inline; margin: 0;">
+                              {% csrf_token %}
+                              <input type="hidden" name="menu_item_id" value="{{ item.pk }}">
+                              <input type="hidden" name="action" value="increment">
+                              <button type="submit" class="poster-qty-btn" aria-label="Increase quantity">+</button>
+                            </form>
+                          </div>
+                        {% else %}
+                          <form hx-post="{% url 'orders_customer:cart_add' %}" hx-target="#cart-bar-container" hx-swap="innerHTML" style="margin: 0;">
+                            {% csrf_token %}
+                            <input type="hidden" name="menu_item_id" value="{{ item.pk }}">
+                            <input type="hidden" name="quantity" value="1">
+                            <button type="submit" class="poster-btn-add">+ Add</button>
+                          </form>
+                        {% endif %}
+                      {% endwith %}
+                    {% else %}
+                      <button type="button" class="poster-btn-add" disabled>+ Add</button>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+
+        </div>
+      {% endif %}
+      {% endwith %}
+    {% endfor %}
+  </div>
+</div>

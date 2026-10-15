@@ -1,0 +1,51 @@
+{% comment %}
+One delivery-agent row. Re-rendered (HTMX outerHTML) after an availability
+toggle or a deactivate. Never renders any password material.
+
+Context: agent (User, role AGENT), profile (AgentProfile or None)
+{% endcomment %}
+<tr id="agent-row-{{ agent.pk }}" style="border-bottom: 1px solid var(--gray-100);">
+  <td style="padding: 1rem;">
+    <strong>{{ agent.get_full_name|default:agent.username }}</strong>
+    <div class="text-sm text-muted">@{{ agent.username }}</div>
+  </td>
+  <td style="padding: 1rem;">{{ agent.phone|default:"—" }}</td>
+  <td style="padding: 1rem;">
+    {% if agent.is_active %}
+      <span class="badge badge-success">Active</span>
+    {% else %}
+      <span class="badge badge-neutral">Deactivated</span>
+    {% endif %}
+  </td>
+  <td style="padding: 1rem;">
+    {% if profile.is_available %}
+      <span class="badge badge-success">Available</span>
+    {% else %}
+      <span class="badge badge-warning">Unavailable</span>
+    {% endif %}
+  </td>
+  <td style="padding: 1rem; text-align: right;">
+    <div class="flex items-center gap-2" style="justify-content: flex-end;">
+      {% if agent.is_active %}
+      <button
+        class="btn btn-sm btn-secondary"
+        hx-post="{% url 'accounts_admin:agent_toggle' agent.pk %}"
+        hx-target="#agent-row-{{ agent.pk }}"
+        hx-swap="outerHTML">
+        <span class="htmx-indicator">…</span>
+        {% if profile.is_available %}Set Unavailable{% else %}Set Available{% endif %}
+      </button>
+      <button
+        class="btn btn-sm btn-danger"
+        hx-post="{% url 'accounts_admin:agent_deactivate' agent.pk %}"
+        hx-target="#agent-row-{{ agent.pk }}"
+        hx-swap="outerHTML"
+        hx-confirm="Deactivate agent {{ agent.username }}?">
+        Deactivate
+      </button>
+      {% else %}
+      <span class="text-sm text-muted">No actions</span>
+      {% endif %}
+    </div>
+  </td>
+</tr>

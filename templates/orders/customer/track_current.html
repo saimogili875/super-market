@@ -1,0 +1,37 @@
+{% extends "orders/customer/base.html" %}
+
+{% block title %}Track Order — {{ BRAND_SHORT }} · {{ BRAND_NAME }}{% endblock %}
+
+{% block content %}
+<div class="card mt-6">
+  <div class="card-body">
+    {% if delivery_customer %}
+      <div class="empty-state">
+        <div class="empty-state__icon">🛵</div>
+        <h2 class="headline-md mb-2">Track Order</h2>
+        <p class="empty-state__text mb-6">No active orders — place an order to track it here</p>
+        <a href="{% url 'orders_customer:menu' %}" class="btn btn-primary">
+          Browse Products & Place Order
+        </a>
+      </div>
+    {% else %}
+      <div class="empty-state">
+        <div class="empty-state__icon">🛵</div>
+        <h2 class="headline-md mb-2">Sign in to track your orders</h2>
+        <p class="empty-state__text mb-6">Log in or create an account to view and track your live grocery orders.</p>
+        <div class="flex flex-col gap-3" style="max-width: 320px; margin: 0 auto;">
+          <a href="{% url 'customer_auth:login' %}" class="btn btn-primary btn-block">
+            Sign In
+          </a>
+          <a href="{% url 'customer_auth:signup' %}" class="btn btn-outline btn-block">
+            Create Account
+          </a>
+          <a href="{% url 'orders_customer:menu' %}" class="btn btn-outline btn-block">
+            Browse Products
+          </a>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

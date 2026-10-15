@@ -1,0 +1,95 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  {% with brand=BRAND_SHORT|default:"FM" store_name=BRAND_NAME|default:"FreshMart" phone_display=BRAND_PHONE|default:"6281238410" phone_intl=BRAND_PHONE_INTL|default:"916281238410" email=BRAND_EMAIL|default:"support@freshmart.com" %}
+  <title>Contact Us — {{ store_name }}</title>
+  <link rel="stylesheet" href="{% static 'css/design-tokens.css' %}">
+  <script defer src="{% static 'js/ui.js' %}"></script>
+</head>
+<body class="rdh-page">
+
+  <!-- Fixed top nav -->
+  <nav class="rdh-nav">
+    <a href="{% url 'home' %}" class="rdh-nav__brand">{{ brand }}</a>
+    <div class="rdh-nav__links">
+      <a href="{% url 'home' %}#story">About Us</a>
+      <a href="{% url 'home' %}#menu">Products</a>
+      <a href="{% url 'home' %}#setting">Why FreshMart</a>
+      <a href="{% url 'home' %}#visit">Store</a>
+      <a href="{% url 'contact' %}" style="color: var(--color-brand-primary);">Contact</a>
+      <a href="{% url 'orders_customer:menu' %}">Shop Online</a>
+    </div>
+  </nav>
+
+  <main style="padding-top: 120px; padding-bottom: 80px;">
+    <section class="rdh-section" style="max-width: 680px;">
+      <div class="reveal active text-center">
+        <p class="rdh-eyebrow">Get In Touch</p>
+        <h1 class="headline-lg">Send Us a Message</h1>
+        <p class="rdh-lead mt-3" style="margin-left: auto; margin-right: auto;">
+          Have a question about groceries, home delivery, or special orders? Send us a message and our support team will get back to you shortly.
+        </p>
+      </div>
+
+      {% if messages %}
+        <div class="mt-6">
+          {% for message in messages %}
+            <div class="card card-body mb-4 {% if message.tags == 'success' %}badge-success{% else %}badge-danger{% endif %}" style="padding: 1rem 1.5rem; font-weight: var(--fw-semibold); font-size: var(--fs-base); border-radius: var(--radius-md);">
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <div class="card card-body mt-6 glow-hover" style="background: var(--rdh-surface-container); border: 1px solid var(--border-subtle); padding: 2rem;">
+        <form method="post" action="{% url 'contact' %}" novalidate>
+          {% csrf_token %}
+
+          <div class="form-group mb-4">
+            <label for="{{ form.name.id_for_label }}" class="form-label">Full Name</label>
+            {{ form.name }}
+            {% if form.name.errors %}
+              <div class="text-xs text-danger mt-1" style="color: var(--rdh-error);">{{ form.name.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <div class="form-group mb-4">
+            <label for="{{ form.email.id_for_label }}" class="form-label">Email Address</label>
+            {{ form.email }}
+            {% if form.email.errors %}
+              <div class="text-xs text-danger mt-1" style="color: var(--rdh-error);">{{ form.email.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <div class="form-group mb-6">
+            <label for="{{ form.message.id_for_label }}" class="form-label">Message</label>
+            {{ form.message }}
+            {% if form.message.errors %}
+              <div class="text-xs text-danger mt-1" style="color: var(--rdh-error);">{{ form.message.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block glow-hover" style="font-size: 1.1rem; padding: 0.85rem;">
+            Send Email Message
+          </button>
+        </form>
+      </div>
+
+      <div class="mt-6 text-center">
+        <a href="{% url 'home' %}" class="btn btn-outline">← Back to Home</a>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="rdh-footer">
+    <div class="rdh-footer__brand">{{ brand }}</div>
+    <div>{{ store_name }} — {{ BRAND_TAGLINE|default:"Fresh groceries, delivered fast" }}</div>
+    <div class="mt-2">© {{ store_name }}. All rights reserved.</div>
+  </footer>
+
+  {% endwith %}
+</body>
+</html>

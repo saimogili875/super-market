@@ -1,0 +1,35 @@
+{% extends "tables/base.html" %}
+
+{% block title %}Start Pickup Order — Counter {{ table.number }}{% endblock %}
+
+{% block content %}
+<div class="card mt-6" style="max-width: 450px; margin-left: auto; margin-right: auto; border-color: var(--color-brand-primary);">
+  <div class="card-body text-center">
+    <div style="font-size: 3rem; margin-bottom: var(--space-2);">&#128722;</div>
+    <h1 class="text-2xl text-bold mb-1" style="color: var(--color-brand-primary);">Welcome to Counter {{ table.number }}</h1>
+    <p class="text-muted text-sm mb-6">
+      Please enter your name to browse products and place your pickup order directly from your phone.
+    </p>
+
+    <form method="post" action="{% url 'tables:start_tab' table.qr_token %}" class="flex flex-col gap-4 text-left">
+      {% csrf_token %}
+      <div class="form-group">
+        <label for="guest_name" class="form-label text-bold">Your Name</label>
+        <input 
+          type="text" 
+          id="guest_name" 
+          name="guest_name" 
+          class="form-input" 
+          placeholder="Enter your name (e.g., Alex)" 
+          autofocus 
+          required>
+        <span class="text-xs text-muted mt-1">Helps store staff identify your pickup order at this counter.</span>
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="width: 100%; padding: var(--space-3); font-size: var(--fs-base);">
+        Start Shopping &rarr;
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}

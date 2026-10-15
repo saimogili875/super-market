@@ -1,0 +1,32 @@
+# Environment
+.env
+.venv/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# Django
+/media/
+/staticfiles/
+
+# Testing & linting
+.pytest_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+
+# Docker DB data
+pgdata/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+db.sqlite3
+all_code.txt
+cookies.txt
+.DS_Store

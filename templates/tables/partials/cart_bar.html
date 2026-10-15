@@ -1,0 +1,25 @@
+{% load currency %}
+{% if cart_count > 0 %}
+<div class="fixed-bottom-bar">
+  <div class="app-container flex justify-between items-center" style="padding: 0;">
+    <div>
+      <span class="text-lg text-bold text-primary">{{ cart_count }} item{% if cart_count != 1 %}s{% endif %}</span>
+      <div class="text-sm text-bold" style="color: var(--color-brand-primary);">Est. Total: {{ cart_total|money }}</div>
+    </div>
+    <button 
+      class="btn btn-primary"
+      hx-post="{% url 'tables:place_order' table.qr_token %}"
+      hx-target="#main-content">
+      Place Pickup Order &rarr;
+    </button>
+  </div>
+</div>
+{% else %}
+<div class="fixed-bottom-bar">
+  <div class="app-container flex justify-between items-center" style="padding: 0; justify-content: center;">
+    <div class="text-muted text-sm text-center">
+      Select products below to add to your cart
+    </div>
+  </div>
+</div>
+{% endif %}

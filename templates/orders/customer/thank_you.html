@@ -1,0 +1,33 @@
+{% extends "orders/customer/base.html" %}
+{% load currency %}
+
+{% block title %}Order Placed — Order #{{ order.pk }}{% endblock %}
+
+{% block header_subtitle %}Fresh Groceries Delivered Fast{% endblock %}
+
+{% block header_actions %}
+<div class="badge badge-warning icon-text">
+  {% include "partials/icon.html" with name="truck" %} Delivery
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="card empty-state mt-6">
+  <div class="empty-state__icon" style="color: var(--color-brand-primary);">{% include "partials/icon.html" with name="check-circle" cls="icon icon-xl" %}</div>
+  <h1 class="text-2xl text-bold mb-2" style="color: var(--color-brand-primary);">Order Placed Successfully!</h1>
+  <p class="text-muted text-base mb-6" style="max-width: 450px; margin-left: auto; margin-right: auto;">
+    Your grocery delivery order #{{ order.pk }} has been received and sent to our store packing team. Please pay cash on delivery when your courier arrives.
+  </p>
+
+  <div class="mb-6" style="background-color: var(--bg-input); border-radius: var(--radius-md); padding: var(--space-4); max-width: 400px; margin-left: auto; margin-right: auto; text-align: left;">
+    <div class="mb-2 text-sm text-muted">Status: <strong class="text-bold" style="color: var(--color-brand-primary);">{{ order.get_status_display }}</strong></div>
+    <div class="mb-2 text-sm text-muted">Total (COD): <strong class="text-bold" style="color: var(--text-primary);">{{ order.total_amount|money }}</strong></div>
+    <div class="text-sm text-muted">Contact: <strong class="text-bold" style="color: var(--text-primary);">{{ order.contact_name }} ({{ order.contact_phone }})</strong></div>
+  </div>
+
+  <div class="flex gap-4 justify-center">
+    <a href="{% url 'orders_customer:menu' %}" class="btn btn-outline">Back to Products</a>
+    <a href="{% url 'orders_customer:track' order.pk %}" class="btn btn-primary">Track Delivery</a>
+  </div>
+</div>
+{% endblock %}

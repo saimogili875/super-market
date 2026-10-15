@@ -1,0 +1,7 @@
+# Development dependencies — includes everything in base.txt
+-r base.txt
+
+pytest~=8.3
+pytest-django~=4.9
+ruff~=0.11
+pip-audit~=2.9

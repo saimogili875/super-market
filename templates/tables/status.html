@@ -1,0 +1,13 @@
+{% extends "tables/base.html" %}
+
+{% block title %}Live Status — Counter {{ table.number }}{% endblock %}
+
+{% block content %}
+<div id="status-container">
+  {% include "tables/partials/running_tab.html" %}
+</div>
+
+{{ table.qr_token|json_script:"table-data" }}
+{% load static %}
+<script src="{% static 'js/table-status.js' %}" defer></script>
+{% endblock %}

@@ -1,0 +1,57 @@
+{% comment %}
+Order card — one delivery assigned to this agent. Re-rendered (HTMX outerHTML)
+after every status change. Shows the cash to collect (COD), contact details,
+the Maps deep-link, and only the next actions the state machine permits.
+
+`targets` is a list of {"value", "label"} dicts from views_agent._next_actions.
+{% endcomment %}
+{% load currency %}
+<article id="order-card-{{ order.pk }}" class="card mb-4">
+  <div class="card-body">
+    <div class="flex justify-between items-center mb-3">
+      <h3 class="text-lg text-bold m-0">Order #{{ order.pk }}</h3>
+      <span class="badge badge-neutral">{{ order.get_status_display }}</span>
+    </div>
+
+    <p class="text-base mb-2">
+      Collect on delivery:
+      <strong style="color: var(--color-success);">{{ order.total_amount|money }}</strong>
+    </p>
+
+    <p class="text-sm text-muted mb-2">
+      {{ order.contact_name|default:"Customer" }}
+      {% if order.contact_phone %}
+      · <a href="tel:{{ order.contact_phone }}">{{ order.contact_phone }}</a>
+      {% endif %}
+    </p>
+
+    {% if order.instructions %}
+    <p class="text-sm text-muted italic mb-4" style="font-style: italic;">&ldquo;{{ order.instructions }}&rdquo;</p>
+    {% endif %}
+
+    {% if order.maps_url %}
+    <a
+      class="btn btn-secondary btn-block mb-4 icon-text justify-center"
+      href="{{ order.maps_url }}"
+      target="_blank"
+      rel="noopener noreferrer">
+      {% include "partials/icon.html" with name="map-pin" %} Navigate
+    </a>
+    {% endif %}
+
+    <div class="flex flex-col gap-2 mt-4">
+      {% for action in targets %}
+      <button
+        class="btn btn-primary btn-block"
+        hx-post="{% url 'orders_agent:update_status' order.pk %}"
+        hx-target="#order-card-{{ order.pk }}"
+        hx-swap="outerHTML"
+        hx-vals='{"to_status": "{{ action.value }}"}'>
+        Mark {{ action.label }}
+      </button>
+      {% empty %}
+      <span class="text-sm text-muted text-center block w-full py-2">No further action right now.</span>
+      {% endfor %}
+    </div>
+  </div>
+</article>

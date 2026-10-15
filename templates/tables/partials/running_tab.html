@@ -1,0 +1,56 @@
+{% load currency %}
+<div class="card mt-4">
+  <div class="card-body">
+    <div class="flex justify-between items-center mb-4" style="border-bottom: 1px solid var(--border-subtle); padding-bottom: var(--space-3);">
+      <h2 class="text-lg text-bold">Counter {{ table.number }} — Active Order</h2>
+      <span class="text-xl text-bold" style="color: var(--color-success);">Total: {{ tab_total|money }}</span>
+    </div>
+
+    {% if bill_requested %}
+    <div class="mb-4 text-center text-bold text-sm" style="background-color: var(--color-success-light); color: var(--color-success-dark); padding: var(--space-3); border-radius: var(--radius-md); border: 1px solid var(--color-success);">
+      <p class="mb-2">&#10003; Bill requested — please proceed to the cashier counter</p>
+      <a href="{% url 'tables:receipt' table.qr_token %}" class="btn btn-sm" style="background-color: var(--color-success); color: white;">View Receipt &rarr;</a>
+    </div>
+    {% endif %}
+
+    <div class="flex flex-col gap-3">
+      {% for order in orders %}
+      <div style="background-color: var(--bg-input); padding: var(--space-3); border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+        <div class="flex justify-between items-center mb-2">
+          <span class="text-bold" style="color: var(--color-brand-primary);">Order #{{ order.pk }}</span>
+          <span class="badge badge-neutral">{{ order.get_status_display }}</span>
+        </div>
+        <ul style="list-style: none; padding: 0; font-size: var(--fs-sm); color: var(--text-primary);">
+          {% for item in order.items.all %}
+          <li class="flex justify-between py-1">
+            <span>{{ item.quantity }}x {{ item.name_snap }}</span>
+            <span>{{ item.line_total|money }}</span>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% empty %}
+      <p class="text-muted text-center py-4">No items placed yet.</p>
+      {% endfor %}
+    </div>
+
+    <div class="flex gap-4 mt-6">
+      <a href="{% url 'tables:menu' table.qr_token %}" class="btn btn-outline" style="flex: 1;">
+        + Add More Products
+      </a>
+      {% if bill_requested %}
+      <a href="{% url 'tables:receipt' table.qr_token %}" class="btn btn-primary" style="flex: 1; background-color: var(--color-success); text-align: center;">
+        View Receipt
+      </a>
+      {% elif orders %}
+      <button 
+        class="btn btn-primary" 
+        style="flex: 1; background-color: var(--color-success);"
+        hx-post="{% url 'tables:request_bill' table.qr_token %}"
+        hx-target="#main-content">
+        Request Bill
+      </button>
+      {% endif %}
+    </div>
+  </div>
+</div>

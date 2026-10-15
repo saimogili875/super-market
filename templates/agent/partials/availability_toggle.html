@@ -1,0 +1,34 @@
+{% comment %}
+Availability toggle — flips the signed-in agent between Available and Busy.
+The admin dashboard reads this flag when routing new deliveries, so keeping it
+current matters. HTMX swaps this whole block for the fresh state after each tap.
+{% endcomment %}
+<div id="availability-toggle" class="card mt-4">
+  <div class="card-body">
+    {% if is_available %}
+    <div class="flex flex-col gap-3 text-center">
+      <span class="text-bold text-sm icon-text justify-center" style="color: var(--color-success);">{% include "partials/icon.html" with name="dot" cls="icon avail-dot" %} Available for deliveries</span>
+      <button
+        class="btn btn-outline btn-block"
+        hx-post="{% url 'orders_agent:toggle_availability' %}"
+        hx-target="#availability-toggle"
+        hx-swap="outerHTML"
+        hx-vals='{"available": "false"}'>
+        Go Busy
+      </button>
+    </div>
+    {% else %}
+    <div class="flex flex-col gap-3 text-center">
+      <span class="text-bold text-sm text-muted icon-text justify-center">{% include "partials/icon.html" with name="dot" cls="icon avail-dot" %} Busy — not receiving orders</span>
+      <button
+        class="btn btn-primary btn-block"
+        hx-post="{% url 'orders_agent:toggle_availability' %}"
+        hx-target="#availability-toggle"
+        hx-swap="outerHTML"
+        hx-vals='{"available": "true"}'>
+        Go Available
+      </button>
+    </div>
+    {% endif %}
+  </div>
+</div>

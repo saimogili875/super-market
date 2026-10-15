@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}My Deliveries — {{ BRAND_NAME }}{% endblock %}
+
+{% block header_subtitle %}{{ request.user.get_full_name|default:request.user.username }}{% endblock %}
+
+{% block header_actions %}
+<div class="badge badge-warning icon-text">
+  {% include "partials/icon.html" with name="truck" %} Agent
+</div>
+<form method="post" action="{% url 'accounts:logout' %}" style="margin: 0;">
+  {% csrf_token %}
+  <button type="submit" class="btn btn-outline" style="font-size: var(--fs-xs); padding: var(--space-1) var(--space-3);">
+    Sign Out
+  </button>
+</form>
+{% endblock %}
+
+{% block content %}
+{% comment %}
+Body-level hx-headers attaches the CSRF token to every HTMX POST on this page
+(status updates + availability toggle), so we don't repeat a hidden field in
+each control. Rendering {{ csrf_token }} also guarantees the csrftoken cookie.
+{% endcomment %}
+<div hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+  
+  {% include "agent/partials/availability_toggle.html" %}
+
+  <h2 class="text-xl text-bold mt-6 mb-4">Assigned Deliveries</h2>
+
+  {% if cards %}
+  <div class="flex flex-col gap-4">
+    {% for card in cards %}
+    {% include "agent/partials/order_card.html" with order=card.order targets=card.targets %}
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="card empty-state">
+    <div class="empty-state__icon">{% include "partials/icon.html" with name="truck" cls="icon icon-xl" %}</div>
+    <div class="empty-state__text mb-2">No deliveries assigned</div>
+    <p class="text-sm text-muted">Stay available and check back soon.</p>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

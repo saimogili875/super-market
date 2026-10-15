@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}Agents — Admin{% endblock %}
+{% block header_subtitle %}Delivery agents & availability{% endblock %}
+
+{% block header_actions %}
+{% include "partials/admin_nav.html" with active_nav="agents" %}
+{% endblock %}
+
+{% block container_class %}app-container--wide{% endblock %}
+
+{% block content %}
+{% include "partials/admin_messages.html" %}
+
+<div class="flex flex-col gap-6" style="display: grid; grid-template-columns: 1fr; gap: 1.5rem;">
+
+  {# ── Create agent ─────────────────────────────────────────────── #}
+  <section class="card">
+    <div class="card-body">
+      <h2 class="admin-section__title mb-4 icon-text">{% include "partials/icon.html" with name="plus" %} Create Delivery Agent</h2>
+      <form method="post" action="{% url 'accounts_admin:agent_create' %}" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; align-items: start;">
+        {% csrf_token %}
+        <div class="form-group mb-0">
+          <label for="id_username" class="form-label">Username</label>
+          {{ form.username }}
+          {% if form.username.errors %}<div class="text-sm badge badge-danger mt-1">{{ form.username.errors|striptags }}</div>{% endif %}
+        </div>
+        <div class="form-group mb-0">
+          <label for="id_phone" class="form-label">Phone</label>
+          {{ form.phone }}
+          {% if form.phone.errors %}<div class="text-sm badge badge-danger mt-1">{{ form.phone.errors|striptags }}</div>{% endif %}
+        </div>
+        <div class="form-group mb-0">
+          <label for="id_password1" class="form-label">Password</label>
+          {{ form.password1 }}
+          {% if form.password1.errors %}<div class="text-sm badge badge-danger mt-1">{{ form.password1.errors|striptags }}</div>{% endif %}
+        </div>
+        <div class="form-group mb-0">
+          <label for="id_password2" class="form-label">Confirm Password</label>
+          {{ form.password2 }}
+          {% if form.password2.errors %}<div class="text-sm badge badge-danger mt-1">{{ form.password2.errors|striptags }}</div>{% endif %}
+        </div>
+        <div class="form-group mb-0" style="align-self: end;">
+          <button type="submit" class="btn btn-primary btn-block">Create Agent</button>
+        </div>
+      </form>
+      {% if form.non_field_errors %}
+      <div class="text-sm badge badge-danger mt-2">{{ form.non_field_errors|striptags }}</div>
+      {% endif %}
+    </div>
+  </section>
+
+  {# ── Agents list ──────────────────────────────────────────────── #}
+  <section>
+    <div class="admin-section">
+      <h2 class="admin-section__title icon-text">{% include "partials/icon.html" with name="truck" %} Delivery Agents</h2>
+      <span class="admin-section__count">{{ agents|length }}</span>
+    </div>
+    <div class="card p-0" style="overflow-x: auto;">
+      <table class="table" style="width: 100%; border-collapse: collapse;">
+        <thead>
+          <tr style="border-bottom: 1px solid var(--gray-200); text-align: left;">
+            <th style="padding: 1rem;">Agent</th>
+            <th style="padding: 1rem;">Phone</th>
+            <th style="padding: 1rem;">Account</th>
+            <th style="padding: 1rem;">Availability</th>
+            <th style="padding: 1rem; text-align: right;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for agent in agents %}
+          {% include "accounts/admin/partials/agent_row.html" with agent=agent profile=agent.agent %}
+          {% empty %}
+          <tr>
+            <td colspan="5" style="padding: 2rem; text-align: center;" class="text-muted">
+              No delivery agents yet. Create one above.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <p class="text-sm text-muted mt-4">
+      Need to see every account? <a href="{% url 'accounts_admin:users' %}" class="text-primary">View all users →</a>
+    </p>
+  </section>
+</div>
+{% endblock %}

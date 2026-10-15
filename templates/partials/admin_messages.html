@@ -1,0 +1,11 @@
+{% comment %}
+Flash-message strip for admin dashboard pages. Renders Django messages as
+design-token toasts. Included near the top of each admin page's content.
+{% endcomment %}
+{% if messages %}
+<div class="admin-messages mb-4" role="status" aria-live="polite">
+  {% for message in messages %}
+  <div class="toast toast--{{ message.tags }}">{{ message }}</div>
+  {% endfor %}
+</div>
+{% endif %}

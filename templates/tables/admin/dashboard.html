@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}Counters Management — Admin{% endblock %}
+
+{% block header_subtitle %}Manage pickup counters and QR codes{% endblock %}
+
+{% block header_actions %}
+{% include "partials/admin_nav.html" with active_nav="tables" %}
+{% endblock %}
+
+{% block container_class %}app-container--wide{% endblock %}
+
+{% block content %}
+{% include "partials/admin_messages.html" %}
+<div class="mb-6 flex justify-between items-center gap-2" style="flex-wrap: wrap;">
+  <a href="{% url 'tables_admin:sessions' %}" class="btn btn-secondary icon-text">{% include "partials/icon.html" with name="receipt" %} View Store Bills</a>
+  <a href="{% url 'tables_admin:table_create' %}" class="btn btn-primary icon-text">{% include "partials/icon.html" with name="plus" %} Add Counter</a>
+</div>
+
+<div class="card p-0" style="overflow-x: auto;">
+  <table class="table" style="width: 100%; border-collapse: collapse;">
+    <thead>
+      <tr style="border-bottom: 1px solid var(--gray-200); text-align: left;">
+        <th style="padding: 1rem;">Counter Number</th>
+        <th style="padding: 1rem;">Status</th>
+        <th style="padding: 1rem;">Active Order</th>
+        <th style="padding: 1rem; text-align: right;">Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for table in tables %}
+      <tr style="border-bottom: 1px solid var(--gray-100);">
+        <td style="padding: 1rem;">
+          <strong class="icon-text" style="font-size: 1.1rem;">{% include "partials/icon.html" with name="chair" %} Counter {{ table.number }}</strong>
+        </td>
+        <td style="padding: 1rem;">
+          {% if table.is_active %}
+          <span class="badge badge-success">Active</span>
+          {% else %}
+          <span class="badge badge-secondary">Inactive</span>
+          {% endif %}
+        </td>
+        <td style="padding: 1rem;">
+          {% if table.open_tabs > 0 %}
+          <span class="badge badge-primary">Open Order</span>
+          {% else %}
+          <span class="text-muted text-sm">No active order</span>
+          {% endif %}
+        </td>
+        <td style="padding: 1rem; text-align: right;">
+          <div class="flex items-center gap-2" style="justify-content: flex-end;">
+            <a href="{% url 'tables:menu' table.qr_token %}" target="_blank" rel="noopener" class="btn btn-sm btn-secondary icon-text">
+              {% include "partials/icon.html" with name="external-link" %} Pickup Link
+            </a>
+            {% if table.pk %}
+            <a href="{% url 'admin:tables_table_download_qr' table.pk %}" download="table_{{ table.number }}.png" class="btn btn-sm btn-secondary icon-text">
+              {% include "partials/icon.html" with name="download" %} Download QR
+            </a>
+            {% endif %}
+            <a href="{% url 'tables_admin:table_edit' table.pk %}" class="btn btn-sm">Edit</a>
+            {% if table.is_active %}
+            <form method="post" action="{% url 'tables_admin:table_deactivate' table.pk %}" style="margin: 0; display: inline;">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-sm btn-danger">Deactivate</button>
+            </form>
+            {% endif %}
+          </div>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="4" style="padding: 2rem; text-align: center;" class="text-muted">
+          No tables found.
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

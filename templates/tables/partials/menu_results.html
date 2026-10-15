@@ -1,0 +1,89 @@
+{% load currency %}
+<input type="hidden" name="category" value="{{ category|default:'all' }}">
+<div class="flex gap-2 mb-6" style="overflow-x: auto; padding-bottom: var(--space-2);">
+  <a 
+    href="{% url 'tables:menu' table.qr_token %}?category=all&search={{ search|default:'' }}"
+    hx-get="{% url 'tables:menu' table.qr_token %}?category=all"
+    hx-include="[name='search']"
+    hx-target="#menu-content"
+    hx-push-url="false"
+    class="btn btn-sm {% if category == 'all' %}btn-primary{% else %}btn-outline{% endif %}">
+    All
+  </a>
+  {% for cat in all_categories %}
+  <a 
+    href="{% url 'tables:menu' table.qr_token %}?category={{ cat.name|urlencode }}&search={{ search|default:'' }}"
+    hx-get="{% url 'tables:menu' table.qr_token %}?category={{ cat.name|urlencode }}"
+    hx-include="[name='search']"
+    hx-target="#menu-content"
+    hx-push-url="false"
+    class="btn btn-sm {% if category == cat.name %}btn-primary{% else %}btn-outline{% endif %}">
+    {{ cat.name }}
+  </a>
+  {% endfor %}
+</div>
+
+{% if search or category != 'all' %}
+  {% if not has_results %}
+  <div class="card empty-state">
+    <div class="empty-state__icon">{% include "partials/icon.html" with name="search" cls="icon icon-xl" %}</div>
+    <div class="empty-state__text mb-2">No products match your filter</div>
+    <p class="text-sm text-muted">Try clearing your search or selecting a different department.</p>
+  </div>
+  {% endif %}
+{% endif %}
+
+<div class="flex flex-col gap-4">
+  {% for cat in categories %}
+    {% with items=cat.items.all %}
+    {% if items or not search and category == 'all' %}
+      <div class="label-caps mt-2">{{ cat.name }}</div>
+      {% for item in items %}
+        <div class="card {% if item.is_orderable %}card-hoverable{% else %}opacity-50{% endif %}" {% if not item.is_orderable %}style="background: var(--rdh-surface-container-low);"{% endif %}>
+          <div class="card-body flex justify-between items-center" style="gap: var(--space-3);">
+            {% if item.image %}
+            <div style="flex-shrink: 0;">
+              <img src="{{ item.image.url }}" alt="{{ item.name }}" style="width: 72px; height: 72px; object-fit: cover; border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
+            </div>
+            {% endif %}
+            <div style="flex: 1; padding-right: var(--space-2);">
+              <h3 class="text-lg text-bold">{{ item.name }}</h3>
+              {% if item.description %}
+              <p class="text-sm text-muted mb-2">{{ item.description }}</p>
+              {% endif %}
+              <div class="flex items-center gap-3">
+                <span class="text-sm text-muted icon-text">{% include "partials/icon.html" with name="clock" %} {{ item.prep_minutes }} mins</span>
+                <span class="amount amount-lg">{{ item.effective_price|money }}</span>
+                {% if item.offer_percent > 0 %}
+                <span class="badge badge-danger">{{ item.offer_percent }}% OFF</span>
+                {% endif %}
+                {% if not item.is_orderable %}
+                  {% if not item.is_available %}
+                    <span class="badge badge-secondary">Unavailable</span>
+                  {% else %}
+                    <span class="badge badge-danger">Sold out</span>
+                  {% endif %}
+                {% elif item.track_stock and item.stock_quantity <= 5 %}
+                  <span class="badge badge-warning">Only {{ item.stock_quantity }} left</span>
+                {% endif %}
+                </div>
+            </div>
+
+            <div>
+              {% if item.is_orderable %}
+              <form hx-post="{% url 'tables:cart_add' table.qr_token %}" hx-target="#cart-bar-container" hx-swap="innerHTML">
+                <input type="hidden" name="menu_item_id" value="{{ item.pk }}">
+                <input type="hidden" name="quantity" value="1">
+                <button type="submit" class="btn btn-primary btn-sm">+ Add</button>
+              </form>
+              {% else %}
+              <button type="button" class="btn btn-secondary btn-sm" disabled style="cursor: not-allowed; opacity: 0.6;">+ Add</button>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    {% endif %}
+    {% endwith %}
+  {% endfor %}
+</div>

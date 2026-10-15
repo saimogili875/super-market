@@ -1,0 +1,23 @@
+{% comment %}
+Headline KPI cards — total revenue, order count, and average order value for
+the selected range. All three numbers come pre-computed from services.totals();
+the template only formats them as currency.
+{% endcomment %}
+{% load currency %}
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-4);">
+  <div class="card card-body flex flex-col gap-1">
+    <span class="text-xs text-bold text-muted" style="text-transform: uppercase; letter-spacing: 0.05em;">Total Revenue</span>
+    <span class="text-3xl text-bold" style="color: var(--color-success);">{{ totals.revenue|money }}</span>
+    <span class="text-xs text-muted">Settled (PAID) orders only</span>
+  </div>
+  <div class="card card-body flex flex-col gap-1">
+    <span class="text-xs text-bold text-muted" style="text-transform: uppercase; letter-spacing: 0.05em;">Orders</span>
+    <span class="text-3xl text-bold">{{ totals.orders }}</span>
+    <span class="text-xs text-muted">Cleared in range</span>
+  </div>
+  <div class="card card-body flex flex-col gap-1">
+    <span class="text-xs text-bold text-muted" style="text-transform: uppercase; letter-spacing: 0.05em;">Avg Order Value</span>
+    <span class="text-3xl text-bold" style="color: var(--color-brand-primary);">{{ totals.avg_order_value|money }}</span>
+    <span class="text-xs text-muted">Revenue ÷ orders</span>
+  </div>
+</div>

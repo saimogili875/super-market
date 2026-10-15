@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}{{ BRAND_SHORT }} · {{ BRAND_NAME }}{% endblock %}</title>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'css/design-tokens.css' %}">
+  
+  <!-- Open Graph / Social Media Preview -->
+  <meta property="og:title" content="{{ BRAND_NAME }} — {{ BRAND_TAGLINE }}" />
+  <meta property="og:description" content="Fresh groceries, daily essentials, organic fruits & vegetables, and pantry staples delivered directly to your doorstep." />
+  <meta property="og:image" content="https://www.freshmart.in/static/images/share-preview.jpg" />
+  <meta property="og:url" content="https://www.freshmart.in" />
+  <meta property="og:type" content="website" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="{{ BRAND_NAME }} — {{ BRAND_TAGLINE }}" />
+  <meta name="twitter:description" content="Fresh groceries, daily essentials, organic produce, and pantry staples delivered fast." />
+  <meta name="twitter:image" content="https://www.freshmart.in/static/images/share-preview.jpg" />
+
+  <!-- Allowed via CSP: unpkg.com -->
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  <script defer src="https://unpkg.com/alpinejs@3.13.3/dist/cdn.min.js"></script>
+</head>
+<body class="app-shell" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+  {% comment %}
+  Body-level hx-headers attaches the CSRF token to EVERY HTMX POST on every
+  page that extends this base (admin dashboards, menu/tables/agents CRUD),
+  including fragments swapped into shared containers. Rendering {{ csrf_token }}
+  also guarantees the csrftoken cookie is set. Mirrors templates/agent/dashboard.html.
+  {% endcomment %}
+  <header class="app-header">
+    <div>
+      <h1 class="app-header__title">{{ BRAND_SHORT }} · {{ BRAND_NAME }}</h1>
+      <span class="app-header__subtitle">{% block header_subtitle %}{{ BRAND_TAGLINE }}{% endblock %}</span>
+    </div>
+    <div class="flex items-center gap-2" style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; justify-content: flex-end;">
+      {% include "partials/share_modal.html" %}
+      <a href="{% url 'orders_customer:my_orders' %}" class="btn btn-xs btn-outline" style="border-color: var(--color-brand-primary); color: var(--color-brand-primary); padding: 0.35rem 0.65rem; border-radius: var(--radius-sm); font-weight: 600; text-decoration: none;">
+        📦 My Orders
+      </a>
+      {% if delivery_customer %}
+        <span class="text-xs text-muted" title="{{ delivery_customer.email }}">
+          {{ delivery_customer.email|truncatechars:14 }}
+        </span>
+        <a href="{% url 'customer_auth:logout' %}" class="btn btn-xs btn-outline">Logout</a>
+      {% else %}
+        <a href="{% url 'customer_auth:login' %}" class="btn btn-xs btn-outline">Sign In</a>
+      {% endif %}
+      {% block header_actions %}
+        <!-- Badges or toggles go here -->
+      {% endblock %}
+    </div>
+  </header>
+
+  <main class="app-main">
+    <!-- Use app-container--wide for admin panels -->
+    <div class="app-container {% block container_class %}{% endblock %}" id="main-content">
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+  
+  <div id="toast-region"></div>
+</body>
+</html>

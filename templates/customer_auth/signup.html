@@ -1,0 +1,80 @@
+{% extends "orders/customer/base.html" %}
+{% load static %}
+
+{% block title %}New Customer Signup — {{ BRAND_NAME|default:"FreshMart" }}{% endblock %}
+
+{% block content %}
+<div class="auth-page-container" style="max-width: 500px; margin: 0 auto; padding-top: 1.5rem;">
+  <div class="text-center mb-6">
+    <p class="label-caps mb-2">Grocery Delivery</p>
+    <h2 class="headline-md">Welcome to {{ BRAND_NAME|default:"FreshMart" }}</h2>
+    <p class="text-sm text-muted mt-2">
+      Create a new account with your phone number and email to shop groceries.
+    </p>
+  </div>
+
+  {% if messages %}
+    <div class="mb-4">
+      {% for message in messages %}
+        <div class="card card-body mb-2 {% if message.tags == 'success' %}badge-success{% else %}badge-danger{% endif %}" style="padding: 0.75rem 1rem; font-size: var(--fs-sm); border-radius: var(--radius-md);">
+          {{ message }}
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <!-- Primary Top Navigation Tabs -->
+  <div class="flex gap-2 mb-6" style="display: flex; gap: 0.75rem; margin-bottom: 1.5rem;">
+    <a href="{% url 'customer_auth:login' %}" class="btn btn-md btn-outline flex-1 glow-hover text-center" style="flex: 1; border-radius: var(--radius-md); padding: 0.75rem 1rem; justify-content: center;">
+      {% include "partials/icon.html" with name="user-check" %} Returning Customer
+    </a>
+    <a href="{% url 'customer_auth:signup' %}" class="btn btn-md btn-primary flex-1 glow-hover text-center" style="flex: 1; border-radius: var(--radius-md); padding: 0.75rem 1rem; justify-content: center;">
+      {% include "partials/icon.html" with name="user-plus" %} New Customer
+    </a>
+  </div>
+
+  <!-- Dedicated Signup Card -->
+  <div class="card card-body glow-hover" style="padding: 2rem; background: var(--rdh-surface-container); border-radius: var(--radius-lg);">
+    <h3 class="text-lg text-bold mb-1">New Customer — Create Account</h3>
+    <p class="text-xs text-muted mb-4">Enter your phone number and email address to set up your delivery account.</p>
+
+    <form method="post" action="{% url 'customer_auth:signup' %}">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="signup">
+
+      <div class="form-group mb-4">
+        <label for="signup_phone" class="form-label">Phone Number *</label>
+        {{ signup_form.phone }}
+        {% if signup_form.phone.errors %}
+          <div class="text-xs mt-1" style="color: var(--rdh-error);">{{ signup_form.phone.errors.0 }}</div>
+        {% endif %}
+      </div>
+
+      <div class="form-group mb-5">
+        <label for="signup_email" class="form-label">Email Address *</label>
+        {{ signup_form.email }}
+        {% if signup_form.email.errors %}
+          <div class="text-xs mt-2 p-2.5" style="color: var(--rdh-error); background: var(--color-danger-light); border-radius: var(--radius-sm);">
+            {{ signup_form.email.errors.0 }}
+            <div class="mt-2">
+              <a href="{% url 'customer_auth:login' %}" class="text-xs text-bold" style="color: var(--color-brand-primary); text-decoration: underline;">
+                Log in with existing account &rarr;
+              </a>
+            </div>
+          </div>
+        {% endif %}
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block btn-lg glow-hover">
+        Create Account & Send Code
+      </button>
+    </form>
+
+    <div class="text-center mt-4 pt-3" style="border-top: 1px solid var(--border-subtle);">
+      <a href="{% url 'customer_auth:login' %}" class="text-xs text-muted">
+        Already have an account? <strong style="color: var(--color-brand-primary);">Log in &rarr;</strong>
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}

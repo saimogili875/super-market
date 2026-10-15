@@ -1,0 +1,48 @@
+{% extends "orders/customer/base.html" %}
+
+{% block title %}Account Settings — {{ BRAND_NAME }}{% endblock %}
+
+{% block content %}
+<div class="card mt-6">
+  <div class="card-body">
+    <h2 class="headline-md mb-4">Account Settings</h2>
+
+    {% if delivery_customer %}
+      <div class="form-group mb-6">
+        <div class="text-xs text-muted font-bold mb-1" style="text-transform: uppercase; letter-spacing: 0.08em; font-size: var(--fs-xs); color: var(--text-secondary); font-weight: var(--fw-bold);">
+          Logged-in Account
+        </div>
+        <div class="text-lg text-bold text-gold" style="font-size: var(--fs-lg); font-weight: var(--fw-bold); color: var(--color-brand-primary);">
+          {{ delivery_customer.email }}
+        </div>
+        {% if delivery_customer.name %}
+          <div class="text-sm text-muted mt-1">{{ delivery_customer.name }}</div>
+        {% endif %}
+        {% if delivery_customer.phone %}
+          <div class="text-sm text-muted mt-1">{{ delivery_customer.phone }}</div>
+        {% endif %}
+      </div>
+
+      <div class="divider-gold"></div>
+
+      <div class="mt-4">
+        <a href="{% url 'customer_auth:logout' %}" class="btn btn-outline btn-block" style="border-color: var(--color-danger); color: var(--color-danger);">
+          Sign Out
+        </a>
+      </div>
+    {% else %}
+      <div class="empty-state" style="padding: var(--space-4) 0;">
+        <p class="empty-state__text mb-6">Sign in or create an account to view your details and order history.</p>
+        <div class="flex flex-col gap-3">
+          <a href="{% url 'customer_auth:login' %}" class="btn btn-primary btn-block">
+            Sign In
+          </a>
+          <a href="{% url 'customer_auth:signup' %}" class="btn btn-outline btn-block">
+            Create Account
+          </a>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

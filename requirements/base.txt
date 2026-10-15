@@ -1,0 +1,17 @@
+# Core dependencies — pinned to current stable major versions
+Django~=5.2
+uvicorn[standard]~=0.34
+psycopg[binary]~=3.2
+django-environ~=0.12
+redis~=5.2
+Pillow
+channels
+channels-redis
+daphne
+qrcode
+django-csp
+django-ratelimit~=4.1
+whitenoise~=6.8
+django-storages[s3]
+resend
+

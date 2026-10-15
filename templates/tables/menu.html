@@ -1,0 +1,44 @@
+{% extends "tables/base.html" %}
+
+{% block title %}Products — Counter {{ table.number }}{% endblock %}
+
+{% block content %}
+<!-- Search Filter -->
+<div class="mb-4">
+  <div class="form-group">
+    <input 
+      type="search" 
+      name="search"
+      value="{{ search|default:'' }}"
+      hx-get="{% url 'tables:menu' table.qr_token %}"
+      hx-trigger="keyup changed delay:300ms, search"
+      hx-target="#menu-content"
+      hx-include="[name='category']"
+      hx-push-url="false"
+      class="form-input"
+      placeholder="Search products...">
+  </div>
+</div>
+
+<!-- View Active Tab Link -->
+{% if session.orders.exists %}
+<div class="card card-hoverable mb-4" style="background-color: var(--color-brand-primary-light); border-color: var(--color-brand-primary);">
+  <div class="card-body flex justify-between items-center">
+    <div>
+      <h3 class="text-lg text-bold" style="color: var(--color-brand-primary);">You have an active in-store order</h3>
+      <span class="text-sm text-muted">View current items and status</span>
+    </div>
+    <a href="{% url 'tables:status' table.qr_token %}" class="btn btn-primary btn-sm">View Order &rarr;</a>
+  </div>
+</div>
+{% endif %}
+
+<!-- Menu Content (Category Pills + Menu List) -->
+<div id="menu-content">
+  {% include "tables/partials/menu_results.html" %}
+</div>
+
+<div id="cart-bar-container">
+  {% include "tables/partials/cart_bar.html" %}
+</div>
+{% endblock %}

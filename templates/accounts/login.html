@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}Sign In — {{ BRAND_SHORT }} · {{ BRAND_NAME }}{% endblock %}
+
+{% block header_subtitle %}Staff Sign In{% endblock %}
+
+{% block header_actions %}
+<div class="badge badge-primary icon-text">
+  {% include "partials/icon.html" with name="lock" %} Login
+</div>
+{% endblock %}
+
+{% block content %}
+<div style="max-width: 420px; margin: var(--space-8) auto;">
+
+  <div class="card">
+    <div class="card-body">
+      <h2 class="text-2xl text-bold mb-2" style="text-align: center; color: var(--text-primary);">
+        Welcome Back
+      </h2>
+      <p class="text-sm text-muted mb-6" style="text-align: center;">
+        Delivery agent sign in — admins can use this too.
+      </p>
+
+      {% if lockout_message %}
+      <div class="mb-4" style="background-color: var(--color-warning-light, #fff3cd); color: var(--color-warning-dark, #856404); padding: var(--space-3); border-radius: var(--radius-md); border: 1px solid var(--color-warning, #ffc107); font-size: var(--fs-sm);">
+        {{ lockout_message }}
+      </div>
+      {% elif form.errors %}
+      <div class="mb-4" style="background-color: var(--color-danger-light); color: var(--color-danger-dark); padding: var(--space-3); border-radius: var(--radius-md); border: 1px solid var(--color-danger); font-size: var(--fs-sm);">
+        Incorrect username or password. Please try again.
+      </div>
+      {% endif %}
+
+      <form method="post" action="{% url 'accounts:login' %}">
+        {% csrf_token %}
+
+        {% if next %}
+        <input type="hidden" name="next" value="{{ next }}">
+        {% endif %}
+
+        <div class="form-group mb-4">
+          <label for="id_username" class="form-label">Username</label>
+          <input
+            type="text"
+            name="username"
+            id="id_username"
+            class="form-input"
+            autocomplete="username"
+            autofocus
+            required>
+        </div>
+
+        <div class="form-group mb-6">
+          <label for="id_password" class="form-label">Password</label>
+          <input
+            type="password"
+            name="password"
+            id="id_password"
+            class="form-input"
+            autocomplete="current-password"
+            required>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%; font-size: var(--fs-lg);"{% if lockout_message %} disabled{% endif %}>
+          Sign In
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <p class="text-xs text-muted mt-4" style="text-align: center;">
+    Staff admin? You can also use the
+    <a href="/backoffice/login/" style="color: var(--color-brand-primary);">backoffice login</a>.
+  </p>
+
+</div>
+{% endblock %}

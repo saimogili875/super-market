@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% load currency %}
+
+{% block title %}Store Bills & Orders — Admin{% endblock %}
+{% block header_subtitle %}Open & settled pickup bills (read-only){% endblock %}
+
+{% block header_actions %}
+{% include "partials/admin_nav.html" with active_nav="tables" %}
+{% endblock %}
+
+{% block container_class %}app-container--wide{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+  <a href="{% url 'tables_admin:management' %}" class="btn btn-secondary btn-sm icon-text">{% include "partials/icon.html" with name="arrow-left" %} Back to Counters</a>
+</div>
+
+<div class="flex flex-col gap-4">
+  {% for row in rows %}
+  <div class="card">
+    <div class="card-body">
+      <div class="flex justify-between items-center mb-3" style="flex-wrap: wrap; gap: .5rem;">
+        <h2 class="text-lg text-bold icon-text">
+          {% include "partials/icon.html" with name="chair" %} Counter {{ row.session.table.number }} · Store Bill #{{ row.session.pk }}
+        </h2>
+        <div class="flex items-center gap-2">
+          {% if row.session.closed_at %}
+          <span class="badge badge-neutral">Closed {{ row.session.closed_at|date:"M j, H:i" }}</span>
+          {% else %}
+          <span class="badge badge-success">Open</span>
+          {% endif %}
+          <span class="text-bold">Total: <span class="amount">{{ row.total|money }}</span></span>
+        </div>
+      </div>
+      <div class="flex flex-col gap-2">
+        {% for order in row.orders %}
+        <div class="flex justify-between items-center text-sm" style="border-top: 1px solid var(--border-subtle); padding-top: .5rem;">
+          <span>
+            <a href="{% url 'orders_admin:detail' order.pk %}" class="text-primary">Order #{{ order.pk }}</a>
+            <span class="status-pill status-pill--{{ order.status }}">{{ order.get_status_display }}</span>
+          </span>
+          <span class="text-bold">{{ order.total_amount|money }}</span>
+        </div>
+        {% empty %}
+        <p class="text-muted text-sm">No items on this order.</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% empty %}
+  <div class="card empty-state">
+    <div class="empty-state__icon">{% include "partials/icon.html" with name="receipt" cls="icon icon-xl" %}</div>
+    <div class="empty-state__text mb-2">No pickup orders yet</div>
+    <p class="text-sm text-muted">Orders appear when customers place in-store pickup orders.</p>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

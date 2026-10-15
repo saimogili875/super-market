@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}{% if mode == "edit" %}Edit{% else %}New{% endif %} Product — Admin{% endblock %}
+{% block header_subtitle %}Product details{% endblock %}
+
+{% block header_actions %}
+{% include "partials/admin_nav.html" with active_nav="menu" %}
+{% endblock %}
+
+{% block content %}
+<div style="max-width: 640px; margin: 0 auto;">
+  <div class="mb-4">
+    <a href="{% url 'menu:management' %}" class="btn btn-secondary btn-sm icon-text">{% include "partials/icon.html" with name="arrow-left" %} Back to Products</a>
+  </div>
+  <div class="card">
+    <div class="card-body">
+      <h1 class="admin-section__title mb-4">
+        {% if mode == "edit" %}Edit Product: {{ item.name }}{% else %}Create Product{% endif %}
+      </h1>
+      {% if item and item.image %}
+      <div class="mb-4">
+        <img src="{{ item.image.url }}" alt="{{ item.name }}" style="max-height: 120px; border-radius: var(--radius-md);">
+      </div>
+      {% endif %}
+      <form method="post" enctype="multipart/form-data" novalidate>
+        {% csrf_token %}
+        {% include "partials/admin_form_fields.html" with form=form %}
+        <div class="flex gap-2 mt-4 items-center">
+          <button type="submit" class="btn btn-primary">Save</button>
+          <a href="{% url 'menu:management' %}" class="btn btn-outline">Cancel</a>
+          {% if mode == "edit" %}
+          <button type="submit" form="item-delete-form" class="btn btn-danger" style="margin-left: auto;">Delete</button>
+          {% endif %}
+        </div>
+      </form>
+      {% if mode == "edit" %}
+      {# Separate (non-nested) delete form; the Delete button above targets it via form= #}
+      <form id="item-delete-form" method="post" action="{% url 'menu:item_delete' item.pk %}">
+        {% csrf_token %}
+      </form>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

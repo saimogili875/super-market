@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Live Orders — Admin Dashboard{% endblock %}
+
+{% block header_subtitle %}Admin Dashboard{% endblock %}
+
+{% block header_actions %}
+{% include "partials/admin_nav.html" with active_nav="orders" %}
+{% endblock %}
+
+{% block container_class %}app-container--wide{% endblock %}
+
+{% block content %}
+<div hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+     id="admin-dashboard">
+
+  {# ── In-Store Pickup Orders ──────────────────────────────────────── #}
+  <section class="mb-6" id="dine-in-section">
+    <div class="admin-section">
+      <h2 class="admin-section__title icon-text">{% include "partials/icon.html" with name="coffee" %} In-Store Pickup Orders</h2>
+      {% with total=dine_by_table|length %}
+      {% if total %}
+      <span class="admin-section__count">{{ total }} counter{{ total|pluralize }}</span>
+      {% endif %}
+      {% endwith %}
+    </div>
+
+    {% for group in dine_by_table %}
+    <div class="mb-6">
+      <div class="table-group__header mb-3" style="font-size: 1.25rem; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.5rem;">
+        <span class="icon-text">{% include "partials/icon.html" with name="chair" %} Counter {{ group.table.number|default:"—" }}</span>
+        <span class="text-xs text-muted ml-2">({{ group.sessions|length }} active bill{{ group.sessions|length|pluralize }})</span>
+      </div>
+      <div class="order-grid" id="dine-grid-{{ group.table.pk }}" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem;">
+        {% for session_data in group.sessions %}
+        {% include "orders/admin/partials/tab_card.html" with session=session_data.session table=session_data.table orders=session_data.orders total=session_data.total bill_requested=session_data.bill_requested %}
+        {% endfor %}
+      </div>
+    </div>
+    {% empty %}
+    <div class="card empty-state">
+      <div class="empty-state__icon">{% include "partials/icon.html" with name="coffee" cls="icon icon-xl" %}</div>
+      <div class="empty-state__text mb-2">No active pickup orders</div>
+      <p class="text-sm text-muted">Pickup orders will appear here when customers place them at the counter.</p>
+    </div>
+    {% endfor %}
+  </section>
+
+  {# ── Delivery Orders ───────────────────────────────────────────── #}
+  <section id="delivery-section">
+    <div class="admin-section">
+      <h2 class="admin-section__title icon-text">{% include "partials/icon.html" with name="truck" %} Delivery Orders</h2>
+      {% with total=delivery_cards|length %}
+      {% if total %}
+      <span class="admin-section__count">{{ total }}</span>
+      {% endif %}
+      {% endwith %}
+    </div>
+
+    {% if delivery_cards %}
+    <div class="order-grid" id="delivery-grid">
+      {% for card in delivery_cards %}
+      {% include "orders/admin/partials/order_card.html" with order=card.order targets=card.targets available_agents=card.available_agents %}
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="card empty-state">
+      <div class="empty-state__icon">{% include "partials/icon.html" with name="truck" cls="icon icon-xl" %}</div>
+      <div class="empty-state__text mb-2">No active deliveries</div>
+      <p class="text-sm text-muted">Delivery orders will appear here when customers place them.</p>
+    </div>
+    {% endif %}
+  </section>
+
+</div>
+
+<script defer src="{% static 'js/admin-dashboard.js' %}"></script>
+{% endblock %}

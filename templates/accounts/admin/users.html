@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}Users — Admin{% endblock %}
+{% block header_subtitle %}All accounts by role (read-only){% endblock %}
+
+{% block header_actions %}
+{% include "partials/admin_nav.html" with active_nav="agents" %}
+{% endblock %}
+
+{% block container_class %}app-container--wide{% endblock %}
+
+{% block content %}
+{% include "partials/admin_messages.html" %}
+
+<div class="mb-6 flex justify-between items-center">
+  <a href="{% url 'accounts_admin:agents' %}" class="btn btn-secondary btn-sm icon-text">{% include "partials/icon.html" with name="arrow-left" %} Back to Agents</a>
+  <a href="{% url 'admin:accounts_user_add' %}" class="btn btn-primary icon-text">{% include "partials/icon.html" with name="plus" %} Add User (Django Admin)</a>
+</div>
+
+{% for group in by_role %}
+<section class="mb-8">
+  <div class="admin-section">
+    <h2 class="admin-section__title">{{ group.label }}</h2>
+    <span class="admin-section__count">{{ group.users|length }}</span>
+  </div>
+  <div class="card p-0" style="overflow-x: auto;">
+    <table class="table" style="width: 100%; border-collapse: collapse;">
+      <thead>
+        <tr style="border-bottom: 1px solid var(--gray-200); text-align: left;">
+          <th style="padding: 1rem;">Username</th>
+          <th style="padding: 1rem;">Email</th>
+          <th style="padding: 1rem;">Phone</th>
+          <th style="padding: 1rem;">Status</th>
+          <th style="padding: 1rem; text-align: right;">Manage</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for user in group.users %}
+        <tr style="border-bottom: 1px solid var(--gray-100);">
+          <td style="padding: 1rem;"><strong>{{ user.username }}</strong>{% if user.is_staff %} <span class="badge badge-primary">staff</span>{% endif %}</td>
+          <td style="padding: 1rem;">{{ user.email|default:"—" }}</td>
+          <td style="padding: 1rem;">{{ user.phone|default:"—" }}</td>
+          <td style="padding: 1rem;">
+            {% if user.is_active %}<span class="badge badge-success">Active</span>{% else %}<span class="badge badge-neutral">Inactive</span>{% endif %}
+          </td>
+          <td style="padding: 1rem; text-align: right;">
+            <a href="{% url 'admin:accounts_user_change' user.pk %}" class="btn btn-sm">Edit in Django Admin</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" style="padding: 2rem; text-align: center;" class="text-muted">No {{ group.label|lower }} accounts.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endfor %}
+{% endblock %}

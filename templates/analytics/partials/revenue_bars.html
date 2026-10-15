@@ -1,0 +1,26 @@
+{% comment %}
+Server-rendered daily revenue bar chart — no JS library, no build step. Each
+bar's width is the day's share of peak revenue (bar_pct, attached in the view).
+Progressive: if styles fail, the daily table below still carries the numbers.
+{% endcomment %}
+{% load currency %}
+<div class="card mb-6">
+  <div class="card-body">
+    <h3 class="text-lg text-bold mb-4">Daily Revenue</h3>
+    {% if daily %}
+    <div class="flex flex-col gap-3">
+      {% for row in daily %}
+      <div style="display: grid; grid-template-columns: 4rem 1fr 5rem; align-items: center; gap: var(--space-4);">
+        <span class="text-sm text-muted">{{ row.day|date:"M j" }}</span>
+        <div style="background-color: var(--bg-input); border-radius: var(--radius-full); height: 0.75rem; overflow: hidden;">
+          <div style="height: 100%; min-width: 2px; background-color: var(--color-brand-primary); border-radius: var(--radius-full); width: {{ row.bar_pct }}%;"></div>
+        </div>
+        <span class="text-sm text-bold text-right">{{ row.revenue|money }}</span>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-muted">No settled revenue in this range.</p>
+    {% endif %}
+  </div>
+</div>

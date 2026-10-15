@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Grocery Order{% endblock %} — {{ BRAND_SHORT }} · {{ BRAND_NAME }}</title>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'css/design-tokens.css' %}">
+  <!-- Open Graph / Social Media Preview -->
+  <meta property="og:title" content="{{ BRAND_NAME }} — {{ BRAND_TAGLINE }}" />
+  <meta property="og:description" content="Fresh groceries, daily essentials, organic fruits & vegetables, and pantry staples delivered directly to your doorstep." />
+  <meta property="og:image" content="https://www.freshmart.in/static/images/share-preview.jpg" />
+  <meta property="og:url" content="https://www.freshmart.in" />
+  <meta property="og:type" content="website" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="{{ BRAND_NAME }} — {{ BRAND_TAGLINE }}" />
+  <meta name="twitter:description" content="Fresh groceries, daily essentials, organic produce, and pantry staples delivered fast." />
+  <meta name="twitter:image" content="https://www.freshmart.in/static/images/share-preview.jpg" />
+
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  <script defer src="https://unpkg.com/alpinejs@3.13.3/dist/cdn.min.js"></script>
+</head>
+<body>
+  <header class="app-header">
+    <div>
+      <h1 class="app-header__title">{{ BRAND_SHORT }} · {{ BRAND_NAME }}</h1>
+      <span class="app-header__subtitle">Fresh Grocery Delivery</span>
+    </div>
+    <div class="flex items-center gap-2" style="display: flex; align-items: center; gap: 0.65rem; flex-wrap: wrap; justify-content: flex-end;">
+      <button type="button" 
+              onclick="toggleTheme()" 
+              class="btn btn-xs theme-toggle-btn" 
+              style="background: #2a2a2a; border: 1px solid #99907c; color: #e5e2e1; padding: 0.4rem 0.85rem; border-radius: 9999px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem; transition: all 0.2s ease;">
+        ☀️ Light Mode
+      </button>
+      {% include "partials/share_modal.html" %}
+      <a href="{% url 'orders_customer:my_orders' %}" class="btn btn-xs btn-outline" style="border-color: #f2ca50; color: #f2ca50; padding: 0.35rem 0.65rem; border-radius: 0.25rem; font-weight: 600; text-decoration: none;">
+        📦 My Orders
+      </a>
+      {% if delivery_customer %}
+        <span class="text-xs text-muted" title="{{ delivery_customer.email }}">
+          {{ delivery_customer.email|truncatechars:14 }}
+        </span>
+        <a href="{% url 'customer_auth:logout' %}" class="btn btn-xs btn-outline">Logout</a>
+      {% else %}
+        <a href="{% url 'customer_auth:login' %}" class="btn btn-xs btn-outline">Sign In</a>
+      {% endif %}
+      <div class="table-badge">
+        Delivery
+      </div>
+    </div>
+  </header>
+
+  <main class="container {% block container_class %}{% endblock %} customer-main-container" id="main-content">
+    {% block content %}{% endblock %}
+  </main>
+
+  {% include "orders/customer/partials/bottom_nav.html" %}
+
+  <script>
+    function applyTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      document.body.setAttribute('data-theme', theme);
+      localStorage.setItem('rdh_theme', theme);
+      const btns = document.querySelectorAll('.theme-toggle-btn');
+      btns.forEach(btn => {
+        btn.innerHTML = theme === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
+        btn.setAttribute('aria-label', `Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`);
+      });
+    }
+
+    function toggleTheme() {
+      const current = document.documentElement.getAttribute('data-theme') || 'dark';
+      const next = current === 'dark' ? 'light' : 'dark';
+      applyTheme(next);
+    }
+
+    (function() {
+      const saved = localStorage.getItem('rdh_theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', saved);
+      document.body.setAttribute('data-theme', saved);
+    })();
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const saved = localStorage.getItem('rdh_theme') || 'dark';
+      applyTheme(saved);
+    });
+
+    document.body.addEventListener('htmx:afterSwap', () => {
+      const saved = localStorage.getItem('rdh_theme') || 'dark';
+      applyTheme(saved);
+    });
+  </script>
+</body>
+</html>

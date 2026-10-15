@@ -1,0 +1,141 @@
+{% comment %}
+Order card — one order in the admin dashboard. Re-rendered (HTMX outerHTML)
+after every transition or assignment. Shows order details, item list, and
+only the action buttons the state machine permits for the ADMIN role.
+
+Context variables:
+  order            — the Order instance (select_related table/session/agent/customer)
+  targets          — list of {"value", "label"} dicts from allowed_targets
+  available_agents — queryset of available AGENT users (for assign control)
+{% endcomment %}
+{% load currency %}
+<article id="order-card-{{ order.pk }}" class="card card-hoverable {% if order.status == 'CANCEL' %}is-cancelled{% endif %}">
+  <div class="card-body">
+    {# Header: Order ID + status pill #}
+    <div class="order-card__header">
+      <div class="flex items-center gap-2">
+        <h3 style="margin: 0; font-size: var(--fs-base); font-weight: var(--fw-bold);">
+          #{{ order.pk }}
+        </h3>
+        <span class="badge {% if order.order_type == 'DINE' %}badge-primary{% else %}badge-warning{% endif %}">
+          {{ order.get_order_type_display }}
+        </span>
+      </div>
+      <div class="flex items-center gap-2">
+        <a href="{% url 'orders_admin:detail' order.pk %}" class="text-sm text-primary">Details</a>
+        <span class="status-pill status-pill--{{ order.status }}">
+          {{ order.get_status_display }}
+        </span>
+      </div>
+    </div>
+
+    {# Meta info #}
+    <div class="order-card__meta flex flex-col gap-1">
+      {% if order.order_type == "DINE" and order.table %}
+        <span class="icon-text">{% include "partials/icon.html" with name="chair" %} Counter {{ order.table.number }}{% if order.session %} · Order #{{ order.session.pk }}{% endif %}</span>
+      {% elif order.order_type == "DELV" %}
+        {% if order.contact_name %}<span class="icon-text">{% include "partials/icon.html" with name="user" %} {{ order.contact_name }}{% if order.contact_phone %} · {{ order.contact_phone }}{% endif %}</span>{% endif %}
+        {% if order.agent %}
+          <span class="icon-text">{% include "partials/icon.html" with name="truck" %} Agent: {{ order.agent.get_full_name|default:order.agent.username }}{% if order.agent.phone %} · {{ order.agent.phone }}{% endif %}</span>
+        {% else %}
+          <em class="text-muted">No agent assigned</em>
+        {% endif %}
+        {% if order.maps_url %}
+          <a href="{{ order.maps_url }}" target="_blank" rel="noopener noreferrer" class="icon-text text-sm">{% include "partials/icon.html" with name="map-pin" %} Open location in Google Maps</a>
+        {% else %}
+          <span class="text-sm text-muted">No location provided</span>
+        {% endif %}
+      {% endif %}
+    </div>
+
+    {% if order.instructions %}
+    <p class="text-sm text-muted" style="font-style: italic; margin-bottom: var(--space-2);">
+      &ldquo;{{ order.instructions }}&rdquo;
+    </p>
+    {% endif %}
+
+    {# Items list #}
+    <ul class="order-card__items">
+      {% for item in order.items.all %}
+      <li>
+        <span>{{ item.quantity }}&times; {{ item.name_snap }}</span>
+        <span>{{ item.line_total|money }}</span>
+      </li>
+      {% empty %}
+      <li class="text-muted">No items</li>
+      {% endfor %}
+    </ul>
+
+    {# Total #}
+    <div class="flex justify-between items-center">
+      <span class="order-card__total">{{ order.total_amount|money }}</span>
+      <span class="text-xs text-muted">{{ order.created_at|timesince }} ago</span>
+    </div>
+  </div>
+
+  {% comment %}
+  Actions footer — only render when the state machine permits an action.
+  Terminal orders (PAID / CANCELLED) expose no transitions and cannot be
+  (re)assigned, so no buttons show for them. (COLLECT is NOT terminal — it
+  transitions to PAID.)
+  {% endcomment %}
+  {% if order.status == "PAID" or order.status == "CANCEL" %}
+  {% else %}
+  {% if targets or order.order_type == "DELV" %}
+  <div class="card-footer">
+    <div class="order-card__actions">
+      {% for action in targets %}
+        {% if action.value == "CANCEL" %}
+        <button
+          class="btn btn-danger btn-sm"
+          hx-post="{% url 'orders_admin:transition' order.pk %}"
+          hx-target="#order-card-{{ order.pk }}"
+          hx-swap="outerHTML"
+          hx-vals='{"to_status": "{{ action.value }}"}'
+          hx-confirm="Cancel order #{{ order.pk }}?">
+          {% include "partials/icon.html" with name="x" %} {{ action.label }}
+        </button>
+        {% elif action.value == "PAID" %}
+        {% if order.order_type == "DINE" and order.session %}
+        <form
+          hx-post="{% url 'tables_admin:clear_bill' order.session.pk %}"
+          hx-target="#tab-card-{{ order.session.pk }}"
+          hx-swap="outerHTML"
+          hx-confirm="Clear bill for Tab #{{ order.session.pk }} — {{ total|default:order.session.total|money }}? This cannot be undone."
+          style="margin: 0;">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-success btn-sm">
+            {% include "partials/icon.html" with name="banknote" %} Clear Bill
+          </button>
+        </form>
+        {% else %}
+        <button
+          class="btn btn-success btn-sm"
+          hx-post="{% url 'orders_admin:transition' order.pk %}"
+          hx-target="#order-card-{{ order.pk }}"
+          hx-swap="outerHTML"
+          hx-vals='{"to_status": "{{ action.value }}"}'>
+          {% include "partials/icon.html" with name="banknote" %} {{ action.label }}
+        </button>
+        {% endif %}
+        {% else %}
+        <button
+          class="btn btn-primary btn-sm"
+          hx-post="{% url 'orders_admin:transition' order.pk %}"
+          hx-target="#order-card-{{ order.pk }}"
+          hx-swap="outerHTML"
+          hx-vals='{"to_status": "{{ action.value }}"}'>
+          {{ action.label }}
+        </button>
+        {% endif %}
+      {% endfor %}
+    </div>
+
+    {# Assign / Reassign Agent (delivery orders) #}
+    {% if order.order_type == "DELV" %}
+    {% include "orders/admin/partials/assign_control.html" %}
+    {% endif %}
+  </div>
+  {% endif %}
+  {% endif %}
+</article>

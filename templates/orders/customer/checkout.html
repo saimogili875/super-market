@@ -1,0 +1,107 @@
+{% extends "orders/customer/base.html" %}
+{% load static currency %}
+
+{% block title %}Grocery Checkout — {{ BRAND_SHORT }} · {{ BRAND_NAME }}{% endblock %}
+
+{% block header_subtitle %}Fresh Groceries Delivered Fast{% endblock %}
+
+{% block header_actions %}
+<div class="badge badge-warning icon-text">
+  {% include "partials/icon.html" with name="truck" %} Delivery
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="mt-4">
+  <a href="{% url 'orders_customer:menu' %}" class="text-sm text-bold" style="color: var(--text-secondary);">&larr; Back to Products</a>
+  <h2 class="text-xl text-bold mt-4 mb-6">Complete Your Grocery Order</h2>
+
+  {% if delivery_customer %}
+  <div class="card mb-4" style="background-color: var(--color-brand-primary-light); border-color: var(--color-brand-primary);">
+    <div class="card-body flex justify-between items-center" style="padding: 0.85rem 1.25rem;">
+      <div class="text-sm">
+        <strong style="color: var(--color-brand-primary);">Signed In:</strong>
+        <span>{{ delivery_customer.email }} ({{ delivery_customer.phone }})</span>
+      </div>
+      <a href="{% url 'customer_auth:logout' %}" class="text-xs text-muted" style="text-decoration: underline;">Switch Account</a>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if errors %}
+  <div class="card mb-4" style="background-color: var(--color-danger-light); border-color: var(--color-danger); color: var(--color-danger-dark);">
+    <div class="card-body">
+      <ul style="margin-left: var(--space-4);">
+        {% for err in errors %}
+        <li>{{ err }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Order Summary Card -->
+  {% include "orders/customer/partials/checkout_summary.html" %}
+
+  <!-- Checkout Form -->
+  <form method="post" action="{% url 'orders_customer:checkout' %}" class="card">
+    {% csrf_token %}
+    <div class="card-body">
+      <h3 class="text-lg text-bold mb-4">Delivery Details</h3>
+
+      <div class="form-group">
+        <label for="contact_name" class="form-label">Contact Name *</label>
+        <input type="text" id="contact_name" name="contact_name" class="form-input" required value="{{ form_data.contact_name|default:'' }}" placeholder="Jane Doe">
+      </div>
+
+      <div class="form-group">
+        <label for="contact_phone" class="form-label">Phone Number *</label>
+        <input type="tel" id="contact_phone" name="contact_phone" class="form-input" required value="{{ form_data.contact_phone|default:'' }}" placeholder="+1 (555) 019-2831">
+      </div>
+
+      <div class="form-group mb-4" style="background-color: var(--rdh-surface-container-low); padding: var(--space-4); border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
+        <label class="form-label icon-text mb-2">{% include "partials/icon.html" with name="map-pin" %} Delivery Location (Required) *</label>
+        <p class="text-xs text-muted mb-3">Please share your GPS location OR enter your street address below.</p>
+        
+        <div class="mb-3">
+          <button type="button" id="btn-geolocate" class="btn btn-secondary icon-text justify-center" style="width: 100%;">
+            {% include "partials/icon.html" with name="map-pin" %} <span>Use my current location</span>
+          </button>
+          
+          <input type="hidden" id="lat" name="lat" value="{{ form_data.lat|default:'' }}">
+          <input type="hidden" id="lng" name="lng" value="{{ form_data.lng|default:'' }}">
+          
+          <div id="location-status" class="text-sm mt-2 font-medium" style="color: var(--text-secondary);">
+            Location needed — share location or enter address
+          </div>
+          <div id="location-preview" class="text-xs mt-1" style="display: none;"></div>
+          <div class="text-xs text-muted mt-1">
+            Note: Location needs HTTPS in production (works on localhost for testing).
+          </div>
+        </div>
+
+        <div class="form-group mb-0">
+          <label for="address" class="form-label">Street Address (Fallback)</label>
+          <input type="text" id="address" name="address" class="form-input" value="{{ form_data.address|default:'' }}" placeholder="123 Maple St, Apt 4B">
+          <span class="text-xs text-muted">Required if GPS location is not used.</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="instructions" class="form-label">Delivery / Kitchen Instructions</label>
+        <input type="text" id="instructions" name="instructions" class="form-input" value="{{ form_data.instructions|default:'' }}" placeholder="Ring doorbell, leave by front door">
+      </div>
+
+      <div class="mt-6 text-right">
+        <button type="submit" id="btn-submit-order" class="btn btn-primary btn-block btn-lg">
+          Place Delivery Order (Cash on Delivery)
+        </button>
+        <div id="submit-error" class="text-xs mt-2 text-center" style="color: var(--color-danger); display: none;">
+          Please share your location or enter an address to place order.
+        </div>
+      </div>
+    </div>
+  </form>
+</div>
+<script src="{% static 'js/geolocate.js' %}" defer></script>
+{% endblock %}

@@ -1,0 +1,56 @@
+{% comment %}
+Daily breakdown table — the accessible, exact-number counterpart to the bar
+chart. One row per settled day plus a per-channel (DINE/DELV) split beneath.
+{% endcomment %}
+{% load currency %}
+<div class="card">
+  <div class="card-body">
+    <h3 class="text-lg text-bold mb-4">By Day</h3>
+    <div class="table-wrapper mb-6">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Day</th>
+            <th class="text-right">Orders</th>
+            <th class="text-right">Revenue</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in daily %}
+          <tr>
+            <td>{{ row.day|date:"D, M j" }}</td>
+            <td class="text-right">{{ row.order_count }}</td>
+            <td class="text-right text-bold" style="color: var(--color-success);">{{ row.revenue|money }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="3" class="text-muted">No settled orders in this range.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <h3 class="text-lg text-bold mb-4">By Channel</h3>
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Channel</th>
+            <th class="text-right">Orders</th>
+            <th class="text-right">Revenue</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in breakdown %}
+          <tr>
+            <td>{% if row.order_type == "DINE" %}Dine-in{% else %}Delivery{% endif %}</td>
+            <td class="text-right">{{ row.order_count }}</td>
+            <td class="text-right text-bold" style="color: var(--color-success);">{{ row.revenue|money }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="3" class="text-muted">No settled orders in this range.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

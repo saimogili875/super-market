@@ -1,0 +1,43 @@
+{% comment %}
+Shared navigation bar for all admin frontend pages.
+
+Usage:
+  {% include "partials/admin_nav.html" with active_nav="orders" %}
+
+Options for active_nav:
+  - 'orders'
+  - 'menu'
+  - 'tables'
+  - 'agents'
+  - 'analytics'
+{% endcomment %}
+<nav class="admin-nav" aria-label="Admin navigation">
+  <a href="{% url 'orders_admin:dashboard' %}" class="admin-nav__link {% if active_nav == 'orders' %}admin-nav__link--active{% endif %}" {% if active_nav == 'orders' %}aria-current="page"{% endif %}>
+    {% if active_nav == 'orders' %}<span class="live-dot" aria-hidden="true"></span>{% endif %} Live Orders
+  </a>
+  <span class="admin-nav__sep" aria-hidden="true"></span>
+  <a href="{% url 'menu:management' %}" class="admin-nav__link {% if active_nav == 'menu' %}admin-nav__link--active{% endif %}" {% if active_nav == 'menu' %}aria-current="page"{% endif %}>
+    {% include "partials/icon.html" with name="list" %} Products
+  </a>
+  <span class="admin-nav__sep" aria-hidden="true"></span>
+  <a href="{% url 'tables_admin:management' %}" class="admin-nav__link {% if active_nav == 'tables' %}admin-nav__link--active{% endif %}" {% if active_nav == 'tables' %}aria-current="page"{% endif %}>
+    {% include "partials/icon.html" with name="chair" %} Counters
+  </a>
+  <span class="admin-nav__sep" aria-hidden="true"></span>
+  <a href="{% url 'accounts_admin:agents' %}" class="admin-nav__link {% if active_nav == 'agents' %}admin-nav__link--active{% endif %}" {% if active_nav == 'agents' %}aria-current="page"{% endif %}>
+    {% include "partials/icon.html" with name="truck" %} Agents
+  </a>
+  <span class="admin-nav__sep" aria-hidden="true"></span>
+  <a href="{% url 'analytics:dashboard' %}" class="admin-nav__link {% if active_nav == 'analytics' %}admin-nav__link--active{% endif %}" {% if active_nav == 'analytics' %}aria-current="page"{% endif %}>
+    {% include "partials/icon.html" with name="chart" %} Analytics
+  </a>
+  <span class="admin-nav__sep" aria-hidden="true"></span>
+  <a href="{% url 'admin:index' %}" class="admin-nav__link">{% include "partials/icon.html" with name="settings" %} Django Admin</a>
+  <span class="admin-nav__sep" aria-hidden="true"></span>
+  <form method="post" action="{% url 'accounts:logout' %}" style="margin: 0; display: inline;">
+    {% csrf_token %}
+    <button type="submit" class="admin-nav__link" style="border: none; background: none; cursor: pointer;">
+      {% include "partials/icon.html" with name="log-out" %} Sign Out
+    </button>
+  </form>
+</nav>

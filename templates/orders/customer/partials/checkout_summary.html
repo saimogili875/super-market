@@ -1,0 +1,43 @@
+{% load currency %}
+<div id="order-summary-container" class="card mb-6">
+  <div class="card-body">
+    <h3 class="text-lg text-bold mb-3" style="color: var(--text-secondary);">Order Summary</h3>
+    <ul style="list-style: none; padding: 0; margin-bottom: var(--space-4); border-bottom: 1px solid var(--border-subtle); padding-bottom: var(--space-3);">
+      {% for entry in cart_items %}
+      <li class="flex justify-between items-center mb-3">
+        <div class="flex items-center gap-2">
+          <div class="flex items-center gap-1">
+            <form hx-post="{% url 'orders_customer:cart_update' %}" hx-target="#order-summary-container" hx-swap="outerHTML" style="display: inline;">
+              {% csrf_token %}
+              <input type="hidden" name="menu_item_id" value="{{ entry.item.pk }}">
+              <input type="hidden" name="action" value="decrement">
+              <button type="submit" class="btn btn-outline btn-xs" aria-label="Decrease quantity" style="padding: 0.1rem 0.35rem; font-size: 0.75rem;">-</button>
+            </form>
+            <span class="text-bold text-sm" style="min-width: 1.2rem; text-align: center; display: inline-block;">{{ entry.quantity }}</span>
+            <form hx-post="{% url 'orders_customer:cart_update' %}" hx-target="#order-summary-container" hx-swap="outerHTML" style="display: inline;">
+              {% csrf_token %}
+              <input type="hidden" name="menu_item_id" value="{{ entry.item.pk }}">
+              <input type="hidden" name="action" value="increment">
+              <button type="submit" class="btn btn-outline btn-xs" aria-label="Increase quantity" style="padding: 0.1rem 0.35rem; font-size: 0.75rem;">+</button>
+            </form>
+          </div>
+          <span class="text-sm font-medium ml-1">{{ entry.item.name }}</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="text-bold text-sm">{{ entry.line_total|money }}</span>
+          <form hx-post="{% url 'orders_customer:cart_update' %}" hx-target="#order-summary-container" hx-swap="outerHTML" style="display: inline;">
+            {% csrf_token %}
+            <input type="hidden" name="menu_item_id" value="{{ entry.item.pk }}">
+            <input type="hidden" name="action" value="remove">
+            <button type="submit" class="btn btn-outline btn-xs text-danger" aria-label="Remove item" title="Remove item" style="padding: 0.15rem 0.4rem; font-size: 0.75rem; border-color: var(--color-danger); color: var(--color-danger); cursor: pointer;">&times;</button>
+          </form>
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+    <div class="flex justify-between text-lg text-bold">
+      <span>Total Amount (COD)</span>
+      <span style="color: var(--color-success);">{{ cart_total|money }}</span>
+    </div>
+  </div>
+</div>

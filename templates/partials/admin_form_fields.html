@@ -1,0 +1,22 @@
+{% comment %}
+Renders every field of a bound Django form with design-system styling.
+Widgets already carry the form-input class (set in the Form). Include as:
+  {% include "partials/admin_form_fields.html" with form=form %}
+{% endcomment %}
+{% if form.non_field_errors %}
+<div class="badge badge-danger mb-4">{{ form.non_field_errors|striptags }}</div>
+{% endif %}
+{% for field in form %}
+<div class="form-group">
+  <label for="{{ field.id_for_label }}" class="form-label">
+    {{ field.label }}{% if field.field.required %} <span style="color: var(--color-danger);">*</span>{% endif %}
+  </label>
+  {{ field }}
+  {% if field.help_text %}
+  <div class="text-sm text-muted mt-1">{{ field.help_text }}</div>
+  {% endif %}
+  {% if field.errors %}
+  <div class="badge badge-danger text-sm mt-1">{{ field.errors|striptags }}</div>
+  {% endif %}
+</div>
+{% endfor %}

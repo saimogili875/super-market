@@ -1,0 +1,18 @@
+{% comment %}
+Order row fragment — one delivery order in the admin dispatch list.
+
+Returned by the assign endpoint (HTMX outerHTML swap) so the row updates in
+place the moment an agent is assigned. While still unassigned it shows the
+assign control instead of an agent name; when rendering an unassigned row the
+caller must supply `available_agents` in the context.
+{% endcomment %}
+{% load currency %}
+<tr id="order-row-{{ order.pk }}" class="order-row">
+  <td>#{{ order.pk }}</td>
+  <td>{{ order.contact_name|default:"&mdash;" }}</td>
+  <td>{{ order.total_amount|money }}</td>
+  <td>{{ order.get_status_display }}</td>
+  <td>
+    {% include "orders/admin/partials/assign_control.html" %}
+  </td>
+</tr>

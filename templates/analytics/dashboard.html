@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}Accounts &amp; Analytics — {{ BRAND_SHORT }} · {{ BRAND_NAME }}{% endblock %}
+
+{% block header_subtitle %}Settled cash flow &amp; order volume{% endblock %}
+
+{% block header_actions %}
+{% include "partials/admin_nav.html" with active_nav="analytics" %}
+{% endblock %}
+
+{% block container_class %}app-container--wide{% endblock %}
+
+{% block content %}
+{% comment %} Date-range filter — plain GET so ranges are shareable/bookmarkable. {% endcomment %}
+<form method="get" class="card card-body flex flex-col md:flex-row gap-4 mb-6">
+  <div class="flex items-center gap-4 flex-wrap">
+    <div class="form-group mb-0 flex-1">
+      <label for="start" class="form-label">From</label>
+      <input type="date" id="start" name="start" value="{{ start|date:'Y-m-d' }}" class="form-input">
+    </div>
+    <div class="form-group mb-0 flex-1">
+      <label for="end" class="form-label">To</label>
+      <input type="date" id="end" name="end" value="{{ end|date:'Y-m-d' }}" class="form-input">
+    </div>
+    <div class="form-group mb-0 flex items-end">
+      <button type="submit" class="btn btn-primary mt-6">Apply</button>
+    </div>
+  </div>
+</form>
+
+<p class="text-sm text-muted mb-4">
+  Showing settled (PAID) orders from
+  <strong class="text-primary">{{ start|date:"M j, Y" }}</strong> to
+  <strong class="text-primary">{{ end|date:"M j, Y" }}</strong>.
+</p>
+
+{% include "analytics/partials/kpi_cards.html" %}
+<div class="flex flex-col gap-6" style="margin-top: 1.5rem;">
+  {% include "analytics/partials/revenue_bars.html" %}
+  {% include "analytics/partials/daily_table.html" %}
+</div>
+{% endblock %}
