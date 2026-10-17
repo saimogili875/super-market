@@ -11,7 +11,10 @@ from apps.core.models import TimeStampedModel
 class Role(models.TextChoices):
     """Platform roles — stored on the User.role column."""
 
-    ADMIN = "ADMIN", "Admin"
+    ADMIN = "ADMIN", "Super Admin"
+    MANAGER = "MANAGER", "Store Manager"
+    INVENTORY = "INVENTORY", "Inventory Staff"
+    CASHIER = "CASHIER", "Cashier"
     AGENT = "AGENT", "Delivery Agent"
     CUSTOMER = "CUST", "Customer"
 
@@ -20,7 +23,7 @@ class User(AbstractUser):
     """Custom user with a business role and optional phone number."""
 
     role = models.CharField(
-        max_length=5,
+        max_length=20,
         choices=Role.choices,
         default=Role.CUSTOMER,
         db_index=True,
@@ -39,8 +42,24 @@ class User(AbstractUser):
 
     @property
     def is_admin_role(self):
-        """True when the user holds the ADMIN business role."""
-        return self.role == Role.ADMIN
+        """True when the user holds an administrative/staff business role."""
+        return self.role in {Role.ADMIN, Role.MANAGER, Role.INVENTORY, Role.CASHIER}
+
+    @property
+    def is_super_admin(self):
+        return self.role == Role.ADMIN or self.is_superuser
+
+    @property
+    def is_manager(self):
+        return self.role in {Role.ADMIN, Role.MANAGER} or self.is_superuser
+
+    @property
+    def is_inventory_staff(self):
+        return self.role in {Role.ADMIN, Role.MANAGER, Role.INVENTORY} or self.is_superuser
+
+    @property
+    def is_cashier(self):
+        return self.role in {Role.ADMIN, Role.MANAGER, Role.CASHIER} or self.is_superuser
 
     @property
     def is_agent(self):

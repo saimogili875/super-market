@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>{% block title %}Super Market — Admin{% endblock %}</title>
+  {% load static %}
+  <!-- Allowed via CSP: unpkg.com -->
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  <script defer src="https://unpkg.com/alpinejs@3.13.3/dist/cdn.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { background: #0B0B0D; color: #F5F5F7; }
+    body {
+      margin: 0;
+      background: #0B0B0D;
+      color: #F5F5F7;
+      font-family: -apple-system, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif;
+      font-size: 14px;
+      line-height: 1.4;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+    .app { display: flex; min-height: 100vh; background: #0B0B0D; }
+    
+    /* Desktop Sidebar */
+    .sb {
+      width: 240px;
+      background: #141417;
+      border-right: 1px solid #303036;
+      padding: 20px 12px;
+      box-sizing: border-box;
+      flex: none;
+      display: flex;
+      flex-direction: column;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+    }
+    .sb-brand {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      padding: 4px 12px 16px;
+      font-weight: 700;
+      font-size: 16px;
+      letter-spacing: -0.01em;
+      border-bottom: 1px solid #26262B;
+      margin-bottom: 8px;
+      color: #F5F5F7;
+      text-decoration: none;
+    }
+    .sb-brand-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 4px;
+      background: #C6A15B;
+      flex: none;
+      box-shadow: 0 0 10px rgba(198, 161, 91, 0.4);
+    }
+    .sb h6 {
+      margin: 14px 12px 6px;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      color: #71717A;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+    .sb a, .sb button.nav-link {
+      display: flex;
+      align-items: center;
+      min-height: 38px;
+      padding: 0 12px;
+      border-radius: 8px;
+      color: #A1A1AA;
+      text-decoration: none;
+      font-weight: 500;
+      font-size: 13.5px;
+      gap: 10px;
+      transition: all 0.15s ease;
+      background: transparent;
+      border: none;
+      width: 100%;
+      text-align: left;
+      cursor: pointer;
+    }
+    .sb a:hover, .sb button.nav-link:hover {
+      color: #F5F5F7;
+      background: rgba(255, 255, 255, 0.04);
+    }
+    .sb a.on, .sb button.nav-link.on {
+      background: #1C1C20;
+      color: #D8B978;
+      box-shadow: inset 3px 0 #C6A15B;
+      font-weight: 600;
+    }
+    .sb-badge {
+      margin-left: auto;
+      padding: 2px 7px;
+      font-size: 11px;
+      border-radius: 99px;
+      background: rgba(198, 161, 91, 0.15);
+      color: #D8B978;
+      font-weight: 600;
+    }
+
+    /* Main Content */
+    .main-wrap { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 28px;
+      background: #141417;
+      border-bottom: 1px solid #303036;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+    .top-bar-left { display: flex; align-items: center; gap: 14px; }
+    .top-bar-right { display: flex; align-items: center; gap: 12px; }
+    .mobile-menu-btn {
+      display: none;
+      background: transparent;
+      border: 1px solid #303036;
+      border-radius: 8px;
+      color: #F5F5F7;
+      min-height: 40px;
+      min-width: 40px;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .main { flex: 1; min-width: 0; padding: 28px 32px; }
+    
+    /* Layout & Cards */
+    .card {
+      background: #141417;
+      border: 1px solid #303036;
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+    .g { display: grid; gap: 16px; }
+    .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
+    .ov { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    
+    /* Typography */
+    h1 { margin: 0 0 4px; font-size: 24px; font-weight: 700; letter-spacing: -0.02em; color: #F5F5F7; }
+    h2 { margin: 0 0 10px; font-size: 18px; font-weight: 600; color: #F5F5F7; }
+    h3 { margin: 0 0 12px; font-size: 15px; font-weight: 600; color: #F5F5F7; }
+    p { margin: 0 0 12px; color: #A1A1AA; font-size: 13.5px; line-height: 1.5; }
+    .mu2 { color: #A1A1AA; font-size: 13px; }
+    .subhead { font-size: 12px; color: #71717A; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
+
+    /* Tables */
+    table { width: 100%; border-collapse: collapse; }
+    th {
+      text-align: left;
+      color: #A1A1AA;
+      font-weight: 600;
+      font-size: 12px;
+      padding: 12px 14px;
+      border-bottom: 1px solid #303036;
+      white-space: nowrap;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    td {
+      padding: 13px 14px;
+      border-bottom: 1px solid #26262B;
+      white-space: nowrap;
+      font-size: 13.5px;
+      color: #F5F5F7;
+    }
+    tbody tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    /* Badges */
+    .b {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 10px;
+      border-radius: 99px;
+      font-size: 12px;
+      border: 1px solid;
+      font-weight: 500;
+      line-height: 1.3;
+    }
+    .ok { color: #34C759; border-color: #1F5A30; background: rgba(52, 199, 89, 0.08); }
+    .wn { color: #FFB340; border-color: #6B4A14; background: rgba(255, 179, 64, 0.08); }
+    .er { color: #FF453A; border-color: #6B2420; background: rgba(255, 69, 58, 0.08); }
+    .mu { color: #A1A1AA; border-color: #303036; background: rgba(161, 161, 170, 0.08); }
+    .gd { color: #D8B978; border-color: #6B5A30; background: rgba(198, 161, 91, 0.08); }
+
+    /* Buttons & Form controls — 44px touch targets */
+    .btn {
+      min-height: 44px;
+      padding: 0 18px;
+      border-radius: 8px;
+      border: 1px solid #303036;
+      background: #1C1C20;
+      color: #F5F5F7;
+      font: inherit;
+      font-size: 13.5px;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      text-decoration: none;
+      box-sizing: border-box;
+      transition: all 0.15s ease;
+    }
+    .btn:hover { background: #26262B; border-color: #404048; color: #FFF; }
+    .btn.pri {
+      background: #C6A15B;
+      color: #0B0B0D;
+      border-color: #C6A15B;
+      font-weight: 600;
+    }
+    .btn.pri:hover {
+      background: #D8B978;
+      border-color: #D8B978;
+    }
+    .btn.dng {
+      border-color: #6B2420;
+      color: #FF453A;
+      background: rgba(255, 69, 58, 0.06);
+    }
+    .btn.dng:hover {
+      background: rgba(255, 69, 58, 0.15);
+      border-color: #FF453A;
+    }
+    .btn.btn-sm {
+      min-height: 36px;
+      padding: 0 12px;
+      font-size: 12.5px;
+    }
+
+    input, select, textarea {
+      min-height: 44px;
+      background: #0B0B0D;
+      border: 1px solid #303036;
+      border-radius: 8px;
+      color: #F5F5F7;
+      padding: 0 12px;
+      font: inherit;
+      font-size: 13.5px;
+      box-sizing: border-box;
+      width: 100%;
+      transition: border-color 0.15s ease;
+    }
+    input:focus, select:focus, textarea:focus {
+      border-color: #C6A15B;
+      outline: 2px solid rgba(198, 161, 91, 0.3);
+      outline-offset: 1px;
+    }
+    label {
+      display: block;
+      color: #A1A1AA;
+      font-size: 12px;
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+
+    /* Accessibility focus */
+    .btn:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible {
+      outline: 2px solid #D8B978;
+      outline-offset: 2px;
+    }
+
+    /* KPI metric tiles */
+    .kpi-tile {
+      background: #141417;
+      border: 1px solid #303036;
+      border-radius: 10px;
+      padding: 18px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .kpi-title { font-size: 12px; text-transform: uppercase; color: #A1A1AA; letter-spacing: 0.04em; font-weight: 600; }
+    .kpi-value { font-size: 26px; font-weight: 700; color: #F5F5F7; letter-spacing: -0.02em; }
+    .kpi-sub { font-size: 12px; color: #71717A; }
+
+    /* Mobile Drawer */
+    .mobile-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 100;
+      backdrop-filter: blur(4px);
+    }
+    .mobile-drawer {
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      width: 260px;
+      background: #141417;
+      border-right: 1px solid #303036;
+      z-index: 101;
+      padding: 20px 14px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 4px 0 20px rgba(0,0,0,0.5);
+    }
+
+    /* Responsive Queries */
+    @media (max-width: 820px) {
+      .sb { display: none; }
+      .mobile-menu-btn { display: inline-flex; }
+      .top-bar { padding: 10px 16px; }
+      .main { padding: 18px 16px; }
+      .g[style*="grid-template-columns"] { grid-template-columns: 1fr !important; }
+      h1 { font-size: 21px; }
+      .kpi-value { font-size: 22px; }
+    }
+    @media (max-width: 480px) {
+      .main { padding: 14px 12px; }
+      .card { padding: 14px; }
+      .row { gap: 8px; }
+      .row > div { min-width: 100% !important; }
+    }
+  </style>
+  {% block extra_head %}{% endblock %}
+</head>
+<body x-data="{ mobileNav: false, notifOpen: false }" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+
+  <div class="app">
+    <!-- Desktop Sidebar -->
+    <nav class="sb" aria-label="Supermarket Admin Navigation">
+      <div>
+        <a href="{% url 'menu:dashboard' %}" class="sb-brand">
+          <span class="sb-brand-dot"></span>
+          <span>Super Market</span>
+        </a>
+
+        <h6>Overview</h6>
+        <a href="{% url 'menu:dashboard' %}" class="{% if active_nav == 'dashboard' %}on{% endif %}" {% if active_nav == 'dashboard' %}aria-current="page"{% endif %}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          Dashboard
+        </a>
+
+        <h6>Catalog</h6>
+        <a href="{% url 'menu:management' %}" class="{% if active_nav == 'products' %}on{% endif %}" {% if active_nav == 'products' %}aria-current="page"{% endif %}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+          Products
+        </a>
+        <a href="{% url 'menu:inventory' %}" class="{% if active_nav == 'inventory' %}on{% endif %}" {% if active_nav == 'inventory' %}aria-current="page"{% endif %}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+          Inventory
+        </a>
+
+        <h6>Sales</h6>
+        <a href="{% url 'orders_admin:dashboard' %}" class="{% if active_nav == 'orders' %}on{% endif %}" {% if active_nav == 'orders' %}aria-current="page"{% endif %}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
+          Orders
+        </a>
+        <a href="{% url 'accounts_admin:customers' %}" class="{% if active_nav == 'customers' %}on{% endif %}" {% if active_nav == 'customers' %}aria-current="page"{% endif %}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          Customers
+        </a>
+        <a href="{% url 'payments:list' %}" class="{% if active_nav == 'payments' %}on{% endif %}" {% if active_nav == 'payments' %}aria-current="page"{% endif %}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
+          Payments
+        </a>
+        <a href="{% url 'orders_admin:invoices' %}" class="{% if active_nav == 'invoices' %}on{% endif %}" {% if active_nav == 'invoices' %}aria-current="page"{% endif %}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          Invoices
+        </a>
+        <a href="{% url 'coupons:list' %}" class="{% if active_nav == 'coupons' %}on{% endif %}" {% if active_nav == 'coupons' %}aria-current="page"{% endif %}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/></svg>
+          Coupons
+        </a>
+        <a href="{% url 'analytics:dashboard' %}" class="{% if active_nav == 'reports' %}on{% endif %}" {% if active_nav == 'reports' %}aria-current="page"{% endif %}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+          Reports
+        </a>
+
+        <h6>Procurement</h6>
+        <a href="{% url 'suppliers:list' %}" class="{% if active_nav == 'suppliers' %}on{% endif %}" {% if active_nav == 'suppliers' %}aria-current="page"{% endif %}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></svg>
+          Suppliers
+        </a>
+
+        <h6>System</h6>
+        <a href="{% url 'notifications:list' %}" class="{% if active_nav == 'notifications' %}on{% endif %}" {% if active_nav == 'notifications' %}aria-current="page"{% endif %}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+          Notifications
+          {% if unread_notifs_count %}<span class="sb-badge">{{ unread_notifs_count }}</span>{% endif %}
+        </a>
+        <a href="{% url 'audit:list' %}" class="{% if active_nav == 'audit' %}on{% endif %}" {% if active_nav == 'audit' %}aria-current="page"{% endif %}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          Audit logs
+        </a>
+        <a href="{% url 'menu:import_export' %}" class="{% if active_nav == 'import_export' %}on{% endif %}" {% if active_nav == 'import_export' %}aria-current="page"{% endif %}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+          Import / Export
+        </a>
+        <a href="{% url 'core:admin_settings' %}" class="{% if active_nav == 'settings' %}on{% endif %}" {% if active_nav == 'settings' %}aria-current="page"{% endif %}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+          Settings
+        </a>
+      </div>
+
+      <div style="border-top:1px solid #26262B;padding-top:14px;margin-top:20px;">
+        <div style="display:flex;align-items:center;gap:10px;padding:0 8px 10px;">
+          <div style="width:32px;height:32px;border-radius:50%;background:#1C1C20;border:1px solid #303036;display:flex;align-items:center;justify-content:center;font-weight:600;color:#D8B978">
+            {{ request.user.username|make_list|first|upper }}
+          </div>
+          <div style="min-width:0;flex:1">
+            <div style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ request.user.username }}</div>
+            <div style="font-size:11px;color:#A1A1AA">{{ request.user.get_role_display|default:"Staff" }}</div>
+          </div>
+        </div>
+        <form method="post" action="{% url 'accounts:logout' %}">
+          {% csrf_token %}
+          <button type="submit" class="nav-link" style="color:#FF453A;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
+            Sign out
+          </button>
+        </form>
+      </div>
+    </nav>
+
+    <!-- Mobile Slide-out Drawer -->
+    <div x-cloak x-show="mobileNav" class="mobile-backdrop" @click="mobileNav = false"></div>
+    <div x-cloak x-show="mobileNav" class="mobile-drawer" x-transition>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #26262B">
+        <a href="{% url 'menu:dashboard' %}" class="sb-brand" style="margin:0;padding:0;border:none">
+          <span class="sb-brand-dot"></span>
+          <span>Super Market</span>
+        </a>
+        <button @click="mobileNav = false" style="background:none;border:none;color:#A1A1AA;font-size:20px;cursor:pointer">&times;</button>
+      </div>
+      <div style="flex:1;overflow-y:auto">
+        <h6>Overview</h6>
+        <a href="{% url 'menu:dashboard' %}" class="nav-link {% if active_nav == 'dashboard' %}on{% endif %}">Dashboard</a>
+        <h6>Catalog</h6>
+        <a href="{% url 'menu:management' %}" class="nav-link {% if active_nav == 'products' %}on{% endif %}">Products</a>
+        <a href="{% url 'menu:inventory' %}" class="nav-link {% if active_nav == 'inventory' %}on{% endif %}">Inventory</a>
+        <h6>Sales</h6>
+        <a href="{% url 'orders_admin:dashboard' %}" class="nav-link {% if active_nav == 'orders' %}on{% endif %}">Orders</a>
+        <a href="{% url 'accounts_admin:customers' %}" class="nav-link {% if active_nav == 'customers' %}on{% endif %}">Customers</a>
+        <a href="{% url 'payments:list' %}" class="nav-link {% if active_nav == 'payments' %}on{% endif %}">Payments</a>
+        <a href="{% url 'orders_admin:invoices' %}" class="nav-link {% if active_nav == 'invoices' %}on{% endif %}">Invoices</a>
+        <a href="{% url 'coupons:list' %}" class="nav-link {% if active_nav == 'coupons' %}on{% endif %}">Coupons</a>
+        <a href="{% url 'analytics:dashboard' %}" class="nav-link {% if active_nav == 'reports' %}on{% endif %}">Reports</a>
+        <h6>Procurement</h6>
+        <a href="{% url 'suppliers:list' %}" class="nav-link {% if active_nav == 'suppliers' %}on{% endif %}">Suppliers</a>
+        <h6>System</h6>
+        <a href="{% url 'notifications:list' %}" class="nav-link {% if active_nav == 'notifications' %}on{% endif %}">Notifications</a>
+        <a href="{% url 'audit:list' %}" class="nav-link {% if active_nav == 'audit' %}on{% endif %}">Audit logs</a>
+        <a href="{% url 'menu:import_export' %}" class="nav-link {% if active_nav == 'import_export' %}on{% endif %}">Import / Export</a>
+        <a href="{% url 'core:admin_settings' %}" class="nav-link {% if active_nav == 'settings' %}on{% endif %}">Settings</a>
+      </div>
+      <div style="border-top:1px solid #26262B;padding-top:10px;margin-top:10px">
+        <form method="post" action="{% url 'accounts:logout' %}">
+          {% csrf_token %}
+          <button type="submit" class="nav-link" style="color:#FF453A;">Sign out</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="main-wrap">
+      <header class="top-bar">
+        <div class="top-bar-left">
+          <button class="mobile-menu-btn" @click="mobileNav = true" aria-label="Open mobile menu">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
+          <div>
+            <div class="subhead">{% block breadcrumb %}Admin{% endblock %}</div>
+            <div style="font-weight:600;font-size:14px;color:#F5F5F7">{% block page_title %}{% endblock %}</div>
+          </div>
+        </div>
+        <div class="top-bar-right">
+          <a href="{% url 'notifications:list' %}" class="btn btn-sm" style="position:relative;padding:0 10px" aria-label="Notifications">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+            {% if unread_notifs_count %}
+            <span style="position:absolute;top:5px;right:6px;width:7px;height:7px;border-radius:50%;background:#C6A15B"></span>
+            {% endif %}
+          </a>
+          <a href="/" target="_blank" class="btn btn-sm" style="color:#A1A1AA">Storefront &rarr;</a>
+          {% block topbar_actions %}{% endblock %}
+        </div>
+      </header>
+
+      <main class="main" id="admin-main">
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+  </div>
+
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

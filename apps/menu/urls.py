@@ -8,12 +8,27 @@ app_name = "menu"
 urlpatterns = [
     path(
         "dashboard/",
+        views_admin.supermarket_dashboard,
+        name="dashboard",
+    ),
+    path(
+        "products/",
         views_admin.menu_management,
         name="management",
     ),
     path(
+        "inventory/",
+        views_admin.inventory_management,
+        name="inventory",
+    ),
+    path(
+        "import-export/",
+        views_admin.import_export_view,
+        name="import_export",
+    ),
+    path(
         "menu/dashboard/",
-        views_admin.menu_management,
+        views_admin.supermarket_dashboard,
     ),
     path(
         "items/<int:pk>/toggle-availability/",

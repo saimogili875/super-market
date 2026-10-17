@@ -8,6 +8,7 @@ math lives in apps/analytics/services.py.
 import datetime
 from decimal import Decimal
 
+from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render
 from django.utils import timezone
 from django.utils.dateparse import parse_date
@@ -42,16 +43,35 @@ def _add_bar_widths(daily: list[dict]) -> list[dict]:
 
 @require_GET
 @role_required("ADMIN")
-def dashboard(request):
-    """Render the financial analytics dashboard for the selected date range."""
+def dashboard(request: HttpRequest) -> HttpResponse:
     today = timezone.localdate()
     start = _parse_date(request.GET.get("start"), today - datetime.timedelta(days=6))
     end = _parse_date(request.GET.get("end"), today)
+
+    from apps.menu.models import MenuItem
+    inventory_valuation = sum(
+        [
+            (Decimal(i.stock_quantity) * (i.cost_price or (i.price * Decimal("0.70"))))
+            for i in MenuItem.objects.all()
+        ],
+        Decimal("0.00"),
+    ).quantize(Decimal("0.01"))
+
+    totals_data = services.totals(start, end)
+    total_rev = totals_data.get("total_revenue") or Decimal("0.00")
+    est_cogs = (total_rev * Decimal("0.68")).quantize(Decimal("0.01"))
+    est_profit = max(Decimal("0.00"), total_rev - est_cogs).quantize(Decimal("0.01"))
+
     context = {
         "start": start,
         "end": end,
-        "totals": services.totals(start, end),
+        "totals": totals_data,
         "daily": _add_bar_widths(services.daily_summary(start, end)),
         "breakdown": services.breakdown_by_type(start, end),
+        "inventory_valuation": inventory_valuation,
+        "est_cogs": est_cogs,
+        "est_profit": est_profit,
+        "active_nav": "reports",
     }
-    return render(request, "analytics/dashboard.html", context)
+    return render(request, "admin/reports.html", context)
+

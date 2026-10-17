@@ -39,17 +39,25 @@ class MenuItemForm(forms.ModelForm):
         fields = (
             "category",
             "name",
-            "description",
+            "sku",
+            "barcode",
+            "unit",
             "price",
-            "prep_minutes",
+            "cost_price",
             "offer_percent",
-            "image",
-            "is_available",
+            "prep_minutes",
             "track_stock",
             "stock_quantity",
+            "low_stock_threshold",
+            "expiry_date",
+            "supplier",
+            "description",
+            "image",
+            "is_available",
         )
         widgets = {
             "description": forms.Textarea(attrs={"rows": 2}),
+            "expiry_date": forms.DateInput(attrs={"type": "date"}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -57,6 +65,17 @@ class MenuItemForm(forms.ModelForm):
         _style(self.fields)
         self.fields["stock_quantity"].required = False
         self.fields["track_stock"].required = False
+        self.fields["sku"].required = False
+        self.fields["barcode"].required = False
+        self.fields["unit"].required = False
+        self.fields["cost_price"].required = False
+        self.fields["low_stock_threshold"].required = False
+        self.fields["expiry_date"].required = False
+        self.fields["supplier"].required = False
+        self.fields["prep_minutes"].required = False
 
     def clean_stock_quantity(self):
         return self.cleaned_data.get("stock_quantity") or 0
+
+    def clean_low_stock_threshold(self):
+        return self.cleaned_data.get("low_stock_threshold") or 5

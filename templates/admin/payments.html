@@ -1,0 +1,155 @@
+{% extends "admin/admin_base.html" %}
+
+{% block title %}Payments & Transactions — Admin{% endblock %}
+{% block breadcrumb %}Admin / Sales{% endblock %}
+{% block page_title %}Payments{% endblock %}
+
+{% block content %}
+<div x-data="{
+  selectedTxn: '{{ transactions.0.txn_id|default:'' }}',
+  selectedAmount: '{{ transactions.0.amount|default:'' }}'
+}">
+
+  <!-- Header -->
+  <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:20px">
+    <div>
+      <div class="mu2" style="font-size:12px">Admin / Sales</div>
+      <h1>Payments</h1>
+      <div class="mu2">Verify transactions, payment methods, and issue refunds</div>
+    </div>
+    <a href="{% url 'menu:import_export' %}" class="btn">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+      Export
+    </a>
+  </div>
+
+  <!-- Messages -->
+  {% if messages %}
+    {% for msg in messages %}
+      <div class="card" style="padding:12px 16px;border-color:{% if msg.tags == 'error' %}#6b2420{% else %}#1f5a30{% endif %};background:{% if msg.tags == 'error' %}rgba(255,69,58,0.08){% else %}rgba(52,199,89,0.08){% endif %};margin-bottom:16px;">
+        {{ msg }}
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Filter Card -->
+  <div class="card" style="margin-bottom:16px">
+    <form method="get" class="row">
+      <div style="flex:1;min-width:140px">
+        <label for="search-txn">Search transaction ID / Order / Customer</label>
+        <input type="search" id="search-txn" name="q" value="{{ q }}" placeholder="e.g. TXN-8801 or customer name…">
+      </div>
+      <div style="flex:1;min-width:130px">
+        <label for="status-txn">Status</label>
+        <select id="status-txn" name="status" onchange="this.form.submit()">
+          <option value="All" {% if status_filter == 'All' %}selected{% endif %}>All</option>
+          <option value="Paid" {% if status_filter == 'Paid' %}selected{% endif %}>Paid</option>
+          <option value="Pending" {% if status_filter == 'Pending' %}selected{% endif %}>Pending</option>
+          <option value="Failed" {% if status_filter == 'Failed' %}selected{% endif %}>Failed</option>
+          <option value="Refunded" {% if status_filter == 'Refunded' %}selected{% endif %}>Refunded</option>
+        </select>
+      </div>
+      <div style="flex:1;min-width:130px">
+        <label for="from-date">From</label>
+        <input type="date" id="from-date" name="from_date" value="{{ from_date }}">
+      </div>
+      <div style="flex:1;min-width:130px">
+        <label for="to-date">To</label>
+        <input type="date" id="to-date" name="to_date" value="{{ to_date }}">
+      </div>
+      <div>
+        <button type="submit" class="btn pri">Filter</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- 2-Col Grid: Table + Refund Box -->
+  <div class="g" style="grid-template-columns: 1.6fr 1fr;">
+    
+    <!-- Transactions Ledger -->
+    <div class="card">
+      <div class="ov">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Transaction</th>
+              <th scope="col">Order</th>
+              <th scope="col">Method</th>
+              <th scope="col">Amount</th>
+              <th scope="col">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for txn in transactions %}
+            <tr style="cursor:pointer;" @click="selectedTxn = '{{ txn.txn_id }}'; selectedAmount = '{{ txn.amount }}'">
+              <td>
+                <div style="font-weight:600">{{ txn.txn_id }}</div>
+                <div class="mu2" style="font-size:11px">{{ txn.created_at|date:"d M Y, H:i" }}</div>
+              </td>
+              <td>
+                <div>{{ txn.order_ref|default:"Walk-in" }}</div>
+                <div class="mu2" style="font-size:11px">{{ txn.customer_name|default:"Customer" }}</div>
+              </td>
+              <td>{{ txn.method }}</td>
+              <td style="font-weight:600">₹{{ txn.amount }}</td>
+              <td>
+                {% if txn.status == 'Paid' %}
+                  <span class="b ok">Paid</span>
+                {% elif txn.status == 'Pending' %}
+                  <span class="b wn">Pending</span>
+                {% elif txn.status == 'Failed' %}
+                  <span class="b er">Failed</span>
+                {% elif txn.status == 'Refunded' %}
+                  <span class="b mu">Refunded</span>
+                {% else %}
+                  <span class="b mu">{{ txn.status }}</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="5" class="mu2" style="text-align:center;padding:24px">No transactions found for the selected criteria.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Refund Action Card -->
+    <div class="card" role="dialog" aria-label="Confirm refund" style="border-color:#6B5A30">
+      <h3 x-text="'Refund ' + (selectedTxn || 'Transaction')">Refund Transaction</h3>
+      
+      <form method="post" action="{% url 'payments:list' %}">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="issue_refund">
+        <input type="hidden" name="txn_id" :value="selectedTxn">
+        
+        <div class="g">
+          <div>
+            <label for="ref-amount">Refund amount (₹)</label>
+            <input type="number" id="ref-amount" name="refund_amount" step="0.01" min="0.01" :value="selectedAmount" required>
+          </div>
+          <div>
+            <label for="ref-reason">Reason for refund</label>
+            <select id="ref-reason" name="reason">
+              <option value="Damaged item">Damaged or spoiled item</option>
+              <option value="Wrong item">Wrong item delivered / packed</option>
+              <option value="Customer request">Customer cancellation request</option>
+              <option value="Billing correction">Billing correction / Duplicate swipe</option>
+            </select>
+          </div>
+          <p class="mu2">This marks the refund in the supermarket ledger and logs it in the audit log. The status updates only after confirmation.</p>
+          
+          <div style="display:flex;gap:10px;margin-top:6px">
+            <button type="button" class="btn" @click="selectedTxn = ''; selectedAmount = ''">Cancel</button>
+            <button type="submit" class="btn dng" :disabled="!selectedTxn">Confirm refund</button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}

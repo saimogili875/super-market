@@ -1,0 +1,94 @@
+<div class="card p-0">
+  <div class="ov">
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Product / SKU</th>
+          <th scope="col">Department</th>
+          <th scope="col">Unit</th>
+          <th scope="col">Cost (₹)</th>
+          <th scope="col">Selling Price</th>
+          <th scope="col">Stock</th>
+          <th scope="col">Expiry</th>
+          <th scope="col">Available?</th>
+          <th scope="col" style="text-align:right">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for cat in categories %}
+          {% for item in cat.items.all %}
+          <tr>
+            <td>
+              <div style="font-weight:600;font-size:14px;color:#F5F5F7">{{ item.name }}</div>
+              <div class="mu2" style="font-size:11px">
+                <code style="color:#D8B978">{{ item.sku|default:"NO-SKU" }}</code>
+                {% if item.barcode %} · Barcode: {{ item.barcode }}{% endif %}
+              </div>
+            </td>
+            <td>
+              <span class="b mu">{{ cat.name }}</span>
+            </td>
+            <td>{{ item.unit }}</td>
+            <td class="mu2">₹{{ item.cost_price|default:"—" }}</td>
+            <td>
+              <strong style="color:#F5F5F7">₹{{ item.price }}</strong>
+              {% if item.offer_percent > 0 %}
+                <span class="b wn" style="font-size:10px;padding:1px 5px">{{ item.offer_percent }}% off</span>
+                <div class="mu2" style="font-size:11px">Effective: ₹{{ item.effective_price }}</div>
+              {% endif %}
+            </td>
+            <td>
+              {% if item.track_stock %}
+                {% if item.is_out_of_stock %}
+                  <span class="b er">Out of stock (0)</span>
+                {% elif item.is_low_stock %}
+                  <span class="b wn">{{ item.stock_quantity }} {{ item.unit }} (Low)</span>
+                {% else %}
+                  <span style="font-weight:600;color:#F5F5F7">{{ item.stock_quantity }} {{ item.unit }}</span>
+                {% endif %}
+              {% else %}
+                <span class="mu2">Untracked</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if item.expiry_date %}
+                {% if item.is_expired %}
+                  <span class="b er">Expired: {{ item.expiry_date|date:"d M Y" }}</span>
+                {% elif item.is_near_expiry %}
+                  <span class="b wn">{{ item.expiry_date|date:"d M Y" }}</span>
+                {% else %}
+                  <span class="mu2">{{ item.expiry_date|date:"d M Y" }}</span>
+                {% endif %}
+              {% else %}
+                <span class="mu2">—</span>
+              {% endif %}
+            </td>
+            <td>
+              <button
+                type="button"
+                hx-post="{% url 'menu:toggle_availability' item.pk %}"
+                hx-swap="outerHTML"
+                hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+                class="b {% if item.is_available %}ok{% else %}mu{% endif %}"
+                style="cursor:pointer;background:transparent;">
+                {% if item.is_available %}Active{% else %}Inactive{% endif %}
+              </button>
+            </td>
+            <td style="text-align:right">
+              <a href="{% url 'menu:item_edit' item.pk %}" class="btn btn-sm" style="display:inline-flex;padding:0 10px">Edit</a>
+              <form method="post" action="{% url 'menu:item_delete' item.pk %}" style="display:inline" onsubmit="return confirm('Are you sure you want to delete {{ item.name }}?');">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm dng" style="display:inline-flex;padding:0 8px">Delete</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        {% empty %}
+          <tr>
+            <td colspan="9" class="mu2" style="text-align:center;padding:32px">No products found matching your search.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>

@@ -1,0 +1,78 @@
+{% extends "admin/admin_base.html" %}
+
+{% block title %}Products Management — Admin{% endblock %}
+{% block breadcrumb %}Admin / Catalog{% endblock %}
+{% block page_title %}Products Management{% endblock %}
+
+{% block content %}
+<div>
+
+  <!-- Header -->
+  <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:20px">
+    <div>
+      <div class="mu2" style="font-size:12px">Admin / Catalog</div>
+      <h1>Supermarket Products</h1>
+      <div class="mu2">Manage catalog items, pricing, SKUs, inventory units, and departments</div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <a href="{% url 'menu:category_create' %}" class="btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add department
+      </a>
+      <a href="{% url 'menu:item_create' %}" class="btn pri">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add product
+      </a>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  {% if messages %}
+    {% for msg in messages %}
+      <div class="card" style="padding:12px 16px;border-color:{% if msg.tags == 'error' %}#6b2420{% else %}#1f5a30{% endif %};background:{% if msg.tags == 'error' %}rgba(255,69,58,0.08){% else %}rgba(52,199,89,0.08){% endif %};margin-bottom:16px;">
+        {{ msg }}
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Search & Filter Card -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="row">
+      <div style="flex:1;min-width:200px">
+        <label for="prod-search">Search products</label>
+        <input
+          type="search"
+          id="prod-search"
+          name="q"
+          value="{{ q|default:'' }}"
+          hx-get="{% url 'menu:management' %}"
+          hx-trigger="keyup changed delay:300ms, search"
+          hx-target="#products-table-container"
+          hx-include="[name='category']"
+          placeholder="Search by name, SKU, or barcode…">
+      </div>
+      <div style="flex:1;min-width:180px">
+        <label for="prod-cat">Filter by department</label>
+        <select
+          id="prod-cat"
+          name="category"
+          hx-get="{% url 'menu:management' %}"
+          hx-trigger="change"
+          hx-target="#products-table-container"
+          hx-include="[name='q']">
+          <option value="all">All departments ({{ all_categories|length }})</option>
+          {% for cat in all_categories %}
+            <option value="{{ cat.pk }}" {% if cat.pk|stringformat:"s" == category %}selected{% endif %}>{{ cat.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table Container Swapped by HTMX -->
+  <div id="products-table-container">
+    {% include "admin/partials/products_table.html" %}
+  </div>
+
+</div>
+{% endblock %}

@@ -1,15 +1,9 @@
-{% extends "base.html" %}
+{% extends "admin/admin_base.html" %}
 {% load static %}
 
-{% block title %}Live Orders — Admin Dashboard{% endblock %}
-
-{% block header_subtitle %}Admin Dashboard{% endblock %}
-
-{% block header_actions %}
-{% include "partials/admin_nav.html" with active_nav="orders" %}
-{% endblock %}
-
-{% block container_class %}app-container--wide{% endblock %}
+{% block title %}Live Orders — Super Market{% endblock %}
+{% block breadcrumb %}Admin / Sales{% endblock %}
+{% block page_title %}Live Grocery Orders{% endblock %}
 
 {% block content %}
 <div hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'

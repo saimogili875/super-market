@@ -1,0 +1,260 @@
+{% extends "admin/admin_base.html" %}
+
+{% block title %}Suppliers & Procurement — Admin{% endblock %}
+{% block breadcrumb %}Admin / Procurement{% endblock %}
+{% block page_title %}Suppliers{% endblock %}
+
+{% block content %}
+<div x-data="{ showAddSupplier: false, showNewPO: false }">
+
+  <!-- Header -->
+  <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:20px">
+    <div>
+      <div class="mu2" style="font-size:12px">Admin / Procurement</div>
+      <h1>Suppliers</h1>
+      <div class="mu2">Manage vendor profiles, purchase orders, and delivery records</div>
+    </div>
+    <div style="display:flex;gap:10px;">
+      <button class="btn pri" @click="showAddSupplier = true">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add supplier
+      </button>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  {% if messages %}
+    {% for msg in messages %}
+      <div class="card" style="padding:12px 16px;border-color:{% if msg.tags == 'error' %}#6b2420{% else %}#1f5a30{% endif %};background:{% if msg.tags == 'error' %}rgba(255,69,58,0.08){% else %}rgba(52,199,89,0.08){% endif %};margin-bottom:16px;">
+        {{ msg }}
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Main 2-Col Grid -->
+  <div class="g" style="grid-template-columns: 1.5fr 1fr;">
+    
+    <!-- Left Column: Suppliers Directory -->
+    <div class="card">
+      <form method="get" class="row" style="margin-bottom:16px">
+        <div style="flex:1;min-width:140px">
+          <label for="search-sup">Search suppliers</label>
+          <input type="search" id="search-sup" name="q" value="{{ q }}" placeholder="Search by name or contact…">
+        </div>
+        <div style="flex:1;min-width:140px">
+          <label for="status-sup">Status</label>
+          <select id="status-sup" name="status" onchange="this.form.submit()">
+            <option value="All" {% if status_filter == 'All' %}selected{% endif %}>All</option>
+            <option value="Active" {% if status_filter == 'Active' %}selected{% endif %}>Active</option>
+            <option value="Inactive" {% if status_filter == 'Inactive' %}selected{% endif %}>Inactive</option>
+          </select>
+        </div>
+      </form>
+
+      <div class="ov">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Supplier</th>
+              <th scope="col">Contact</th>
+              <th scope="col">Open POs</th>
+              <th scope="col">Last Delivery</th>
+              <th scope="col">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for sup in suppliers %}
+            <tr>
+              <td>
+                <div style="font-weight:600">{{ sup.name }}</div>
+                <div class="mu2" style="font-size:12px">{{ sup.address|default:"No address" }}</div>
+              </td>
+              <td>
+                <div>{{ sup.contact|default:"-" }}</div>
+                <div class="mu2" style="font-size:12px">{{ sup.phone|default:sup.email }}</div>
+              </td>
+              <td>
+                <span style="font-weight:600">{{ sup.open_pos_count }}</span>
+              </td>
+              <td class="mu2">
+                {% if sup.last_delivery_date %}
+                  {{ sup.last_delivery_date|date:"d M Y" }}
+                {% else %}
+                  <span class="mu2">None</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if sup.status == 'Active' %}
+                  <span class="b ok">Active</span>
+                {% else %}
+                  <span class="b mu">Inactive</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="5" class="mu2" style="text-align:center;padding:24px;">No suppliers found. Click "Add supplier" to register your first vendor.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Right Column: New PO + Delivery History -->
+    <div class="g">
+      
+      <!-- New Purchase Order Form -->
+      <div class="card">
+        <h3>New purchase order</h3>
+        <form method="post" action="{% url 'suppliers:list' %}">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="create_po">
+          <div class="g">
+            <div>
+              <label for="po-supplier">Supplier</label>
+              <select id="po-supplier" name="supplier_id" required>
+                {% for sup in all_suppliers %}
+                  <option value="{{ sup.pk }}">{{ sup.name }}</option>
+                {% empty %}
+                  <option value="" disabled>No active suppliers</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div>
+              <label for="po-product">Product</label>
+              <input type="text" id="po-product" name="product_name" list="catalog-products" placeholder="e.g. Fresh Red Onions or SKU" required>
+              <datalist id="catalog-products">
+                {% for item in all_products %}
+                  <option value="{{ item.name }}">{{ item.category.name }} (₹{{ item.price }})</option>
+                {% endfor %}
+              </datalist>
+            </div>
+            <div class="row">
+              <div style="flex:1;min-width:100px">
+                <label for="po-qty">Quantity</label>
+                <input type="number" id="po-qty" name="quantity" min="1" value="10" required>
+              </div>
+              <div style="flex:1;min-width:120px">
+                <label for="po-cost">Unit cost (₹)</label>
+                <input type="number" id="po-cost" name="unit_cost" step="0.01" min="0" placeholder="0.00" required>
+              </div>
+            </div>
+            <div style="display:flex;gap:10px;margin-top:6px">
+              <button type="submit" name="status" value="Draft" class="btn">Save draft</button>
+              <button type="submit" name="status" value="Submitted" class="btn pri">Submit order</button>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <!-- Delivery History Card -->
+      <div class="card">
+        <h3>Delivery history</h3>
+        <div class="ov">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">PO #</th>
+                <th scope="col">Product</th>
+                <th scope="col">Received / Qty</th>
+                <th scope="col">Status</th>
+                <th scope="col">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for po in recent_pos %}
+              <tr>
+                <td><strong>{{ po.po_number }}</strong></td>
+                <td>
+                  <div>{{ po.product_name|truncatechars:18 }}</div>
+                  <div class="mu2" style="font-size:11px">{{ po.supplier.name|truncatechars:16 }}</div>
+                </td>
+                <td>{{ po.received_quantity }} / {{ po.quantity }}</td>
+                <td>
+                  {% if po.status == 'Complete' %}
+                    <span class="b ok">Complete</span>
+                  {% elif po.status == 'Partial' %}
+                    <span class="b wn">Partial</span>
+                  {% elif po.status == 'Submitted' %}
+                    <span class="b gd">Submitted</span>
+                  {% elif po.status == 'Cancelled' %}
+                    <span class="b er">Cancelled</span>
+                  {% else %}
+                    <span class="b mu">{{ po.status }}</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if po.status != 'Complete' and po.status != 'Cancelled' %}
+                    <form method="post" action="{% url 'suppliers:receive_po' po.pk %}" style="display:inline">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-sm" title="Mark received and update stock">Receive</button>
+                    </form>
+                  {% else %}
+                    <span class="mu2">—</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="5" class="mu2" style="text-align:center;padding:16px">No purchase orders recorded yet.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Add Supplier Modal -->
+  <div x-cloak x-show="showAddSupplier" class="mobile-backdrop" @click="showAddSupplier = false"></div>
+  <div x-cloak x-show="showAddSupplier" class="card" role="dialog" aria-modal="true" style="position:fixed;top:50%;left:50%;transform:translate(-50%, -50%);width:90%;max-width:480px;z-index:102;border-color:#C6A15B">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <h3>Add new supplier</h3>
+      <button @click="showAddSupplier = false" style="background:none;border:none;color:#A1A1AA;font-size:20px;cursor:pointer">&times;</button>
+    </div>
+    <form method="post" action="{% url 'suppliers:list' %}">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="add_supplier">
+      <div class="g">
+        <div>
+          <label for="as-name">Company / Supplier name *</label>
+          <input type="text" id="as-name" name="name" required placeholder="e.g. FreshFields Agro Farms">
+        </div>
+        <div class="row">
+          <div style="flex:1;min-width:140px">
+            <label for="as-contact">Contact person</label>
+            <input type="text" id="as-contact" name="contact" placeholder="e.g. Ramesh Patel">
+          </div>
+          <div style="flex:1;min-width:140px">
+            <label for="as-phone">Phone number</label>
+            <input type="tel" id="as-phone" name="phone" placeholder="+91 98765 43210">
+          </div>
+        </div>
+        <div>
+          <label for="as-email">Email address</label>
+          <input type="email" id="as-email" name="email" placeholder="orders@supplier.com">
+        </div>
+        <div>
+          <label for="as-address">Address / City</label>
+          <textarea id="as-address" name="address" rows="2" placeholder="Warehouse address, City, State"></textarea>
+        </div>
+        <div>
+          <label for="as-status">Status</label>
+          <select id="as-status" name="status">
+            <option value="Active">Active</option>
+            <option value="Inactive">Inactive</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:10px">
+          <button type="button" class="btn" @click="showAddSupplier = false">Cancel</button>
+          <button type="submit" class="btn pri">Save supplier</button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+</div>
+{% endblock %}

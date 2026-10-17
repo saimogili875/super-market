@@ -10,6 +10,8 @@ app_name = "orders_admin"
 
 urlpatterns = [
     path("dashboard/", views_admin.dashboard, name="dashboard"),
+    path("invoices/", views_admin.invoices_list, name="invoices"),
+    path("<int:pk>/receipt/", views_admin.invoice_receipt, name="receipt"),
     path("<int:pk>/detail/", views_admin.order_detail, name="detail"),
     path("<int:pk>/assign/", views_admin.assign_order, name="assign"),
     path("<int:pk>/transition/", views_admin.transition_order, name="transition"),

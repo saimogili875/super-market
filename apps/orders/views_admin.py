@@ -130,6 +130,7 @@ def dashboard(request):
     context = {
         "dine_by_table": dine_by_table,
         "delivery_cards": delivery_orders,
+        "active_nav": "orders",
     }
     return render(request, "orders/admin/dashboard.html", context)
 
@@ -212,3 +213,60 @@ def assign_order(request, pk):
         agent = get_object_or_404(User, pk=agent_id, role=Role.AGENT)
         services.assign_agent(order, agent, request.user)
     return render(request, "orders/admin/partials/order_card.html", _card_context(order))
+
+
+@role_required("ADMIN")
+def invoices_list(request):
+    """Invoice browser matching Claude design with search, details, and receipt preview."""
+    from decimal import Decimal
+    from django.db import models
+    q = request.GET.get("q", "").strip()
+    orders_qs = Order.objects.select_related("delivery_customer", "customer").prefetch_related("items__item").order_by("-created_at")
+
+    if q:
+        clean_q = q.replace("INV-", "").replace("ORD-", "").strip()
+        orders_qs = orders_qs.filter(
+            models.Q(pk__icontains=clean_q)
+            | models.Q(contact_name__icontains=q)
+            | models.Q(contact_phone__icontains=q)
+        )
+
+    invoices = orders_qs[:100]
+
+    selected_id = request.GET.get("selected")
+    selected_order = None
+    if selected_id:
+        selected_order = Order.objects.filter(pk=selected_id).prefetch_related("items__item").first()
+    if not selected_order and invoices:
+        selected_order = invoices[0]
+
+    subtotal = Decimal("0.00")
+    if selected_order:
+        for itm in selected_order.items.all():
+            subtotal += Decimal(itm.quantity) * itm.unit_price
+
+    return render(
+        request,
+        "admin/invoices.html",
+        {
+            "invoices": invoices,
+            "selected_order": selected_order,
+            "subtotal": subtotal,
+            "q": q,
+            "active_nav": "invoices",
+        },
+    )
+
+
+@role_required("ADMIN")
+def invoice_receipt(request, pk):
+    """Standalone printable supermarket receipt page for thermal or A4 printing."""
+    order = get_object_or_404(Order.objects.prefetch_related("items__item"), pk=pk)
+    return render(
+        request,
+        "admin/receipt_print.html",
+        {
+            "order": order,
+        },
+    )
+

@@ -1,0 +1,166 @@
+{% extends "admin/admin_base.html" %}
+
+{% block title %}Discounts & Coupons — Admin{% endblock %}
+{% block breadcrumb %}Admin / Sales{% endblock %}
+{% block page_title %}Discounts and coupons{% endblock %}
+
+{% block content %}
+<div x-data="{
+  code: '',
+  discountType: 'Percentage',
+  value: '',
+  validFrom: '{{ today|date:'Y-m-d' }}',
+  validTo: '',
+  usageLimit: 100,
+  minOrder: 0,
+  isActive: true,
+  editCoupon(c) {
+    this.code = c.code;
+    this.discountType = c.type;
+    this.value = c.value;
+    this.validFrom = c.from;
+    this.validTo = c.to;
+    this.usageLimit = c.limit;
+    this.minOrder = c.minOrder;
+    this.isActive = c.active;
+  }
+}">
+
+  <!-- Header -->
+  <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:20px">
+    <div>
+      <div class="mu2" style="font-size:12px">Admin / Sales</div>
+      <h1>Discounts and coupons</h1>
+      <div class="mu2">Create supermarket promotional vouchers with limits and date validity</div>
+    </div>
+    <button class="btn pri" @click="code = ''; value = ''; validTo = ''; usageLimit = 100; minOrder = 0; isActive = true;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      New coupon
+    </button>
+  </div>
+
+  <!-- Messages -->
+  {% if messages %}
+    {% for msg in messages %}
+      <div class="card" style="padding:12px 16px;border-color:{% if msg.tags == 'error' %}#6b2420{% else %}#1f5a30{% endif %};background:{% if msg.tags == 'error' %}rgba(255,69,58,0.08){% else %}rgba(52,199,89,0.08){% endif %};margin-bottom:16px;">
+        {{ msg }}
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- 2-Col Layout: Table + Form -->
+  <div class="g" style="grid-template-columns: 1.4fr 1fr;">
+    
+    <!-- Coupons List Card -->
+    <div class="card">
+      <div class="ov">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Code</th>
+              <th scope="col">Discount</th>
+              <th scope="col">Valid Range</th>
+              <th scope="col">Used / Limit</th>
+              <th scope="col">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for c in coupons %}
+            <tr style="cursor:pointer;" @click="editCoupon({
+              code: '{{ c.code }}',
+              type: '{{ c.discount_type }}',
+              value: '{{ c.value }}',
+              from: '{{ c.valid_from|date:'Y-m-d' }}',
+              to: '{{ c.valid_to|date:'Y-m-d' }}',
+              limit: {{ c.usage_limit }},
+              minOrder: '{{ c.min_order }}',
+              active: {{ c.is_active|yesno:'true,false' }}
+            })">
+              <td>
+                <strong style="color:#D8B978;letter-spacing:0.04em;">{{ c.code }}</strong>
+                {% if c.min_order > 0 %}
+                <div class="mu2" style="font-size:11px">Min order: ₹{{ c.min_order }}</div>
+                {% endif %}
+              </td>
+              <td><strong>{{ c.discount_display }}</strong></td>
+              <td class="mu2">{{ c.valid_from|date:"d M" }} &rarr; {{ c.valid_to|date:"d M Y" }}</td>
+              <td>{{ c.times_used }} / {{ c.usage_limit }}</td>
+              <td>
+                {% if c.status == 'Active' %}
+                  <span class="b ok">Active</span>
+                {% elif c.status == 'Scheduled' %}
+                  <span class="b wn">Scheduled</span>
+                {% else %}
+                  <span class="b mu">{{ c.status }}</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="5" class="mu2" style="text-align:center;padding:24px">No coupons configured yet. Fill out the form to create your first voucher.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Create / Edit Coupon Form -->
+    <div class="card">
+      <h3>Create coupon</h3>
+      <form method="post" action="{% url 'coupons:list' %}">
+        {% csrf_token %}
+        <div class="g">
+          <div>
+            <label for="cp-code">Coupon code *</label>
+            <input type="text" id="cp-code" name="code" x-model="code" placeholder="e.g. SUMMER20" required style="text-transform:uppercase;">
+          </div>
+          <div class="row">
+            <div style="flex:1;min-width:130px">
+              <label for="cp-type">Type</label>
+              <select id="cp-type" name="discount_type" x-model="discountType">
+                <option value="Percentage">Percentage (%)</option>
+                <option value="Fixed">Fixed amount (₹)</option>
+              </select>
+            </div>
+            <div style="flex:1;min-width:130px">
+              <label for="cp-value">Value *</label>
+              <input type="number" id="cp-value" name="value" x-model="value" step="0.01" min="0.01" placeholder="10" required>
+            </div>
+          </div>
+          <div class="row">
+            <div style="flex:1;min-width:130px">
+              <label for="cp-vfrom">Valid from *</label>
+              <input type="date" id="cp-vfrom" name="valid_from" x-model="validFrom" required>
+            </div>
+            <div style="flex:1;min-width:130px">
+              <label for="cp-vto">Valid to *</label>
+              <input type="date" id="cp-vto" name="valid_to" x-model="validTo" required>
+            </div>
+          </div>
+          <div class="row">
+            <div style="flex:1;min-width:130px">
+              <label for="cp-limit">Usage limit</label>
+              <input type="number" id="cp-limit" name="usage_limit" x-model="usageLimit" min="1" value="100">
+            </div>
+            <div style="flex:1;min-width:130px">
+              <label for="cp-min">Min. order (₹)</label>
+              <input type="number" id="cp-min" name="min_order" x-model="minOrder" step="0.01" min="0" value="0">
+            </div>
+          </div>
+          <label style="display:flex;gap:10px;align-items:center;min-height:44px;color:#F5F5F7;cursor:pointer;">
+            <input type="checkbox" name="is_active" x-model="isActive" style="width:20px;min-height:20px;accent-color:#C6A15B">
+            <span>Coupon is active for checkout</span>
+          </label>
+          <div style="display:flex;gap:10px;margin-top:6px">
+            <button type="button" class="btn" @click="code = ''; value = ''; validTo = ''">Cancel</button>
+            <button type="submit" class="btn pri">Save coupon</button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}

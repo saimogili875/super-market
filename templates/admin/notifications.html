@@ -1,0 +1,134 @@
+{% extends "admin/admin_base.html" %}
+
+{% block title %}Notifications & Alerts — Admin{% endblock %}
+{% block breadcrumb %}Admin / System{% endblock %}
+{% block page_title %}Notifications{% endblock %}
+
+{% block content %}
+<div>
+
+  <!-- Header -->
+  <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:20px">
+    <div>
+      <div class="mu2" style="font-size:12px">Admin / System</div>
+      <h1>Notifications</h1>
+      <div class="mu2">Operational alerts and inventory warnings that need attention</div>
+    </div>
+    <form method="post" action="{% url 'notifications:list' %}" style="display:inline">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="mark_all_read">
+      <button type="submit" class="btn">Mark all as read</button>
+    </form>
+  </div>
+
+  <!-- Messages -->
+  {% if messages %}
+    {% for msg in messages %}
+      <div class="card" style="padding:12px 16px;border-color:{% if msg.tags == 'error' %}#6b2420{% else %}#1f5a30{% endif %};background:{% if msg.tags == 'error' %}rgba(255,69,58,0.08){% else %}rgba(52,199,89,0.08){% endif %};margin-bottom:16px;">
+        {{ msg }}
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Filter Pills -->
+  <div class="row" style="margin-bottom:16px">
+    <a href="?filter=All" class="btn {% if filter_type == 'All' %}pri{% endif %}">All</a>
+    <a href="?filter=Unread" class="btn {% if filter_type == 'Unread' %}pri{% endif %}">Unread</a>
+    <a href="?filter=Low stock" class="btn {% if filter_type == 'Low stock' %}pri{% endif %}">Low stock</a>
+    <a href="?filter=Expiry" class="btn {% if filter_type == 'Expiry' %}pri{% endif %}">Expiry</a>
+    <a href="?filter=Orders" class="btn {% if filter_type == 'Orders' %}pri{% endif %}">Orders</a>
+  </div>
+
+  <!-- 2-Col Layout -->
+  <div class="g" style="grid-template-columns: 1fr 1fr;">
+    
+    <!-- Left Column: Notification Item Cards -->
+    <div class="card" style="padding:4px 16px">
+      {% for notif in notifications %}
+      <a href="?filter={{ filter_type }}&selected={{ notif.pk }}" style="display:flex;gap:12px;padding:14px 0;border-bottom:1px solid #26262b;align-items:start;text-decoration:none;color:inherit;">
+        {% if not notif.is_read %}
+          <span aria-label="Unread" style="width:8px;height:8px;margin-top:6px;border-radius:50%;background:#C6A15B;flex:none"></span>
+        {% else %}
+          <span aria-label="Read" style="width:8px;height:8px;margin-top:6px;border-radius:50%;background:#303036;flex:none"></span>
+        {% endif %}
+        
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:{% if not notif.is_read %}600{% else %}400{% endif %};font-size:13.5px;color:#F5F5F7">
+            {{ notif.title }}
+          </div>
+          <div class="mu2" style="font-size:12px;margin-top:2px">{{ notif.created_at|date:"d M, H:i" }}</div>
+        </div>
+
+        <span class="b {{ notif.severity }}" style="flex:none">{{ notif.notification_type }}</span>
+      </a>
+      {% empty %}
+      <div class="mu2" style="text-align:center;padding:32px">
+        No notifications in this category. Everything is operating smoothly.
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Right Column: Detail / Resolution Pane -->
+    <div>
+      {% if selected_notif %}
+      <div class="card">
+        <h3>{{ selected_notif.title }}</h3>
+        <p class="mu2">{{ selected_notif.message|default:"Review the details below and take corrective operational action." }}</p>
+
+        {% if product_item %}
+        <div class="ov" style="margin-bottom:16px">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Product</th>
+                <th scope="col">Current Stock</th>
+                <th scope="col">Threshold</th>
+                <th scope="col">Expiry Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>{{ product_item.name }}</strong> ({{ product_item.sku }})</td>
+                <td>
+                  <span style="font-weight:600;{% if product_item.is_out_of_stock %}color:#FF453A{% elif product_item.is_low_stock %}color:#FFB340{% endif %}">
+                    {{ product_item.stock_quantity }} {{ product_item.unit }}
+                  </span>
+                </td>
+                <td>{{ product_item.low_stock_threshold }} {{ product_item.unit }}</td>
+                <td>{{ product_item.expiry_date|default:"N/A"|date:"d M Y" }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        {% endif %}
+
+        <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
+          {% if not selected_notif.is_resolved %}
+          <form method="post" action="{% url 'notifications:list' %}" style="display:inline">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="mark_resolved">
+            <input type="hidden" name="notif_id" value="{{ selected_notif.pk }}">
+            <button type="submit" class="btn">Mark resolved</button>
+          </form>
+          {% else %}
+          <span class="b ok" style="padding:8px 14px">Resolved</span>
+          {% endif %}
+
+          {% if selected_notif.notification_type == 'Low stock' or selected_notif.notification_type == 'Expiry' %}
+          <a href="{% url 'suppliers:list' %}" class="btn pri">Create purchase order</a>
+          {% elif selected_notif.notification_type == 'Order' %}
+          <a href="{% url 'orders_admin:dashboard' %}" class="btn pri">View order</a>
+          {% endif %}
+        </div>
+      </div>
+      {% else %}
+      <div class="card" style="text-align:center;padding:36px">
+        <div class="mu2">Select an alert to view resolution options.</div>
+      </div>
+      {% endif %}
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}

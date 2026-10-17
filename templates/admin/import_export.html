@@ -1,0 +1,143 @@
+{% extends "admin/admin_base.html" %}
+
+{% block title %}Import & Export — Admin{% endblock %}
+{% block breadcrumb %}Admin / System{% endblock %}
+{% block page_title %}Import and export{% endblock %}
+
+{% block content %}
+<div x-data="{
+  exportData: 'products',
+  exportFormat: 'csv'
+}">
+
+  <!-- Header -->
+  <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:20px">
+    <div>
+      <div class="mu2" style="font-size:12px">Admin / System</div>
+      <h1>Import and export</h1>
+      <div class="mu2">Upload product catalog CSV, validate duplicate SKUs and prices, then confirm database import</div>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  {% if messages %}
+    {% for msg in messages %}
+      <div class="card" style="padding:12px 16px;border-color:{% if msg.tags == 'error' %}#6b2420{% else %}#1f5a30{% endif %};background:{% if msg.tags == 'error' %}rgba(255,69,58,0.08){% else %}rgba(52,199,89,0.08){% endif %};margin-bottom:16px;">
+        {{ msg }}
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- 2-Col Layout -->
+  <div class="g" style="grid-template-columns: 1.5fr 1fr;">
+    
+    <!-- Left Column: Upload + Preview Table -->
+    <div class="g">
+      
+      <!-- Upload Dropzone Card -->
+      <div class="card" style="border-style:dashed;text-align:center;padding:28px 24px;">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#C6A15B" stroke-width="1.8" style="margin-bottom:10px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+        <div style="font-size:16px;font-weight:600;margin-bottom:4px">Choose a CSV product catalog file</div>
+        <div class="mu2" style="margin-bottom:16px">Format: name, price, sku (optional), cost_price (optional)</div>
+        
+        <form method="post" enctype="multipart/form-data" action="{% url 'menu:import_export' %}">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="upload_preview">
+          <input type="file" name="file" accept=".csv" required style="margin-bottom:14px;background:#1C1C20;max-width:320px;padding:8px">
+          <div>
+            <button type="submit" class="btn pri">Upload & validate preview</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Import Preview Card -->
+      <div class="card">
+        <h3>Import preview</h3>
+        {% if preview_rows %}
+        <div class="ov" style="margin-bottom:16px">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Row</th>
+                <th scope="col">Product Name</th>
+                <th scope="col">Price</th>
+                <th scope="col">SKU</th>
+                <th scope="col">Validation Result</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for r in preview_rows %}
+              <tr>
+                <td>{{ r.row }}</td>
+                <td><strong>{{ r.name }}</strong></td>
+                <td>{{ r.price|default:"[BLANK]" }}</td>
+                <td><code>{{ r.sku }}</code></td>
+                <td>
+                  <span class="b {{ r.status }}">{{ r.label }}</span>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <form method="post" action="{% url 'menu:import_export' %}">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="commit_import">
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            <a href="{% url 'menu:import_export' %}" class="btn">Cancel</a>
+            <button type="submit" class="btn pri">Import valid rows only</button>
+            <span class="mu2" style="font-size:12px">Records are saved safely to PostgreSQL database</span>
+          </div>
+        </form>
+        {% else %}
+        <div class="mu2" style="text-align:center;padding:24px">
+          Upload a CSV file above to review column validation before committing to the catalog.
+        </div>
+        {% endif %}
+      </div>
+
+    </div>
+
+    <!-- Right Column: Exporter Card -->
+    <div>
+      <div class="card">
+        <h3>Data Export</h3>
+        <p class="mu2">Export supermarket business data directly to downloadable CSV files.</p>
+        
+        <form method="get" action="{% url 'menu:import_export' %}">
+          <div class="g">
+            <div>
+              <label for="exp-dataset">Select Dataset</label>
+              <select id="exp-dataset" name="dataset" x-model="exportData">
+                <option value="products">Product Catalog (Stock, Prices, SKUs)</option>
+                <option value="orders">Sales & Orders Ledger</option>
+                <option value="customers">Customers Directory</option>
+              </select>
+            </div>
+            <div>
+              <label for="exp-format">File Format</label>
+              <select id="exp-format" name="format" x-model="exportFormat">
+                <option value="csv">CSV (Comma-Separated Values)</option>
+              </select>
+            </div>
+            <div>
+              <button type="submit" class="btn pri" style="width:100%">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                Start export
+              </button>
+            </div>
+          </div>
+        </form>
+
+        <div style="margin-top:20px;padding:12px;background:#0B0B0D;border:1px solid #303036;border-radius:6px">
+          <div class="b ok" style="margin-bottom:6px">Export engine: Online</div>
+          <div class="mu2" style="font-size:12px">All export operations are logged in the cryptographic security audit trail.</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}

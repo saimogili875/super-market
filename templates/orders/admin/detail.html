@@ -1,14 +1,9 @@
-{% extends "base.html" %}
+{% extends "admin/admin_base.html" %}
 {% load currency %}
 
-{% block title %}Order #{{ order.pk }} — Admin{% endblock %}
-{% block header_subtitle %}Order detail{% endblock %}
-
-{% block header_actions %}
-{% include "partials/admin_nav.html" with active_nav="orders" %}
-{% endblock %}
-
-{% block container_class %}app-container--wide{% endblock %}
+{% block title %}Order #{{ order.pk }} — Super Market{% endblock %}
+{% block breadcrumb %}Admin / Sales / Orders{% endblock %}
+{% block page_title %}Order #{{ order.pk }} Details{% endblock %}
 
 {% block content %}
 <div class="mb-6">

@@ -1,0 +1,114 @@
+{% extends "admin/admin_base.html" %}
+
+{% block title %}Audit Logs — Admin{% endblock %}
+{% block breadcrumb %}Admin / System{% endblock %}
+{% block page_title %}Audit logs{% endblock %}
+
+{% block content %}
+<div>
+
+  <!-- Header -->
+  <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:20px">
+    <div>
+      <div class="mu2" style="font-size:12px">Admin / System</div>
+      <h1>Audit logs</h1>
+      <div class="mu2">Read-only cryptographic audit trail of administrative security and data changes</div>
+    </div>
+    <a href="?q={{ q }}&category={{ category }}&from_date={{ from_date }}&to_date={{ to_date }}&export=csv" class="btn">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+      Export log (CSV)
+    </a>
+  </div>
+
+  <!-- Filter Card -->
+  <div class="card" style="margin-bottom:16px">
+    <form method="get" class="row">
+      <div style="flex:1;min-width:140px">
+        <label for="search-aud">Search user, action, or record</label>
+        <input type="search" id="search-aud" name="q" value="{{ q }}" placeholder="e.g. admin or PRD-101…">
+      </div>
+      <div style="flex:1;min-width:130px">
+        <label for="cat-aud">Category</label>
+        <select id="cat-aud" name="category" onchange="this.form.submit()">
+          <option value="All" {% if category == 'All' %}selected{% endif %}>All</option>
+          <option value="Logins" {% if category == 'Logins' %}selected{% endif %}>Logins</option>
+          <option value="Products" {% if category == 'Products' %}selected{% endif %}>Products</option>
+          <option value="Inventory" {% if category == 'Inventory' %}selected{% endif %}>Inventory</option>
+          <option value="Order status" {% if category == 'Order status' %}selected{% endif %}>Order status</option>
+          <option value="Payments" {% if category == 'Payments' %}selected{% endif %}>Payments</option>
+          <option value="Security" {% if category == 'Security' %}selected{% endif %}>Security</option>
+        </select>
+      </div>
+      <div style="flex:1;min-width:130px">
+        <label for="from-aud">From</label>
+        <input type="date" id="from-aud" name="from_date" value="{{ from_date }}">
+      </div>
+      <div style="flex:1;min-width:130px">
+        <label for="to-aud">To</label>
+        <input type="date" id="to-aud" name="to_date" value="{{ to_date }}">
+      </div>
+      <div>
+        <button type="submit" class="btn pri">Filter</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Audit Log Table Card -->
+  <div class="card">
+    <div class="ov">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Time</th>
+            <th scope="col">User</th>
+            <th scope="col">Action</th>
+            <th scope="col">Record</th>
+            <th scope="col">Change Details</th>
+            <th scope="col">IP Address</th>
+            <th scope="col">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for entry in logs %}
+          <tr>
+            <td class="mu2" style="font-size:12.5px">{{ entry.timestamp|date:"d M Y, H:i:s" }}</td>
+            <td>
+              <div style="font-weight:600">{{ entry.user_display }}</div>
+              <div class="mu2" style="font-size:11px">{{ entry.category }}</div>
+            </td>
+            <td><strong>{{ entry.action }}</strong></td>
+            <td>
+              {% if entry.record_id %}
+                <code style="background:#0B0B0D;border:1px solid #303036;padding:2px 6px;border-radius:4px;color:#D8B978">{{ entry.record_id }}</code>
+              {% else %}
+                <span class="mu2">—</span>
+              {% endif %}
+            </td>
+            <td style="max-width:280px;white-space:normal;color:#F5F5F7;">
+              {{ entry.change_summary|default:"—" }}
+            </td>
+            <td class="mu2" style="font-size:12px">{{ entry.ip_address|default:"127.0.0.1" }}</td>
+            <td>
+              {% if entry.status == 'Success' %}
+                <span class="b ok">Success</span>
+              {% else %}
+                <span class="b er">Failed</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="7" class="mu2" style="text-align:center;padding:24px">No audit log records match the search filter.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div style="display:flex;justify-content:space-between;margin-top:16px;align-items:center" class="mu2">
+      <span>Showing {{ logs|length }} of {{ total_count }} logged events</span>
+      <span class="mu2">All administrative actions are permanently recorded</span>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

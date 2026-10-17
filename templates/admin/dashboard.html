@@ -1,0 +1,265 @@
+{% extends "admin/admin_base.html" %}
+
+{% block title %}Supermarket Admin Dashboard{% endblock %}
+{% block breadcrumb %}Admin / Overview{% endblock %}
+{% block page_title %}Supermarket Dashboard{% endblock %}
+
+{% block content %}
+<div>
+
+  <!-- Top Hero Header -->
+  <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:24px">
+    <div>
+      <div class="mu2" style="font-size:12px">Executive Operations Center</div>
+      <h1>Supermarket Management Dashboard</h1>
+      <div class="mu2">Real-time store metrics, inventory levels, sales velocity, and alerts</div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <a href="{% url 'menu:item_create' %}" class="btn pri">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add product
+      </a>
+      <a href="{% url 'suppliers:list' %}" class="btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        New PO
+      </a>
+      <a href="{% url 'menu:import_export' %}" class="btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+        CSV Import
+      </a>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  {% if messages %}
+    {% for msg in messages %}
+      <div class="card" style="padding:12px 16px;border-color:{% if msg.tags == 'error' %}#6b2420{% else %}#1f5a30{% endif %};background:{% if msg.tags == 'error' %}rgba(255,69,58,0.08){% else %}rgba(52,199,89,0.08){% endif %};margin-bottom:16px;">
+        {{ msg }}
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- KPI Tiles Grid -->
+  <div class="g" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin-bottom: 24px;">
+    <div class="kpi-tile">
+      <span class="kpi-title">Active Products</span>
+      <span class="kpi-value">{{ active_products }}</span>
+      <span class="kpi-sub">Total in catalog: {{ total_products }}</span>
+    </div>
+    <div class="kpi-tile">
+      <span class="kpi-title">Today's Sales</span>
+      <span class="kpi-value" style="color:#C6A15B">₹{{ today_sales }}</span>
+      <span class="kpi-sub">{{ today_orders_count }} orders processed today</span>
+    </div>
+    <div class="kpi-tile">
+      <span class="kpi-title">Registered Customers</span>
+      <span class="kpi-value">{{ total_customers }}</span>
+      <span class="kpi-sub">Delivery & In-store CRM</span>
+    </div>
+    <div class="kpi-tile" style="border-color:{% if low_stock_count > 0 %}#6B4A14{% else %}#303036{% endif %}">
+      <span class="kpi-title">Low Stock Items</span>
+      <span class="kpi-value" style="color:#FFB340">{{ low_stock_count }}</span>
+      <span class="kpi-sub">{{ out_of_stock_count }} items out of stock</span>
+    </div>
+    <div class="kpi-tile" style="border-color:{% if near_expiry_count > 0 %}#6B2420{% else %}#303036{% endif %}">
+      <span class="kpi-title">Near-Expiry Items</span>
+      <span class="kpi-value" style="color:#FF453A">{{ near_expiry_count }}</span>
+      <span class="kpi-sub">Expires within 7 days</span>
+    </div>
+  </div>
+
+  <!-- Operations 2-Col Grid -->
+  <div class="g" style="grid-template-columns: 1.6fr 1fr;">
+    
+    <!-- Left Column: Priority Attention Tables -->
+    <div class="g">
+      
+      <!-- Low Stock & Near Expiry Table -->
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <h3>Stock & Expiry Attention Needed</h3>
+          <a href="{% url 'menu:inventory' %}" class="mu2" style="font-size:12px;text-decoration:none">View inventory &rarr;</a>
+        </div>
+        <div class="ov">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Product</th>
+                <th scope="col">Stock</th>
+                <th scope="col">Reorder Level</th>
+                <th scope="col">Expiry</th>
+                <th scope="col">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for itm in low_stock_items %}
+              <tr>
+                <td>
+                  <strong>{{ itm.name }}</strong>
+                  <div class="mu2" style="font-size:11px">{{ itm.sku|default:"No SKU" }} · {{ itm.category.name }}</div>
+                </td>
+                <td style="font-weight:600;color:#FFB340">{{ itm.stock_quantity }} {{ itm.unit }}</td>
+                <td>{{ itm.low_stock_threshold }} {{ itm.unit }}</td>
+                <td class="mu2">{{ itm.expiry_date|default:"—"|date:"d M Y" }}</td>
+                <td>
+                  {% if itm.is_out_of_stock %}
+                    <span class="b er">Out of stock</span>
+                  {% else %}
+                    <span class="b wn">Low stock</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% empty %}
+                {% for itm in near_expiry_items %}
+                <tr>
+                  <td>
+                    <strong>{{ itm.name }}</strong>
+                    <div class="mu2" style="font-size:11px">{{ itm.sku }} · {{ itm.category.name }}</div>
+                  </td>
+                  <td>{{ itm.stock_quantity }} {{ itm.unit }}</td>
+                  <td>{{ itm.low_stock_threshold }} {{ itm.unit }}</td>
+                  <td style="color:#FF453A;font-weight:600">{{ itm.expiry_date|date:"d M Y" }}</td>
+                  <td><span class="b er">Expiring</span></td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="5" class="mu2" style="text-align:center;padding:20px">No low-stock or expiring items. All shelves are healthy.</td>
+                </tr>
+                {% endfor %}
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Recent Transactions Table -->
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <h3>Recent Transactions</h3>
+          <a href="{% url 'payments:list' %}" class="mu2" style="font-size:12px;text-decoration:none">All payments &rarr;</a>
+        </div>
+        <div class="ov">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Transaction ID</th>
+                <th scope="col">Order / Customer</th>
+                <th scope="col">Method</th>
+                <th scope="col">Amount</th>
+                <th scope="col">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for txn in recent_transactions %}
+              <tr>
+                <td><strong>{{ txn.txn_id }}</strong></td>
+                <td>
+                  <div>{{ txn.order_ref|default:"Walk-in" }}</div>
+                  <div class="mu2" style="font-size:11px">{{ txn.customer_name|default:"Customer" }}</div>
+                </td>
+                <td>{{ txn.method }}</td>
+                <td style="font-weight:600">₹{{ txn.amount }}</td>
+                <td>
+                  {% if txn.status == 'Paid' %}
+                    <span class="b ok">Paid</span>
+                  {% elif txn.status == 'Pending' %}
+                    <span class="b wn">Pending</span>
+                  {% elif txn.status == 'Refunded' %}
+                    <span class="b mu">Refunded</span>
+                  {% else %}
+                    <span class="b er">{{ txn.status }}</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="5" class="mu2" style="text-align:center;padding:16px">No payment transactions recorded yet.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Right Column: Quick Action Cards + Open POs -->
+    <div class="g">
+      
+      <!-- Open Purchase Orders -->
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <h3>Procurement & POs</h3>
+          <a href="{% url 'suppliers:list' %}" class="mu2" style="font-size:12px;text-decoration:none">Suppliers &rarr;</a>
+        </div>
+        <div class="ov">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">PO #</th>
+                <th scope="col">Supplier</th>
+                <th scope="col">Amount</th>
+                <th scope="col">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for po in open_pos %}
+              <tr>
+                <td><strong>{{ po.po_number }}</strong></td>
+                <td>
+                  <div>{{ po.supplier.name|truncatechars:15 }}</div>
+                  <div class="mu2" style="font-size:11px">{{ po.product_name|truncatechars:14 }}</div>
+                </td>
+                <td>₹{{ po.total_cost }}</td>
+                <td>
+                  {% if po.status == 'Submitted' %}
+                    <span class="b gd">Submitted</span>
+                  {% elif po.status == 'Partial' %}
+                    <span class="b wn">Partial</span>
+                  {% else %}
+                    <span class="b mu">{{ po.status }}</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="4" class="mu2" style="text-align:center;padding:16px">No open purchase orders.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <div style="margin-top:14px">
+          <a href="{% url 'suppliers:list' %}" class="btn" style="width:100%">Create purchase order</a>
+        </div>
+      </div>
+
+      <!-- Quick Supermarket Shortcuts -->
+      <div class="card">
+        <h3>Operational Shortcuts</h3>
+        <div class="g">
+          <a href="{% url 'orders_admin:dashboard' %}" class="btn" style="justify-content:flex-start">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
+            Live Grocery Orders
+          </a>
+          <a href="{% url 'menu:inventory' %}" class="btn" style="justify-content:flex-start">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/></svg>
+            Stock Corrections & Wastage
+          </a>
+          <a href="{% url 'analytics:dashboard' %}" class="btn" style="justify-content:flex-start">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+            Financial & Valuation Reports
+          </a>
+          <a href="{% url 'audit:list' %}" class="btn" style="justify-content:flex-start">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            Security Audit Trail
+          </a>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}

@@ -10,6 +10,7 @@ app_name = "accounts_admin"
 
 urlpatterns = [
     path("", views_admin.agents, name="agents"),
+    path("customers/", views_admin.customers_directory, name="customers"),
     path("create/", views_admin.agent_create, name="agent_create"),
     path("<int:pk>/availability/", views_admin.agent_toggle_availability, name="agent_toggle"),
     path("<int:pk>/deactivate/", views_admin.agent_deactivate, name="agent_deactivate"),

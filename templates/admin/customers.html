@@ -1,0 +1,91 @@
+{% extends "admin/admin_base.html" %}
+
+{% block title %}Customers Directory — Admin{% endblock %}
+{% block breadcrumb %}Admin / Sales{% endblock %}
+{% block page_title %}Customers Management{% endblock %}
+
+{% block content %}
+<div>
+
+  <!-- Header -->
+  <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:20px">
+    <div>
+      <div class="mu2" style="font-size:12px">Admin / Sales</div>
+      <h1>Customers Management</h1>
+      <div class="mu2">Manage customer profiles, saved delivery addresses, order counts, and lifetime store spending</div>
+    </div>
+    <a href="{% url 'menu:import_export' %}?dataset=customers" class="btn">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+      Export customers (CSV)
+    </a>
+  </div>
+
+  <!-- Search Card -->
+  <div class="card" style="margin-bottom:16px">
+    <form method="get" class="row">
+      <div style="flex:1;min-width:240px">
+        <label for="cust-search">Search customers</label>
+        <input type="search" id="cust-search" name="q" value="{{ q }}" placeholder="Search by name, phone, email, or address…">
+      </div>
+      <div>
+        <button type="submit" class="btn pri">Search</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Customers Table Card -->
+  <div class="card">
+    <div class="ov">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Customer</th>
+            <th scope="col">Contact</th>
+            <th scope="col">Delivery Address</th>
+            <th scope="col">Orders Count</th>
+            <th scope="col">Total Spent</th>
+            <th scope="col">Registered</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in customers %}
+          <tr>
+            <td>
+              <div style="font-weight:600;font-size:14px;color:#F5F5F7">
+                {{ row.customer.name|default:"Supermarket Customer" }}
+              </div>
+              <div class="mu2" style="font-size:11px">ID: CUST-{{ row.customer.pk }}</div>
+            </td>
+            <td>
+              <div>{{ row.customer.phone }}</div>
+              <div class="mu2" style="font-size:12px">{{ row.customer.email }}</div>
+            </td>
+            <td style="max-width:260px;white-space:normal;font-size:12.5px;color:#A1A1AA;">
+              {{ row.customer.default_address|default:"No saved address" }}
+            </td>
+            <td>
+              <span class="b ok">{{ row.total_orders }} orders</span>
+            </td>
+            <td style="font-weight:700;color:#D8B978;font-size:14px">
+              ₹{{ row.total_spent }}
+            </td>
+            <td class="mu2" style="font-size:12px">
+              {{ row.customer.created_at|date:"d M Y" }}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="6" class="mu2" style="text-align:center;padding:32px">No customer accounts match your search filter.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div style="display:flex;justify-content:space-between;margin-top:14px;align-items:center" class="mu2">
+      <span>Showing {{ customers|length }} of {{ total_count }} registered customers</span>
+      <span class="mu2">Customer profiles update automatically on order checkout</span>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

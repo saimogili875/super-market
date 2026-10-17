@@ -88,3 +88,57 @@ def contact(request):
 
     return render(request, "pages/contact.html", {"form": form})
 
+
+def admin_settings(request):
+    """Supermarket store profile and operational configuration."""
+    from django.conf import settings as django_settings
+    from django.contrib import messages
+    from django.shortcuts import redirect
+    from apps.audit.models import log_audit_event
+    from apps.core.permissions import role_required
+
+    if not request.user.is_authenticated or not getattr(request.user, "is_admin_role", False):
+        from django.core.exceptions import PermissionDenied
+        raise PermissionDenied
+
+    if request.method == "POST":
+        brand_name = request.POST.get("brand_name", "").strip()
+        brand_tagline = request.POST.get("brand_tagline", "").strip()
+        brand_phone = request.POST.get("brand_phone", "").strip()
+        brand_email = request.POST.get("brand_email", "").strip()
+        brand_location = request.POST.get("brand_location", "").strip()
+        tax_rate = request.POST.get("tax_rate", "5.0").strip()
+
+        request.session["custom_brand_settings"] = {
+            "name": brand_name,
+            "tagline": brand_tagline,
+            "phone": brand_phone,
+            "email": brand_email,
+            "location": brand_location,
+            "tax_rate": tax_rate,
+        }
+
+        log_audit_event(
+            request=request,
+            action="Settings updated",
+            category="Security",
+            change_summary=f"Updated store profile: {brand_name}, Tax: {tax_rate}%",
+        )
+        messages.success(request, "Supermarket settings updated successfully.")
+        return redirect("core:admin_settings")
+
+    custom_cfg = request.session.get("custom_brand_settings", {})
+    return render(
+        request,
+        "admin/settings.html",
+        {
+            "brand_name": custom_cfg.get("name") or getattr(django_settings, "BRAND_NAME", "FreshMart"),
+            "brand_tagline": custom_cfg.get("tagline") or getattr(django_settings, "BRAND_TAGLINE", "Fresh groceries, delivered fast"),
+            "brand_phone": custom_cfg.get("phone") or getattr(django_settings, "BRAND_PHONE", "6281238410"),
+            "brand_email": custom_cfg.get("email") or getattr(django_settings, "BRAND_EMAIL", "support@freshmart.in"),
+            "brand_location": custom_cfg.get("location") or getattr(django_settings, "BRAND_LOCATION", "Hyderabad"),
+            "tax_rate": custom_cfg.get("tax_rate", "5.0"),
+            "active_nav": "settings",
+        },
+    )
+

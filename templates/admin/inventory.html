@@ -1,0 +1,278 @@
+{% extends "admin/admin_base.html" %}
+
+{% block title %}Inventory & Expiry Management — Admin{% endblock %}
+{% block breadcrumb %}Admin / Catalog{% endblock %}
+{% block page_title %}Inventory and Expiry Management{% endblock %}
+
+{% block content %}
+<div x-data="{
+  showAdjustModal: false,
+  selectedItemId: '{{ all_products.0.pk|default:'' }}',
+  selectedItemName: '{{ all_products.0.name|default:'' }}',
+  movementType: 'CORRECTION',
+  adjustQty: 10,
+  adjustNotes: '',
+  openAdjust(id, name) {
+    this.selectedItemId = id;
+    this.selectedItemName = name;
+    this.showAdjustModal = true;
+  }
+}">
+
+  <!-- Header -->
+  <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:20px">
+    <div>
+      <div class="mu2" style="font-size:12px">Admin / Catalog</div>
+      <h1>Inventory and Expiry Management</h1>
+      <div class="mu2">Stock-in, stock-out records, wastage adjustments, and perishable expiry tracking</div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn pri" @click="showAdjustModal = true">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+        Adjust stock
+      </button>
+      <a href="{% url 'suppliers:list' %}" class="btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Purchase orders
+      </a>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  {% if messages %}
+    {% for msg in messages %}
+      <div class="card" style="padding:12px 16px;border-color:{% if msg.tags == 'error' %}#6b2420{% else %}#1f5a30{% endif %};background:{% if msg.tags == 'error' %}rgba(255,69,58,0.08){% else %}rgba(52,199,89,0.08){% endif %};margin-bottom:16px;">
+        {{ msg }}
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- 2-Col Layout -->
+  <div class="g" style="grid-template-columns: 1.5fr 1fr;">
+    
+    <!-- Left Column: Critical Stock & Expiry Tables -->
+    <div class="g">
+      
+      <!-- Low Stock Alerts Table -->
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <h3>Low Stock & Out-of-Stock Products</h3>
+          <span class="mu2" style="font-size:12px">{{ low_stock_items|length }} alerts</span>
+        </div>
+        <div class="ov">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Product</th>
+                <th scope="col">Available</th>
+                <th scope="col">Threshold</th>
+                <th scope="col">Status</th>
+                <th scope="col" style="text-align:right">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for itm in low_stock_items %}
+              <tr>
+                <td>
+                  <strong>{{ itm.name }}</strong>
+                  <div class="mu2" style="font-size:11px">{{ itm.sku }} · {{ itm.category.name }}</div>
+                </td>
+                <td style="font-weight:700;{% if itm.is_out_of_stock %}color:#FF453A{% else %}color:#FFB340{% endif %}">
+                  {{ itm.stock_quantity }} {{ itm.unit }}
+                </td>
+                <td>{{ itm.low_stock_threshold }} {{ itm.unit }}</td>
+                <td>
+                  {% if itm.is_out_of_stock %}
+                    <span class="b er">Out of stock</span>
+                  {% else %}
+                    <span class="b wn">Low stock</span>
+                  {% endif %}
+                </td>
+                <td style="text-align:right">
+                  <button type="button" class="btn btn-sm" @click="openAdjust('{{ itm.pk }}', '{{ itm.name|escapejs }}')">Adjust</button>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="5" class="mu2" style="text-align:center;padding:20px">No low stock items. All inventory levels are above thresholds.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Expiry Alerts Table -->
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <h3>Perishable Expiry Tracking</h3>
+          <span class="mu2" style="font-size:12px">{{ near_expiry_items|length }} items</span>
+        </div>
+        <div class="ov">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Product</th>
+                <th scope="col">Stock</th>
+                <th scope="col">Expiry Date</th>
+                <th scope="col">Alert Level</th>
+                <th scope="col" style="text-align:right">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for itm in near_expiry_items %}
+              <tr>
+                <td>
+                  <strong>{{ itm.name }}</strong>
+                  <div class="mu2" style="font-size:11px">{{ itm.sku }}</div>
+                </td>
+                <td>{{ itm.stock_quantity }} {{ itm.unit }}</td>
+                <td style="font-weight:600;{% if itm.is_expired %}color:#FF453A{% else %}color:#FFB340{% endif %}">
+                  {{ itm.expiry_date|date:"d M Y" }}
+                </td>
+                <td>
+                  {% if itm.is_expired %}
+                    <span class="b er">EXPIRED</span>
+                  {% else %}
+                    <span class="b wn">Expiring soon</span>
+                  {% endif %}
+                </td>
+                <td style="text-align:right">
+                  <button type="button" class="btn btn-sm" @click="openAdjust('{{ itm.pk }}', '{{ itm.name|escapejs }}')">Waste / Correct</button>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="5" class="mu2" style="text-align:center;padding:20px">No near-expiry or expired items found.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Right Column: Quick Adjustment Form & Movement Log -->
+    <div class="g">
+      
+      <!-- Quick Adjustment Card -->
+      <div class="card">
+        <h3>Stock Adjustment</h3>
+        <form method="post" action="{% url 'menu:inventory' %}">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="stock_adjust">
+          <div class="g">
+            <div>
+              <label for="inv-item">Product</label>
+              <select id="inv-item" name="item_id" x-model="selectedItemId" required>
+                {% for item in all_products %}
+                  <option value="{{ item.pk }}">{{ item.name }} (Stock: {{ item.stock_quantity }} {{ item.unit }})</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="row">
+              <div style="flex:1;min-width:120px">
+                <label for="inv-type">Movement type</label>
+                <select id="inv-type" name="movement_type" x-model="movementType">
+                  <option value="RESTOCK">Restock / Direct Delivery</option>
+                  <option value="WASTE">Damaged / Expired / Wastage</option>
+                  <option value="CORRECTION">Audit Count Correction</option>
+                  <option value="RETURN">Customer Return</option>
+                </select>
+              </div>
+              <div style="flex:1;min-width:110px">
+                <label for="inv-qty">Qty change (+/-)</label>
+                <input type="number" id="inv-qty" name="quantity" x-model="adjustQty" placeholder="+10 or -5" required>
+              </div>
+            </div>
+            <div>
+              <label for="inv-notes">Reason / Reference notes</label>
+              <input type="text" id="inv-notes" name="notes" x-model="adjustNotes" placeholder="e.g. Broken packaging or shelf count mismatch">
+            </div>
+            <div>
+              <button type="submit" class="btn pri" style="width:100%">Save stock adjustment</button>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <!-- Recent Movements Log -->
+      <div class="card">
+        <h3>Stock Movement History</h3>
+        <div class="ov">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Time</th>
+                <th scope="col">Item</th>
+                <th scope="col">Change</th>
+                <th scope="col">New Stock</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for mov in recent_movements %}
+              <tr>
+                <td class="mu2" style="font-size:11px">{{ mov.created_at|date:"d M, H:i" }}</td>
+                <td>
+                  <div>{{ mov.item.name|truncatechars:18 }}</div>
+                  <div class="mu2" style="font-size:10px">{{ mov.get_movement_type_display }}</div>
+                </td>
+                <td style="font-weight:700;{% if mov.quantity > 0 %}color:#34C759{% else %}color:#FF453A{% endif %}">
+                  {% if mov.quantity > 0 %}+{% endif %}{{ mov.quantity }}
+                </td>
+                <td style="font-weight:600">{{ mov.resulting_quantity }}</td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="4" class="mu2" style="text-align:center;padding:16px">No stock movements recorded yet.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- Modal for Stock Adjust Triggered from Row Buttons -->
+  <div x-cloak x-show="showAdjustModal" class="mobile-backdrop" @click="showAdjustModal = false"></div>
+  <div x-cloak x-show="showAdjustModal" class="card" role="dialog" aria-modal="true" style="position:fixed;top:50%;left:50%;transform:translate(-50%, -50%);width:90%;max-width:440px;z-index:102;border-color:#C6A15B">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <h3 x-text="'Adjust: ' + selectedItemName">Adjust Stock</h3>
+      <button @click="showAdjustModal = false" style="background:none;border:none;color:#A1A1AA;font-size:20px;cursor:pointer">&times;</button>
+    </div>
+    <form method="post" action="{% url 'menu:inventory' %}">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="stock_adjust">
+      <input type="hidden" name="item_id" :value="selectedItemId">
+      <div class="g">
+        <div>
+          <label>Movement reason</label>
+          <select name="movement_type" x-model="movementType">
+            <option value="RESTOCK">Restock / Direct Delivery (+)</option>
+            <option value="WASTE">Damaged / Expired / Wastage (-)</option>
+            <option value="CORRECTION">Audit Count Correction</option>
+            <option value="RETURN">Customer Return (+)</option>
+          </select>
+        </div>
+        <div>
+          <label>Quantity change (use negative for deduction, e.g. -5)</label>
+          <input type="number" name="quantity" x-model="adjustQty" required>
+        </div>
+        <div>
+          <label>Audit notes</label>
+          <input type="text" name="notes" x-model="adjustNotes" placeholder="Reason for inventory shift">
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:10px">
+          <button type="button" class="btn" @click="showAdjustModal = false">Cancel</button>
+          <button type="submit" class="btn pri">Update stock</button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+</div>
+{% endblock %}

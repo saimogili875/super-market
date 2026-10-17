@@ -108,3 +108,50 @@ def _is_available(agent) -> bool:
     """True if the agent currently has an available AgentProfile."""
     profile = getattr(agent, "agent", None)
     return bool(profile and profile.is_available)
+
+
+@require_GET
+@role_required("ADMIN")
+def customers_directory(request):
+    """Customer CRM directory showing registered delivery & in-store customers."""
+    from decimal import Decimal
+    from django.db import models
+    from apps.customer_auth.models import Customer
+    from apps.orders.models import Order
+
+    q = request.GET.get("q", "").strip()
+    customers_qs = Customer.objects.all().order_by("-created_at")
+
+    if q:
+        customers_qs = customers_qs.filter(
+            models.Q(name__icontains=q)
+            | models.Q(phone__icontains=q)
+            | models.Q(email__icontains=q)
+            | models.Q(default_address__icontains=q)
+        )
+
+    customer_list = []
+    for c in customers_qs[:100]:
+        orders = Order.objects.filter(delivery_customer=c)
+        total_orders = orders.count()
+        total_spent = orders.filter(status__in=["PAID", "READY", "COLLECT"]).aggregate(
+            s=models.Sum("total_amount")
+        )["s"] or Decimal("0.00")
+
+        customer_list.append({
+            "customer": c,
+            "total_orders": total_orders,
+            "total_spent": total_spent,
+        })
+
+    return render(
+        request,
+        "admin/customers.html",
+        {
+            "customers": customer_list,
+            "total_count": customers_qs.count(),
+            "q": q,
+            "active_nav": "customers",
+        },
+    )
+

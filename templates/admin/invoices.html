@@ -1,0 +1,181 @@
+{% extends "admin/admin_base.html" %}
+
+{% block title %}Invoices & Receipts — Admin{% endblock %}
+{% block breadcrumb %}Admin / Sales{% endblock %}
+{% block page_title %}Invoices and receipts{% endblock %}
+
+{% block content %}
+<div>
+
+  <!-- Header -->
+  <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:20px">
+    <div>
+      <div class="mu2" style="font-size:12px">Admin / Sales</div>
+      <h1>Invoices and receipts</h1>
+      <div class="mu2">Preview, print tax invoices, and download customer receipts</div>
+    </div>
+    <a href="{% url 'menu:import_export' %}" class="btn">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+      Export list
+    </a>
+  </div>
+
+  <!-- 2-Col Layout -->
+  <div class="g" style="grid-template-columns: 1fr 1fr;">
+    
+    <!-- Left Column: Invoices List -->
+    <div class="card">
+      <form method="get" class="row" style="margin-bottom:14px">
+        <div style="flex:1;min-width:140px">
+          <label for="search-inv">Search invoice or customer</label>
+          <input type="search" id="search-inv" name="q" value="{{ q }}" placeholder="e.g. INV-1002 or name…">
+        </div>
+        <div>
+          <button type="submit" class="btn pri">Search</button>
+        </div>
+      </form>
+
+      <div class="ov">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Invoice</th>
+              <th scope="col">Customer</th>
+              <th scope="col">Amount</th>
+              <th scope="col">Payment</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for ord in invoices %}
+            <tr style="cursor:pointer;{% if selected_order.pk == ord.pk %}background:rgba(198,161,91,0.06);border-left:2px solid #C6A15B;{% endif %}" onclick="window.location.href='?q={{ q }}&selected={{ ord.pk }}'">
+              <td>
+                <strong>INV-{{ ord.pk }}</strong>
+                <div class="mu2" style="font-size:11px">{{ ord.created_at|date:"d M Y, H:i" }}</div>
+              </td>
+              <td>
+                <div>{{ ord.contact_name|default:ord.customer.username|default:"Customer" }}</div>
+                <div class="mu2" style="font-size:11px">{{ ord.contact_phone|default:"In-store Counter" }}</div>
+              </td>
+              <td style="font-weight:600">₹{{ ord.total_amount }}</td>
+              <td>
+                {% if ord.status == 'PAID' or ord.status == 'READY' or ord.status == 'COLLECT' %}
+                  <span class="b ok">Paid</span>
+                {% elif ord.status == 'CANCEL' %}
+                  <span class="b mu">Cancelled</span>
+                {% else %}
+                  <span class="b wn">Pending</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="4" class="mu2" style="text-align:center;padding:24px">No orders found matching criteria.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Right Column: Printable Invoice Preview -->
+    <div>
+      {% if selected_order %}
+      <!-- Thermal / Printable Tax Invoice Container -->
+      <div id="printable-receipt" style="background:#F5F5F7;color:#0B0B0D;border-radius:8px;padding:28px;margin-bottom:14px;box-shadow:0 4px 16px rgba(0,0,0,0.4)">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #0B0B0D;padding-bottom:12px;margin-bottom:12px">
+          <div>
+            <h2 style="color:#0B0B0D;margin:0;font-size:20px;font-weight:800;letter-spacing:-0.02em;">{{ BRAND_NAME|default:"FRESHMART SUPERMARKET"|upper }}</h2>
+            <div style="color:#555;font-size:12px;margin-top:3px">{{ BRAND_LOCATION|default:"Store #1, Central Road, Hyderabad" }} · Tel: {{ BRAND_PHONE|default:"6281238410" }}</div>
+          </div>
+          <div style="text-align:right">
+            <strong style="font-size:15px;color:#0B0B0D">TAX INVOICE</strong>
+            <div style="font-size:12px;color:#555;margin-top:3px">INV-{{ selected_order.pk }}</div>
+          </div>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:#555;margin-bottom:16px;">
+          <div>Billed to: <strong>{{ selected_order.contact_name|default:selected_order.customer.username|default:"Walk-in Customer" }}</strong> ({{ selected_order.contact_phone|default:"POS Counter" }})</div>
+          <div>Date: <strong>{{ selected_order.created_at|date:"d M Y, H:i" }}</strong></div>
+        </div>
+
+        <table style="color:#0B0B0D;margin-bottom:14px">
+          <thead>
+            <tr style="border-bottom:1px solid #CCC">
+              <th scope="col" style="color:#333;padding:6px 0;font-size:11px">Item Description</th>
+              <th scope="col" style="color:#333;padding:6px 8px;text-align:center;font-size:11px">Qty</th>
+              <th scope="col" style="color:#333;padding:6px 8px;text-align:right;font-size:11px">Price</th>
+              <th scope="col" style="color:#333;padding:6px 0;text-align:right;font-size:11px">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for itm in selected_order.items.all %}
+            <tr style="border-bottom:1px dashed #DDD">
+              <td style="color:#0B0B0D;padding:8px 0;font-size:13px">{{ itm.item.name }}</td>
+              <td style="color:#0B0B0D;padding:8px 8px;text-align:center;font-size:13px">{{ itm.quantity }}</td>
+              <td style="color:#0B0B0D;padding:8px 8px;text-align:right;font-size:13px">₹{{ itm.unit_price }}</td>
+              <td style="color:#0B0B0D;padding:8px 0;text-align:right;font-weight:600;font-size:13px">₹{{ itm.line_total }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="4" style="color:#555;text-align:center;padding:12px">General Grocery Items</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+
+        <div style="border-top:1px solid #0B0B0D;padding-top:10px;display:flex;flex-direction:column;gap:4px">
+          <div style="display:flex;justify-content:space-between;font-size:12px;color:#555">
+            <span>Items Subtotal:</span>
+            <span>₹{{ subtotal|default:selected_order.total_amount }}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;color:#555">
+            <span>Applicable GST (Included):</span>
+            <span>5.0%</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:16px;font-weight:800;color:#0B0B0D;border-top:1px dashed #999;padding-top:6px;margin-top:4px">
+            <span>Final Amount:</span>
+            <span>₹{{ selected_order.total_amount }}</span>
+          </div>
+        </div>
+
+        <div style="margin-top:16px;padding-top:10px;border-top:1px solid #CCC;display:flex;justify-content:space-between;font-size:12px;color:#444">
+          <span>Payment Status: <strong style="color:#1F5A30">PAID & VERIFIED</strong></span>
+          <span>Order Type: <strong>{{ selected_order.get_order_type_display }}</strong></span>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px">
+        <button class="btn" onclick="printReceipt()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+          Print receipt
+        </button>
+        <a href="{% url 'orders_admin:receipt' selected_order.pk %}" target="_blank" class="btn pri">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+          Download / Open full PDF
+        </a>
+      </div>
+      {% else %}
+      <div class="card" style="text-align:center;padding:48px">
+        <div class="mu2">Select an invoice on the left to preview receipt details.</div>
+      </div>
+      {% endif %}
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+function printReceipt() {
+  const receiptEl = document.getElementById('printable-receipt');
+  if (!receiptEl) return;
+  const printWindow = window.open('', '_blank', 'width=600,height=700');
+  printWindow.document.write('<html><head><title>Print Tax Invoice</title><style>body{font-family:system-ui,-apple-system,sans-serif;margin:20px;color:#000;}table{width:100%;border-collapse:collapse;}th,td{padding:8px 4px;font-size:12px;}@media print{@page{margin:10mm;}}</style></head><body>');
+  printWindow.document.write(receiptEl.innerHTML);
+  printWindow.document.write('</body></html>');
+  printWindow.document.close();
+  printWindow.focus();
+  setTimeout(() => { printWindow.print(); }, 250);
+}
+</script>
+{% endblock %}

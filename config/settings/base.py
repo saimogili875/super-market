@@ -36,11 +36,16 @@ INSTALLED_APPS = [
     # project apps
     "apps.accounts",
     "apps.analytics",
+    "apps.audit",
     "apps.core",
+    "apps.coupons",
     "apps.customer_auth",
     "apps.menu",
+    "apps.notifications",
     "apps.orders",
+    "apps.payments",
     "apps.realtime",
+    "apps.suppliers",
     "apps.tables",
 ]
 
@@ -74,6 +79,7 @@ TEMPLATES = [
                 "django.contrib.messages.context_processors.messages",
                 "apps.orders.context_processors.delivery_cart",
                 "apps.core.context_processors.brand_context",
+                "apps.core.context_processors.admin_context",
             ],
         },
     },
