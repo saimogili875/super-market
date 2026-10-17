@@ -16,7 +16,7 @@ admin.site.login = admin_login(admin.site.login)
 
 urlpatterns = [
     # Admin-scoped app endpoints must precede admin.site.urls so they resolve first.
-    path(f"{_admin_path}menu/", include("apps.menu.urls")),
+    path(_admin_path, include("apps.menu.urls")),
     path(f"{_admin_path}orders/", include("apps.orders.urls_admin")),
     path(f"{_admin_path}accounts/", include("apps.analytics.urls")),
     path(f"{_admin_path}agents/", include("apps.accounts.urls_admin")),
