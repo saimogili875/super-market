@@ -22,6 +22,44 @@
   --agent-gray-text: #4A554F;
 }
 
+[data-theme="dark"] {
+  --agent-brand: #22c55e;
+  --agent-brand-hover: #16a34a;
+  --agent-brand-light: #163824;
+  --agent-bg: #0c1510;
+  --agent-text: #f0fdf4;
+  --agent-muted: #94a39b;
+  --agent-border: #22352a;
+  --agent-card: #14221a;
+  --agent-danger: #f87171;
+  --agent-danger-border: #b91c1c;
+  --agent-danger-bg: #450a0a;
+  --agent-warn-bg: #451a03;
+  --agent-warn-text: #fde047;
+  --agent-warn-border: #78350f;
+  --agent-blue-bg: #172554;
+  --agent-blue-text: #93c5fd;
+  --agent-gray-bg: #1f2937;
+  --agent-gray-text: #9ca3af;
+}
+
+[data-theme="dark"] .nav,
+[data-theme="dark"] .c-hd,
+[data-theme="dark"] .c-ft,
+[data-theme="dark"] .card {
+  background: var(--agent-card) !important;
+  color: var(--agent-text) !important;
+  border-color: var(--agent-border) !important;
+}
+
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+  background-color: #0d1a12 !important;
+  color: #f0fdf4 !important;
+  border-color: #22352a !important;
+}
+
 body.agent-body {
   margin: 0;
   font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;

@@ -10,9 +10,14 @@
     <p class="m">{{ greeting }}</p>
     <h1>{{ agent_name }}</h1>
   </div>
-  <a href="{% url 'orders_agent:notifications' %}" class="btn s" id="btn-alerts" style="min-height: 40px; padding: 0 14px; font-size: 13px;">
-    🔔 Alerts {% if unread_notifs %}({{ unread_notifs }}){% endif %}
-  </a>
+  <div style="display:flex;align-items:center;gap:8px;">
+    <button type="button" class="btn s freshmart-theme-toggle" id="themeToggleBtn" onclick="toggleFreshMartTheme()" style="min-height: 40px; padding: 0 12px;" aria-label="Toggle dark mode">
+      <span id="themeToggleIcon">&#127769;</span>
+    </button>
+    <a href="{% url 'orders_agent:notifications' %}" class="btn s" id="btn-alerts" style="min-height: 40px; padding: 0 14px; font-size: 13px;">
+      🔔 Alerts {% if unread_notifs %}({{ unread_notifs }}){% endif %}
+    </a>
+  </div>
 </div>
 
 <!-- Availability Card -->

@@ -118,57 +118,101 @@ def freshmart_users(db):
 # =========================================================================
 
 @pytest.mark.django_db
-def test_home_page_dmart_layout_and_brand(client, freshmart_catalog):
-    """Home page must render FreshMart brand, announcement bar, sticky header, and rails."""
+def test_home_page_minimal_marketing_and_no_products(client, freshmart_catalog):
+    """Home page must render clean minimal marketing page with zero products/prices/categories."""
     resp = client.get(reverse("home"))
     assert resp.status_code == 200
     html = resp.content.decode()
 
-    # 1. Brand identity
+    # 1. Brand identity and tagline
     assert "FreshMart" in html
-    assert "Fresh food. Everyday low prices." in html or "Everyday Low Prices" in html
+    assert "Fresh food. Everyday low prices." in html
 
-    # 2. Top announcement bar
-    assert "top-announcement-bar" in html
-    assert "FRESH20" in html
+    # 2. Header with dark-mode toggle and prominent Login button
+    assert "themeToggleBtn" in html
+    assert 'href="/login/"' in html
 
-    # 3. Sticky header navigation
-    assert "store-brand-logo" in html
-    assert "location-picker-btn" in html
-    assert "Deliver to" in html
-    assert 'href="/login/"' in html  # Separate full-page navigation to /login/
+    # 3. Hero CTA buttons
+    assert "Sign In to Shop" in html
+    assert "Create Account" in html
+    assert "/customer/auth/signup/" in html
 
-    # 4. DMart-style category search dropdown
-    assert "search-category-dropdown" in html
-    assert "All Categories" in html
+    # 4. 3 Value points
+    assert "Fresh" in html
+    assert "Fast Delivery" in html or "Fast delivery" in html
+    assert "Fair Prices" in html or "Fair prices" in html
 
-    # 5. Hero banner carousel (3 offers)
-    assert "hero-carousel-container" in html
-    assert "Mega Grocery Carnival" in html
-    assert "Farm-Fresh Fruits &amp; Veggies" in html or "Farm-Fresh Fruits" in html
-    assert "Household &amp; Cleaning Bumper Deals" in html or "Household &amp; Cleaning" in html
+    # 5. Support footer
+    assert "support@freshmart.com" in html
+    assert "+91 1800 266 2255" in html or "1800 266 2255" in html
 
-    # 6. Category icon strip
-    assert "category-strip" in html
-    assert "Fruits and Vegetables" in html
+    # 6. ZERO products, prices, categories, or cart exposed to logged-out visitors
+    assert "dmart-card" not in html
+    assert "add-to-cart" not in html
+    assert "SKU-" not in html
+    assert "Fresh Red Onions" not in html
+    assert "Basmati Rice" not in html
 
-    # 7. Today's Best Deals with MRP strike-through and savings
-    assert "Today's Best Deals" in html
-    assert "dmart-card" in html
-    assert "% OFF" in html
-    assert "dmart-effective-price" in html
-    assert "dmart-mrp" in html
 
-    # 8. Trust pillars & FAQ
-    assert "Why FreshMart?" in html
-    assert "Everyday Low Prices" in html
-    assert "How FreshMart Works" in html
-    assert "What Our Shoppers Say" in html
-    assert "Frequently Asked Questions" in html
+# =========================================================================
+# 1b. ROLE ISOLATION & ACCESS CONTROL TESTS (Step 1 & Step 6)
+# =========================================================================
 
-    # 9. DMart supermarket footer
-    assert "supermarket-footer" in html
-    assert "1800-266-2255" in html
+@pytest.mark.django_db
+def test_unauthenticated_catalog_redirects_to_login(client):
+    """Logged-out visitor requesting catalog routes must be redirected to /login/?next=..."""
+    for path in ["/order/menu/", "/order/cart/", "/order/wishlist/"]:
+        resp = client.get(path)
+        assert resp.status_code == 302
+        assert "/login/" in resp.url
+        assert f"next={path}" in resp.url
+
+
+@pytest.mark.django_db
+def test_unauthenticated_htmx_catalog_returns_401_hx_redirect(client):
+    """Logged-out HTMX request returns 401 with HX-Redirect header."""
+    resp = client.get("/order/menu/", HTTP_HX_REQUEST="true")
+    assert resp.status_code == 401
+    assert "HX-Redirect" in resp.headers
+    assert "/login/?next=/order/menu/" in resp.headers["HX-Redirect"]
+
+
+@pytest.mark.django_db
+def test_logged_in_customer_home_redirects_to_catalog(client, freshmart_users):
+    """Authenticated customer hitting / is redirected straight to /order/menu/."""
+    client.force_login(freshmart_users["customer"])
+    resp = client.get("/")
+    assert resp.status_code == 302
+    assert resp.url == "/order/menu/"
+
+
+@pytest.mark.django_db
+def test_agent_visiting_catalog_redirects_to_agent_portal(client, freshmart_users):
+    """Delivery agent visiting /order/menu/ is redirected to their /agent/ portal."""
+    client.force_login(freshmart_users["agent"])
+    resp = client.get("/order/menu/")
+    assert resp.status_code == 302
+    assert resp.url == "/agent/"
+
+
+@pytest.mark.django_db
+def test_customer_accessing_agent_portal_forbidden(client, freshmart_users):
+    """Customer cannot access delivery agent portal routes."""
+    client.force_login(freshmart_users["customer"])
+    resp = client.get("/agent/")
+    # Delivery agent decorator redirects non-agents or returns 403
+    assert resp.status_code in (302, 403)
+    if resp.status_code == 302:
+        assert "/agent/" not in resp.url
+
+
+@pytest.mark.django_db
+def test_seed_demo_command_runs_idempotently(db):
+    """python manage.py seed_demo executes without error."""
+    from django.core.management import call_command
+    call_command("seed_demo", skip_images=True)
+    # Run second time to ensure idempotency
+    call_command("seed_demo", skip_images=True)
 
 
 # =========================================================================

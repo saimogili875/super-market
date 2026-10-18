@@ -20,6 +20,17 @@
   <meta property="og:type" content="website" />
   <meta name="theme-color" content="#14532d">
 
+  <!-- Pre-paint Theme Script -->
+  <script>
+    (function() {
+      try {
+        var stored = localStorage.getItem('freshmart_theme');
+        var theme = stored || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', theme);
+      } catch (e) {}
+    })();
+  </script>
+
   <style>
     :root {
       --deep-green: #14532d;
@@ -47,6 +58,28 @@
       --radius-md: 12px;
       --radius-lg: 16px;
       --radius-xl: 20px;
+    }
+
+    [data-theme="dark"] {
+      --deep-green: #22c55e;
+      --deep-green-dark: #16a34a;
+      --leaf: #34d399;
+      --leaf-hover: #10b981;
+      --cream: #0c1510;
+      --cream-card: #14221a;
+      --tomato: #fb7185;
+      --bg: #0c1510;
+      --surface: #14221a;
+      --border: #22352a;
+      --primary: #22c55e;
+      --primary-dark: #16a34a;
+      --primary-pill: #163824;
+      --text: #f0fdf4;
+      --text-muted: #94a39b;
+      --text-secondary: #c5d6cc;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+      --shadow-md: 0 4px 14px rgba(0,0,0,0.4);
+      --shadow-lg: 0 8px 24px rgba(0,0,0,0.5);
     }
 
     * {
@@ -713,6 +746,16 @@
 
         <!-- Header Actions: Location, Login, Cart -->
         <div class="header-actions">
+          <!-- Dark Mode Toggle -->
+          <button type="button" 
+                  id="themeToggleBtn" 
+                  class="sound-toggle-btn freshmart-theme-toggle" 
+                  onclick="toggleFreshMartTheme()"
+                  title="Toggle Dark Mode"
+                  aria-label="Toggle Dark Mode">
+            <span id="themeToggleIcon">&#127769;</span>
+          </button>
+
           <!-- Wishlist link -->
           <a href="{% url 'orders_customer:wishlist' %}" class="sound-toggle-btn" title="Saved Wishlist" aria-label="Wishlist">
             ❤️
@@ -1143,5 +1186,6 @@
         }).catch(() => {});
     });
   </script>
+  <script src="{% static 'js/theme.js' %}"></script>
 </body>
 </html>

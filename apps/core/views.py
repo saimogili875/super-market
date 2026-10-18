@@ -11,98 +11,38 @@ def healthz(request):
 
 
 def home(request):
-    """Public supermarket customer homepage (DMart-India-style layout).
+    """Marketing landing page for FreshMart.
 
-    Loads categories, best deals, department rails, customer location,
-    and active cart state for the FreshMart shopping experience.
+    If the visitor is already logged in, redirect them directly to their role portal:
+    - Customer -> /order/menu/
+    - Agent -> /agent/
+    - Manager / Staff -> /manager/
+    - Admin -> /<ADMIN_URL>/orders/dashboard/
+
+    If the visitor is unauthenticated, render the minimal marketing page
+    (brand, dark mode toggle, hero, 3 value points, tiny footer).
+    Zero catalog items, prices, categories, or cart are exposed.
     """
-    from apps.menu.models import Category, MenuItem
-    from apps.orders.views_customer import _get_delivery_cart
+    from django.shortcuts import redirect
+    from apps.accounts.models import Role
     from apps.customer_auth.views import get_logged_in_customer
 
-    customer = getattr(request, "delivery_customer", None) or get_logged_in_customer(request)
-    if customer:
-        request.delivery_customer = customer
+    user = getattr(request, "user", None)
+    if user and user.is_authenticated:
+        role = getattr(user, "role", None)
+        if role == Role.ADMIN:
+            return redirect("orders_admin:dashboard")
+        elif role == Role.AGENT:
+            return redirect("orders_agent:dashboard")
+        elif role in (Role.MANAGER, Role.STAFF, Role.INVENTORY, Role.CASHIER):
+            return redirect("manager:dashboard")
+        elif role == Role.CUSTOMER:
+            return redirect("orders_customer:menu")
 
-    categories = list(Category.objects.filter(is_active=True).order_by("sort_order", "name"))
-    
-    # 1. Today's Best Deals (highest % discounts first)
-    best_deals = list(
-        MenuItem.objects.filter(is_available=True, offer_percent__gt=0)
-        .select_related("category")
-        .order_by("-offer_percent", "name")[:8]
-    )
-    if not best_deals:
-        best_deals = list(
-            MenuItem.objects.filter(is_available=True)
-            .select_related("category")
-            .order_by("name")[:8]
-        )
-
-    # 2. Department rails
-    staples_items = list(
-        MenuItem.objects.filter(
-            is_available=True,
-            category__name__iregex=r"(rice|pulse|grain|flour|staple|cook|oil|spic|atta|dal)",
-        )
-        .select_related("category")
-        .order_by("-offer_percent", "name")[:6]
-    )
-
-    fruits_veg_items = list(
-        MenuItem.objects.filter(
-            is_available=True,
-            category__name__iregex=r"(fruit|veg)",
-        )
-        .select_related("category")
-        .order_by("-offer_percent", "name")[:6]
-    )
-
-    dairy_bakery_items = list(
-        MenuItem.objects.filter(
-            is_available=True,
-            category__name__iregex=r"(dairy|egg|milk|bakery|bread)",
-        )
-        .select_related("category")
-        .order_by("-offer_percent", "name")[:6]
-    )
-
-    household_items = list(
-        MenuItem.objects.filter(
-            is_available=True,
-            category__name__iregex=r"(house|clean|detergent|personal|care)",
-        )
-        .select_related("category")
-        .order_by("-offer_percent", "name")[:6]
-    )
-
-    # Best sellers fallback / highlight items
-    best_sellers = list(
-        MenuItem.objects.filter(is_available=True)
-        .select_related("category")
-        .order_by("-stock_quantity", "name")[:8]
-    )
-
-    cart_items, cart_total, cart_count = _get_delivery_cart(request.session)
-    cart_map = {str(entry["item"].pk): entry["quantity"] for entry in cart_items}
-
-    customer_location = request.session.get("customer_location", "500074, Hyderabad")
+    if get_logged_in_customer(request):
+        return redirect("orders_customer:menu")
 
     context = {
-        "categories": categories,
-        "best_deals": best_deals,
-        "staples_items": staples_items,
-        "fruits_veg_items": fruits_veg_items,
-        "dairy_bakery_items": dairy_bakery_items,
-        "household_items": household_items,
-        "best_sellers": best_sellers,
-        "cart_items": cart_items,
-        "cart_total": cart_total,
-        "cart_count": cart_count,
-        "cart_map": cart_map,
-        "customer_location": customer_location,
-        "delivery_customer": customer,
-        "active_nav": "home",
         "brand_name": "FreshMart",
         "brand_tagline": "Fresh food. Everyday low prices.",
     }

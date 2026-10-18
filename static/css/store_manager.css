@@ -23,6 +23,57 @@
   --mgr-info-bg: #dbeafe;
 }
 
+[data-theme="dark"] {
+  --mgr-brand: #22c55e;
+  --mgr-brand-hover: #16a34a;
+  --mgr-brand-light: #163824;
+  --mgr-primary: #22c55e;
+  --mgr-accent: #f5b301;
+  --mgr-bg: #0c1510;
+  --mgr-surface: #14221a;
+  --mgr-border: #22352a;
+  --mgr-border-input: #2d4436;
+  --mgr-text: #f0fdf4;
+  --mgr-muted: #94a39b;
+  --mgr-danger: #f87171;
+  --mgr-danger-bg: #450a0a;
+  --mgr-warning: #fde047;
+  --mgr-warning-bg: #451a03;
+  --mgr-success: #34d399;
+  --mgr-success-bg: #064e3b;
+  --mgr-info: #93c5fd;
+  --mgr-info-bg: #172554;
+}
+
+[data-theme="dark"] .card,
+[data-theme="dark"] .top,
+[data-theme="dark"] .pm,
+[data-theme="dark"] .side {
+  background: var(--mgr-surface) !important;
+  color: var(--mgr-text) !important;
+  border-color: var(--mgr-border) !important;
+}
+
+[data-theme="dark"] .in,
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+  background-color: #0d1a12 !important;
+  color: #f0fdf4 !important;
+  border-color: #22352a !important;
+}
+
+[data-theme="dark"] .tb th {
+  background-color: #122018 !important;
+  color: #f0fdf4 !important;
+  border-color: #22352a !important;
+}
+
+[data-theme="dark"] .tb td {
+  border-color: #22352a !important;
+  color: #f0fdf4 !important;
+}
+
 body {
   margin: 0;
   font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;

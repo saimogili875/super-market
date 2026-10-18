@@ -10,6 +10,17 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   
+  <!-- Pre-paint Theme Script -->
+  <script>
+    (function() {
+      try {
+        var stored = localStorage.getItem('freshmart_theme');
+        var theme = stored || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', theme);
+      } catch (e) {}
+    })();
+  </script>
+
   <style>
     :root {
       --deep-green: #14532d;
@@ -24,6 +35,21 @@
       --border-color: #d1d5db;
       --input-bg: #f9fafb;
       --focus-ring: rgba(34, 160, 90, 0.25);
+    }
+
+    [data-theme="dark"] {
+      --deep-green: #22c55e;
+      --deep-green-dark: #16a34a;
+      --leaf: #34d399;
+      --leaf-hover: #10b981;
+      --cream: #0c1510;
+      --cream-card: #14221a;
+      --tomato: #fb7185;
+      --text-main: #f0fdf4;
+      --text-muted: #94a39b;
+      --border-color: #22352a;
+      --input-bg: #0d1a12;
+      --focus-ring: rgba(52, 211, 153, 0.25);
     }
 
     * {
@@ -667,9 +693,15 @@
         <span style="font-size: 12px; font-weight: 700; color: var(--leaf); letter-spacing: 0.05em; text-transform: uppercase;">
           Secure Access Portal
         </span>
-        <a href="/" class="back-store-link" id="linkBackToStore">
-          &larr; Back to store
-        </a>
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <button type="button" class="theme-toggle-btn" id="themeToggleBtn" aria-label="Toggle dark mode" onclick="toggleFreshMartTheme()" style="background: none; border: 1px solid var(--border-color); border-radius: 8px; padding: 4px 8px; cursor: pointer; color: var(--text-main); font-size: 13px; display: inline-flex; align-items: center; gap: 4px;">
+            <span id="themeToggleIcon">&#127769;</span>
+            <span id="themeToggleLabel" style="font-size: 12px;">Dark</span>
+          </button>
+          <a href="/" class="back-store-link" id="linkBackToStore">
+            &larr; Back to store
+          </a>
+        </div>
       </div>
 
       <div class="login-card-header">
@@ -858,6 +890,34 @@
     const captchaField = document.getElementById('id_captcha');
     if (captchaField) captchaField.focus();
   }
+
+  // 4. Dark Theme Switcher
+  function updateThemeUI(theme) {
+    var icon = document.getElementById('themeToggleIcon');
+    var label = document.getElementById('themeToggleLabel');
+    if (theme === 'dark') {
+      if (icon) icon.innerHTML = '&#9728;';
+      if (label) label.textContent = 'Light';
+    } else {
+      if (icon) icon.innerHTML = '&#127769;';
+      if (label) label.textContent = 'Dark';
+    }
+  }
+
+  function toggleFreshMartTheme() {
+    var current = document.documentElement.getAttribute('data-theme') || 'light';
+    var next = current === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    try {
+      localStorage.setItem('freshmart_theme', next);
+    } catch (e) {}
+    updateThemeUI(next);
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    var activeTheme = document.documentElement.getAttribute('data-theme') || 'light';
+    updateThemeUI(activeTheme);
+  });
 </script>
 
 </body>

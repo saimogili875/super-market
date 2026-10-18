@@ -88,6 +88,7 @@ def _get_delivery_cart(session_dict: dict) -> tuple[list[dict], Decimal, int]:
 
 
 @require_GET
+
 def delivery_menu(request):
     """Render the public delivery menu with server-side cart."""
     from apps.customer_auth.views import get_logged_in_customer
@@ -151,6 +152,7 @@ def delivery_menu(request):
 
 
 @require_POST
+
 def cart_add(request):
     """HTMX endpoint to add a menu item to the delivery session cart."""
     menu_item_id = request.POST.get("menu_item_id")
@@ -195,6 +197,7 @@ def cart_add(request):
 
 
 @require_POST
+
 def cart_update(request):
     """HTMX / Form endpoint to update or remove a menu item quantity in the delivery session cart."""
     menu_item_id = request.POST.get("menu_item_id")
@@ -619,6 +622,7 @@ def post_order_message(request, pk):
 
 
 @require_GET
+
 def delivery_cart_view(request):
     """Customer dedicated cart page showing session cart items, totals, and checkout button."""
     from apps.customer_auth.views import get_logged_in_customer
@@ -648,6 +652,7 @@ def delivery_cart_view(request):
 
 
 @require_POST
+
 def cart_apply_coupon(request):
     """Apply coupon code to delivery cart session."""
     code = request.POST.get("code", "").strip().upper()
@@ -681,6 +686,7 @@ def cart_apply_coupon(request):
 
 
 @require_POST
+
 def cart_remove_coupon(request):
     """Remove active coupon from delivery cart."""
     request.session.pop("delv_coupon_code", None)
@@ -693,6 +699,7 @@ def cart_remove_coupon(request):
 
 
 @require_GET
+@customer_login_required
 def product_detail(request, pk):
     """Individual product detail page."""
     item = get_object_or_404(MenuItem.objects.select_related("category"), pk=pk)
@@ -727,6 +734,7 @@ def product_detail(request, pk):
 
 
 @require_GET
+@customer_login_required
 def wishlist_view(request):
     """Customer saved wishlist page."""
     from apps.customer_auth.views import get_logged_in_customer
@@ -750,6 +758,7 @@ def wishlist_view(request):
 
 
 @require_http_methods(["GET", "POST"])
+@customer_login_required
 def wishlist_toggle(request, pk):
     """Add or remove an item from the customer's wishlist."""
     item = get_object_or_404(MenuItem, pk=pk)
@@ -788,12 +797,11 @@ def wishlist_toggle(request, pk):
 
 
 @require_GET
+@customer_login_required
 def customer_addresses(request):
     """Customer saved addresses management page."""
     from apps.customer_auth.views import get_logged_in_customer
     customer = getattr(request, "delivery_customer", None) or get_logged_in_customer(request)
-    if not customer:
-        return redirect("customer_auth:login")
 
     addresses = list(CustomerAddress.objects.filter(customer=customer))
     cart_items, cart_total, cart_count = _get_delivery_cart(request.session)
@@ -807,12 +815,11 @@ def customer_addresses(request):
 
 
 @require_POST
+@customer_login_required
 def address_add(request):
     """Add a new delivery address for the customer."""
     from apps.customer_auth.views import get_logged_in_customer
     customer = getattr(request, "delivery_customer", None) or get_logged_in_customer(request)
-    if not customer:
-        return redirect("customer_auth:login")
 
     title = request.POST.get("title", "Home").strip()
     recipient_name = request.POST.get("recipient_name", customer.name or "").strip()
@@ -846,12 +853,11 @@ def address_add(request):
 
 
 @require_POST
+@customer_login_required
 def address_delete(request, pk):
     """Delete a customer saved delivery address."""
     from apps.customer_auth.views import get_logged_in_customer
     customer = getattr(request, "delivery_customer", None) or get_logged_in_customer(request)
-    if not customer:
-        return redirect("customer_auth:login")
 
     addr = get_object_or_404(CustomerAddress, pk=pk, customer=customer)
     addr.delete()
@@ -860,12 +866,11 @@ def address_delete(request, pk):
 
 
 @require_POST
+@customer_login_required
 def address_set_default(request, pk):
     """Set an address as customer default."""
     from apps.customer_auth.views import get_logged_in_customer
     customer = getattr(request, "delivery_customer", None) or get_logged_in_customer(request)
-    if not customer:
-        return redirect("customer_auth:login")
 
     addr = get_object_or_404(CustomerAddress, pk=pk, customer=customer)
     CustomerAddress.objects.filter(customer=customer).update(is_default=False)
@@ -895,6 +900,7 @@ def set_location(request):
 
 
 @require_GET
+@customer_login_required
 def order_history(request):
     """Customer order history page listing past orders and live active order banner if present."""
     from apps.customer_auth.views import get_logged_in_customer
@@ -948,6 +954,7 @@ def order_history(request):
 
 
 @require_GET
+@customer_login_required
 def track_current(request):
     """Redirect to the customer's most recent active (non-terminal) order or show merged orders view."""
     from apps.customer_auth.views import get_logged_in_customer
@@ -988,6 +995,7 @@ def track_current(request):
 
 
 @require_GET
+@customer_login_required
 def customer_settings(request):
     """Customer settings page displaying account info and auth actions."""
     customer = getattr(request, "delivery_customer", None)

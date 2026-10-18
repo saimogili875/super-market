@@ -6,11 +6,23 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
   <title>{% block title %}Store Manager Portal — SuperMarket{% endblock %}</title>
   
+  <!-- Pre-paint Theme Script -->
+  <script>
+    (function() {
+      try {
+        var stored = localStorage.getItem('freshmart_theme');
+        var theme = stored || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', theme);
+      } catch (e) {}
+    })();
+  </script>
+
   <link rel="stylesheet" href="{% static 'css/store_manager.css' %}">
   
   <!-- HTMX & Alpine.js -->
   <script src="https://unpkg.com/htmx.org@1.9.10"></script>
   <script defer src="https://unpkg.com/alpinejs@3.13.3/dist/cdn.min.js"></script>
+  <script src="{% static 'js/theme.js' %}"></script>
   
   {% block extra_head %}{% endblock %}
 </head>
@@ -194,6 +206,11 @@
         <div class="in dk" style="width:190px;display:flex;align-items:center;font-size:13px;font-weight:600;color:var(--mgr-primary);background:#f0f7f2;" id="store-selector">
           🏪 Hyderabad – LB Nagar
         </div>
+
+        <!-- Dark Mode Toggle -->
+        <button type="button" class="ib freshmart-theme-toggle" id="themeToggleBtn" onclick="toggleFreshMartTheme()" aria-label="Toggle dark mode" title="Toggle dark mode">
+          <span id="themeToggleIcon">&#127769;</span>
+        </button>
 
         <!-- Notification Bell -->
         <a href="{% url 'manager:notifications' %}" class="ib" id="btn-top-notif" aria-label="Notifications">

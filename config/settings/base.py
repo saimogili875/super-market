@@ -91,14 +91,19 @@ ASGI_APPLICATION = "config.asgi.application"
 WSGI_APPLICATION = "config.wsgi.application"
 
 # ---------- database ----------
+DATABASE_CONFIG = env.db("DATABASE_URL")
+if "postgresql" in DATABASE_CONFIG.get("ENGINE", ""):
+    DATABASE_CONFIG["CONN_MAX_AGE"] = env.int("CONN_MAX_AGE", default=600)
+    options = DATABASE_CONFIG.get("OPTIONS", {})
+    options.setdefault("connect_timeout", 10)
+    raw_db_url = env("DATABASE_URL", default="")
+    if "sslmode=require" in raw_db_url:
+        options["sslmode"] = "require"
+    DATABASE_CONFIG["OPTIONS"] = options
+
 DATABASES = {
-    "default": env.db("DATABASE_URL"),
+    "default": DATABASE_CONFIG,
 }
-# avoids per-request connect overhead on the small VPS
-DATABASES["default"]["CONN_MAX_AGE"] = 60
-# connect_timeout is a PostgreSQL-only option; skip it on SQLite (dev).
-if "postgresql" in DATABASES["default"].get("ENGINE", ""):
-    DATABASES["default"]["OPTIONS"] = {"connect_timeout": 5}
 
 # ---------- caches & channel layers ----------
 REDIS_URL = env("REDIS_URL", default="redis://localhost:6379/0")

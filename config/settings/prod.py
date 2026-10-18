@@ -4,7 +4,9 @@ from .base import *  # noqa: F401, F403
 DEBUG = False
 
 ALLOWED_HOSTS = env("ALLOWED_HOSTS")  # noqa: F405 — imported via base.*
-DATABASES["default"]["CONN_MAX_AGE"] = env.int("CONN_MAX_AGE", default=60)  # noqa: F405
+DATABASES["default"]["CONN_MAX_AGE"] = env.int("CONN_MAX_AGE", default=600)  # noqa: F405
+if "postgresql" in DATABASES["default"].get("ENGINE", ""):
+    DATABASES["default"].setdefault("OPTIONS", {})["sslmode"] = "require"
 
 # ---------- media & static files storage (prod) ----------
 # Static files served via WhiteNoise; media uploads persisted to S3/R2 cloud object storage.

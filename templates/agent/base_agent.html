@@ -6,11 +6,23 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
   <title>{% block title %}SuperMarket Delivery Partner{% endblock %}</title>
   
+  <!-- Pre-paint Theme Script -->
+  <script>
+    (function() {
+      try {
+        var stored = localStorage.getItem('freshmart_theme');
+        var theme = stored || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', theme);
+      } catch (e) {}
+    })();
+  </script>
+  
   <link rel="stylesheet" href="{% static 'css/delivery_agent.css' %}">
   
   <!-- HTMX & Alpine (allowed by CSP) -->
   <script src="https://unpkg.com/htmx.org@1.9.10"></script>
   <script defer src="https://unpkg.com/alpinejs@3.13.3/dist/cdn.min.js"></script>
+  <script src="{% static 'js/theme.js' %}"></script>
   
   {% block extra_head %}{% endblock %}
 </head>
