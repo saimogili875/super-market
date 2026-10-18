@@ -1,0 +1,54 @@
+{% extends "agent/base_agent.html" %}
+{% load static %}
+
+{% block title %}Notifications — SuperMarket Delivery{% endblock %}
+
+{% block content %}
+<div class="row">
+  <h1>Notifications</h1>
+  {% if unread_count %}
+  <form method="post" action="{% url 'orders_agent:notifications' %}" style="margin: 0;">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="mark_all_read">
+    <button type="submit" class="btn s" style="min-height: 38px; padding: 0 14px; font-size: 13px;" id="btn-mark-all-read">
+      Mark all read
+    </button>
+  </form>
+  {% endif %}
+</div>
+
+{% if notifications %}
+  <div style="display: flex; flex-direction: column; gap: 10px;">
+    {% for n in notifications %}
+    <div class="card" id="notif-card-{{ n.pk }}" style="{% if not n.is_read %}border-color: #176B45; background: #F1F9F5;{% endif %} padding: 14px 16px;">
+      <div class="row">
+        <b style="font-size: 14px; color: var(--agent-text);">{{ n.title }}</b>
+        <span class="m" style="font-size: 12px;">{{ n.created_at|timesince }} ago</span>
+      </div>
+      {% if n.message %}
+      <p class="m" style="margin: 4px 0; font-size: 13px;">{{ n.message }}</p>
+      {% endif %}
+      <div class="row" style="margin-top: 6px;">
+        <span class="m" style="font-size: 12px;">
+          {% if not n.is_read %}<strong>● Unread</strong>{% else %}Read{% endif %}
+        </span>
+        <form method="post" action="{% url 'orders_agent:notifications' %}" style="margin: 0;">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="toggle_read">
+          <input type="hidden" name="notif_id" value="{{ n.pk }}">
+          <button type="submit" class="chip" style="min-height: 32px; padding: 0 12px; font-size: 12px;" id="btn-toggle-notif-{{ n.pk }}">
+            {% if n.is_read %}Mark unread{% else %}Mark as read{% endif %}
+          </button>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="card" style="text-align: center; padding: 36px 16px;">
+    <div style="font-size: 36px; margin-bottom: 8px;">🔔</div>
+    <b style="font-size: 16px;">All caught up</b>
+    <p class="m">No notifications right now.</p>
+  </div>
+{% endif %}
+{% endblock %}

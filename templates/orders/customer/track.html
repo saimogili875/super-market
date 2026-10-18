@@ -69,7 +69,7 @@
     <div id="timeline-wrapper" style="{% if order.status == 'CANCEL' %}display: none;{% else %}display:flex;flex-direction:column;gap:12px;padding:4px 0;{% endif %}">
       {% for code, label in tracking_steps %}
         {% with idx=forloop.counter0 %}
-          <div id="step-{{ code }}" style="display:flex;align-items:center;gap:14px;position:relative">
+          <div id="step-{{ code }}" class="timeline-step {% if idx < current_step_index %}completed{% elif idx == current_step_index %}active{% else %}pending{% endif %}" style="display:flex;align-items:center;gap:14px;position:relative">
             <!-- Node circle -->
             <div id="step-node-{{ code }}" 
                  style="width:32px;height:32px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;z-index:2;{% if idx < current_step_index %}background:var(--primary);color:#fff;{% elif idx == current_step_index %}background:var(--accent-gold);color:#171A17;box-shadow:0 0 0 4px var(--primary-pill);{% else %}background:#E5E9E3;color:var(--text-muted);{% endif %}">

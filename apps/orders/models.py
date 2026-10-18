@@ -116,6 +116,64 @@ class Order(TimeStampedModel):
         default=Decimal("0"),
     )
 
+    # Delivery fulfillment & verification tracking
+    delivery_accepted_at = models.DateTimeField(null=True, blank=True, help_text="When agent accepted assignment.")
+    delivery_arrived_at = models.DateTimeField(null=True, blank=True, help_text="When driver arrived at store/pickup.")
+    delivery_picked_at = models.DateTimeField(null=True, blank=True, help_text="When order was picked up from store.")
+    delivery_completed_at = models.DateTimeField(null=True, blank=True, help_text="When delivery was completed.")
+    delivery_pod_type = models.CharField(max_length=20, blank=True, default="", help_text="POD type: otp, handover.")
+    delivery_pod_detail = models.CharField(max_length=120, blank=True, default="", help_text="OTP code or handover verification detail.")
+    delivery_pod_image = models.ImageField(upload_to="pod/", null=True, blank=True, help_text="Proof of delivery photo/document.")
+    delivery_notes = models.TextField(blank=True, default="", help_text="Driver delivery notes.")
+    delivery_issue_reason = models.CharField(max_length=120, blank=True, default="", help_text="Reported issue or rejection reason.")
+    delivery_issue_notes = models.TextField(blank=True, default="", help_text="Issue description notes.")
+
+    @property
+    def delivery_address(self) -> str:
+        """Safe delivery destination address string."""
+        if self.delivery_customer and self.delivery_customer.default_address:
+            return self.delivery_customer.default_address
+        if self.maps_url and "destination=" in self.maps_url:
+            import urllib.parse
+            parsed = self.maps_url.split("destination=")[-1]
+            return urllib.parse.unquote(parsed)
+        if self.contact_name:
+            return f"{self.contact_name}'s Delivery Location"
+        return "Address on file"
+
+    @property
+    def delivery_area(self) -> str:
+        """Area or locality extracted from address."""
+        addr = self.delivery_address
+        if "," in addr:
+            return addr.split(",")[0].strip()
+        return addr[:30]
+
+    @property
+    def delivery_otp(self) -> str:
+        """4-digit delivery verification OTP for customer confirmation."""
+        if self.contact_phone and len(self.contact_phone.strip()) >= 4:
+            clean = "".join(c for c in self.contact_phone if c.isdigit())
+            if len(clean) >= 4:
+                return clean[-4:]
+        return f"{(self.pk * 73 + 1234) % 9000 + 1000}"
+
+    @property
+    def store_name_address(self) -> str:
+        return "SuperMarket Store 01, Main Road"
+
+    @property
+    def estimated_km(self) -> float:
+        return round(2.0 + (self.pk % 5) * 0.8, 1)
+
+    @property
+    def estimated_mins(self) -> int:
+        return int(self.estimated_km * 4 + 6)
+
+    @property
+    def estimated_fee(self) -> Decimal:
+        return Decimal("40.00") + Decimal(str(round(self.estimated_km * 5, 2)))
+
     class Meta:
         indexes = [
             models.Index(fields=["status", "created_at"]),
@@ -176,6 +234,7 @@ class OrderItem(models.Model):
     quantity = models.PositiveSmallIntegerField(
         validators=[MinValueValidator(1)],
     )
+    is_picked = models.BooleanField(default=False, db_index=True)
 
     @property
     def line_total(self) -> Decimal:

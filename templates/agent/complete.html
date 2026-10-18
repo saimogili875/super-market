@@ -1,0 +1,65 @@
+{% extends "agent/base_agent.html" %}
+{% load static %}
+
+{% block title %}Delivery Complete — SuperMarket{% endblock %}
+
+{% block content %}
+<div style="text-align: center; display: flex; flex-direction: column; gap: 10px; align-items: center; margin-top: 10px;">
+  <div style="width: 80px; height: 80px; border-radius: 50%; background: #E4F4EC; color: #21865B; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 16px rgba(23, 107, 69, 0.15);">
+    <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-label="Success" role="img">
+      <path d="M20 6L9 17l-5-5"/>
+    </svg>
+  </div>
+  <h1 style="font-size: 26px;">Delivery complete</h1>
+  <p class="m">Order #{{ order.pk }} is officially delivered and verified.</p>
+</div>
+
+<!-- Summary Card -->
+<div class="card" id="completion-summary-card" style="margin-top: 8px;">
+  <div class="row">
+    <span class="m">Address</span>
+    <b style="max-width: 60%; text-align: right;">{{ card.address }}</b>
+  </div>
+  <div class="row" style="padding-top: 6px; border-top: 1px solid #F1F4F2;">
+    <span class="m">Completed</span>
+    <b>{{ order.delivery_completed_at|date:"M d, Y · I:i A"|default:"Today" }}</b>
+  </div>
+  <div class="row" style="padding-top: 6px; border-top: 1px solid #F1F4F2;">
+    <span class="m">Items</span>
+    <b>{{ card.items_count }} items</b>
+  </div>
+  <div class="row" style="padding-top: 6px; border-top: 1px solid #F1F4F2;">
+    <span class="m">Order Value</span>
+    <b style="color: var(--agent-brand);">₹{{ order.total_amount }}</b>
+  </div>
+  <div class="row" style="padding-top: 6px; border-top: 1px solid #F1F4F2;">
+    <span class="m">Verification</span>
+    <span class="bd" style="background: #E4F4EC; color: #176B45;">
+      {{ order.delivery_pod_detail|default:"Verified" }}
+    </span>
+  </div>
+  {% if order.delivery_notes %}
+  <div class="row" style="padding-top: 6px; border-top: 1px solid #F1F4F2;">
+    <span class="m">Delivery Note</span>
+    <b>{{ order.delivery_notes }}</b>
+  </div>
+  {% endif %}
+  {% if order.delivery_pod_image %}
+  <div style="padding-top: 6px; border-top: 1px solid #F1F4F2;">
+    <span class="m" style="display: block; margin-bottom: 6px;">Proof Photo:</span>
+    <img src="{{ order.delivery_pod_image.url }}" alt="Proof of delivery" style="width: 100%; max-height: 200px; object-fit: cover; border-radius: 8px;">
+  </div>
+  {% endif %}
+</div>
+
+<!-- Action Navigation -->
+<a href="{% url 'orders_agent:order_receipt' order.pk %}" class="btn s" style="text-align: center; text-decoration: none;" id="btn-view-receipt-complete">
+  View receipt
+</a>
+<a href="{% url 'orders_agent:dashboard' %}" class="btn" style="text-align: center; text-decoration: none;" id="btn-back-dashboard-complete">
+  Back to dashboard
+</a>
+<a href="{% url 'orders_agent:orders' %}" class="btn s" style="text-align: center; text-decoration: none;" id="btn-back-orders-complete">
+  My orders
+</a>
+{% endblock %}

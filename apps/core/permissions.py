@@ -6,7 +6,7 @@ from django.shortcuts import get_object_or_404
 
 
 ADMIN_ROLES = ("ADMIN", "MANAGER")
-STAFF_ROLES = ("ADMIN", "MANAGER", "INVENTORY", "CASHIER")
+STAFF_ROLES = ("ADMIN", "MANAGER", "STAFF", "INVENTORY", "CASHIER")
 
 
 def has_role(user, *roles):

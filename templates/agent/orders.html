@@ -1,0 +1,90 @@
+{% extends "agent/base_agent.html" %}
+{% load static %}
+
+{% block title %}My Orders — SuperMarket Delivery{% endblock %}
+
+{% block content %}
+<div class="row">
+  <h1>My Orders</h1>
+  <a href="{% url 'orders_agent:orders' %}?filter={{ filter }}" class="btn s" style="min-height: 38px; padding: 0 12px; font-size: 13px;" id="btn-refresh-orders">
+    ↻ Refresh
+  </a>
+</div>
+
+<!-- Search Input -->
+<form method="get" action="{% url 'orders_agent:orders' %}" style="margin: 0;">
+  <input type="hidden" name="filter" value="{{ filter }}">
+  <div style="position: relative;">
+    <input
+      type="text"
+      name="q"
+      id="order-search-input"
+      class="in"
+      placeholder="Search by order #ID, customer, area..."
+      value="{{ q }}"
+      autocomplete="off"
+    >
+    {% if q %}
+    <a href="{% url 'orders_agent:orders' %}?filter={{ filter }}" style="position: absolute; right: 14px; top: 14px; color: var(--agent-muted); text-decoration: none; font-weight: bold;">✕</a>
+    {% endif %}
+  </div>
+</form>
+
+<!-- Filter Chips -->
+<div class="chips">
+  <a href="{% url 'orders_agent:orders' %}?filter=all{% if q %}&q={{ q }}{% endif %}" class="chip {% if filter == 'all' %}on{% endif %}" id="filter-all">
+    All
+  </a>
+  <a href="{% url 'orders_agent:orders' %}?filter=new{% if q %}&q={{ q }}{% endif %}" class="chip {% if filter == 'new' %}on{% endif %}" id="filter-new">
+    New
+  </a>
+  <a href="{% url 'orders_agent:orders' %}?filter=active{% if q %}&q={{ q }}{% endif %}" class="chip {% if filter == 'active' %}on{% endif %}" id="filter-active">
+    Active
+  </a>
+  <a href="{% url 'orders_agent:orders' %}?filter=done{% if q %}&q={{ q }}{% endif %}" class="chip {% if filter == 'done' %}on{% endif %}" id="filter-done">
+    Completed
+  </a>
+  <a href="{% url 'orders_agent:orders' %}?filter=failed{% if q %}&q={{ q }}{% endif %}" class="chip {% if filter == 'failed' %}on{% endif %}" id="filter-failed">
+    Cancelled / Failed
+  </a>
+</div>
+
+<!-- Order Cards List -->
+{% if orders %}
+  <div class="flex flex-col gap-3" style="display: flex; flex-direction: column; gap: 12px;">
+    {% for o in orders %}
+    <div class="card" id="order-card-{{ o.id }}">
+      <div class="row">
+        <b>#{{ o.id }}</b>
+        <span class="bd" style="{{ o.badge_style }}">{{ o.label }}</span>
+      </div>
+      <p class="m">{{ o.items_count }} items · {{ o.created_at_display }}</p>
+      <p style="font-size: 14px; margin: 2px 0;">
+        {% if o.order.status == "DISPATCH" and not o.order.delivery_accepted_at %}
+          <strong>Pickup:</strong> {{ o.store }}
+        {% else %}
+          <strong>Drop:</strong> {{ o.area }}
+        {% endif %}
+      </p>
+      <div class="row" style="margin-top: 4px;">
+        <span class="m" style="font-weight: 600;">₹{{ o.order.total_amount }}</span>
+        <a href="{% url 'orders_agent:order_detail' o.id %}" class="btn {% if o.order.status == 'DISPATCH' and not o.order.delivery_accepted_at %}on{% else %}s{% endif %}" style="min-height: 40px; padding: 0 16px; font-size: 13px;" id="btn-order-card-{{ o.id }}">
+          {% if o.order.status == 'DISPATCH' and not o.order.delivery_accepted_at %}View assignment{% else %}View details{% endif %}
+        </a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="card" style="text-align: center; padding: 32px 16px;">
+    <div style="font-size: 36px; margin-bottom: 8px;">📦</div>
+    <b style="font-size: 16px;">No orders here</b>
+    <p class="m">Nothing matches this filter or search query.</p>
+    {% if q or filter != 'all' %}
+    <div style="margin-top: 12px;">
+      <a href="{% url 'orders_agent:orders' %}" class="btn s" style="min-height: 38px; font-size: 13px;">Clear filters</a>
+    </div>
+    {% endif %}
+  </div>
+{% endif %}
+{% endblock %}

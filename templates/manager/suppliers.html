@@ -1,0 +1,63 @@
+{% extends "manager/base_manager.html" %}
+{% load static %}
+
+{% block title %}Suppliers — Store Operations{% endblock %}
+{% block page_title %}Supermarket Suppliers{% endblock %}
+
+{% block content %}
+<div x-data="{
+  detailModal: false,
+  detailLines: [],
+  openDetail(name, contact, email, phone, addr, status, last) {
+    this.detailLines = [
+      {k: 'Supplier Name', v: name},
+      {k: 'Contact Person', v: contact || 'Representative'},
+      {k: 'Email Address', v: email || 'N/A'},
+      {k: 'Phone Number', v: phone || 'N/A'},
+      {k: 'Warehouse Address', v: addr || 'Hyderabad'},
+      {k: 'Vendor Status', v: status},
+      {k: 'Last PO Date', v: last || 'Recent'}
+    ];
+    this.detailModal = true;
+  }
+}">
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+    <h1 class="h1">Authorized Store Suppliers</h1>
+    <div class="sm">Direct procurement vendors for supermarket restocking.</div>
+  </div>
+
+  <!-- Suppliers List -->
+  <div class="card" id="card-suppliers-list">
+    {% for s in suppliers %}
+    <div class="row">
+      <div class="grow">
+        <b>{{ s.name }}</b>
+        <div class="sm">{{ s.contact|default:"Representative" }} · {{ s.phone|default:s.email|default:"Registered Supplier" }}</div>
+      </div>
+      <span class="bg {% if s.status == 'Active' %}ok{% else %}nt{% endif %}">{{ s.status }}</span>
+      <button type="button" class="btn s" @click="openDetail('{{ s.name|escapejs }}', '{{ s.contact|default:""|escapejs }}', '{{ s.email|default:""|escapejs }}', '{{ s.phone|default:""|escapejs }}', '{{ s.address|default:""|escapejs }}', '{{ s.status }}', '{{ s.last_delivery_date|date:"Y-m-d"|default:"Active" }}')" id="btn-view-supplier-{{ s.pk }}">
+        View Details
+      </button>
+    </div>
+    {% empty %}
+    <div class="sm" style="padding:24px 0;text-align:center;">No suppliers registered yet.</div>
+    {% endfor %}
+  </div>
+
+  <!-- Details Modal -->
+  <div class="ov" x-show="detailModal" x-cloak>
+    <div class="md" @click.away="detailModal = false">
+      <h2 class="h2">Supplier Profile</h2>
+      <template x-for="l in detailLines" :key="l.k">
+        <div class="row">
+          <div class="sm" style="width:140px;" x-text="l.k"></div>
+          <div class="grow" style="font-weight:600;" x-text="l.v"></div>
+        </div>
+      </template>
+      <div style="display:flex;justify-content:flex-end;margin-top:8px;">
+        <button type="button" class="btn" @click="detailModal = false">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

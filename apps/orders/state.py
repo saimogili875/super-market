@@ -28,6 +28,11 @@ TRANSITIONS: dict[str, dict[str, tuple[str, ...]]] = {
         "ARRIVED": ("CANCEL",),
         "COLLECT": ("CANCEL",),
     },
+    "STAFF": {
+        "PLACED": ("APPROVED",),
+        "APPROVED": ("KITCHEN",),
+        "KITCHEN": ("READY",),
+    },
     "AGENT": {
         "PLACED": ("ARRIVED",),
         "APPROVED": ("ARRIVED",),
@@ -44,18 +49,19 @@ def can_transition(role: str, frm: str, to: str) -> bool:
     """Check whether a role is allowed to move an order from *frm* to *to*.
 
     Args:
-        role: The actor's business role (e.g. "ADMIN", "AGENT").
+        role: The actor's business role (e.g. "ADMIN", "MANAGER", "AGENT").
         frm:  The order's current status value.
         to:   The desired target status value.
 
     Returns:
         True if the transition is explicitly allowed, False otherwise.
-
-    This function is the single gatekeeper: services.transition() calls it
-    before mutating any state. Because it uses TRANSITIONS (a plain dict),
-    tuning the workflow means editing the dict, not rewriting logic.
     """
     role_map = TRANSITIONS.get(role, {})
+    if not role_map:
+        if role in {"MANAGER", "ADMIN"}:
+            role_map = TRANSITIONS.get("ADMIN", {})
+        elif role in {"STAFF", "INVENTORY", "CASHIER"}:
+            role_map = TRANSITIONS.get("STAFF", {})
     allowed = role_map.get(frm, ())
     return to in allowed
 
@@ -69,7 +75,11 @@ def allowed_targets(role: str, frm: str) -> tuple[str, ...]:
 
     Returns:
         A tuple of allowed target status strings (possibly empty).
-
-    Useful for building UI buttons: only show the actions the actor can take.
     """
-    return TRANSITIONS.get(role, {}).get(frm, ())
+    role_map = TRANSITIONS.get(role, {})
+    if not role_map:
+        if role in {"MANAGER", "ADMIN"}:
+            role_map = TRANSITIONS.get("ADMIN", {})
+        elif role in {"STAFF", "INVENTORY", "CASHIER"}:
+            role_map = TRANSITIONS.get("STAFF", {})
+    return role_map.get(frm, ())

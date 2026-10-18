@@ -11,14 +11,32 @@ from apps.customer_auth import services
 
 
 def get_logged_in_customer(request) -> Customer | None:
-    """Helper function to fetch the currently logged-in Customer from session."""
+    """Helper function to fetch the currently logged-in Customer from session or authenticated User."""
     customer_id = request.session.get("customer_id")
-    if not customer_id:
-        return None
-    try:
-        return Customer.objects.filter(pk=customer_id).first()
-    except Exception:
-        return None
+    if customer_id:
+        try:
+            cust = Customer.objects.filter(pk=customer_id).first()
+            if cust:
+                return cust
+        except Exception:
+            pass
+
+    # Seamless integration with Django User session (e.g. logged in via /login/)
+    user = getattr(request, "user", None)
+    if user and user.is_authenticated and getattr(user, "role", None) == "CUST":
+        phone = user.phone or "9876543210"
+        email = user.email or f"{user.username}@example.com"
+        cust = Customer.objects.filter(email=email).first() or Customer.objects.filter(phone=phone).first()
+        if not cust:
+            cust = Customer.objects.create(
+                phone=phone,
+                email=email,
+                name=user.get_full_name() or user.username,
+            )
+        request.session["customer_id"] = cust.pk
+        return cust
+
+    return None
 
 
 @require_http_methods(["GET", "POST"])

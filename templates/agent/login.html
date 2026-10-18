@@ -1,0 +1,114 @@
+{% extends "agent/base_agent.html" %}
+{% load static %}
+
+{% block title %}Delivery Partner Sign In — SuperMarket{% endblock %}
+
+{% block nav %}
+<!-- No bottom nav bar on login screen -->
+{% endblock %}
+
+{% block content %}
+<div style="display: flex; flex-direction: column; gap: 14px; margin-top: 20px;">
+  <div style="height: 48px; width: 48px; border-radius: 14px; background: #176B45; color: #fff; font-weight: 800; font-size: 20px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(23, 107, 69, 0.2);" role="img" aria-label="SuperMarket Delivery Logo">
+    SM
+  </div>
+
+  <div>
+    <h1 style="font-size: 24px; font-weight: 800;">Delivery Partner Sign in</h1>
+    <p class="m" style="margin-top: 4px;">This portal is exclusively for SuperMarket delivery partners.</p>
+  </div>
+
+  {% if error %}
+  <div class="card" style="border-color: var(--agent-danger-border); background: var(--agent-danger-bg); padding: 12px 14px;" role="alert" id="login-error-alert">
+    <p class="er">{{ error }}</p>
+  </div>
+  {% endif %}
+
+  <form method="post" action="{% url 'orders_agent:login' %}" style="display: flex; flex-direction: column; gap: 14px;" id="agent-login-form">
+    {% csrf_token %}
+    
+    <div>
+      <label for="id" style="font-weight: 600; font-size: 14px; display: block; margin-bottom: 6px;">
+        Email or mobile number
+      </label>
+      <input
+        type="text"
+        name="username"
+        id="id"
+        class="in"
+        placeholder="partner@demo.test"
+        value="{{ username }}"
+        required
+        autocomplete="username"
+      >
+    </div>
+
+    <div>
+      <label for="pw" style="font-weight: 600; font-size: 14px; display: block; margin-bottom: 6px;">
+        Password
+      </label>
+      <div style="position: relative; display: flex; align-items: center;">
+        <input
+          type="password"
+          name="password"
+          id="pw"
+          class="in"
+          placeholder="Password"
+          required
+          autocomplete="current-password"
+          style="padding-right: 64px;"
+        >
+        <button
+          type="button"
+          class="btn s"
+          onclick="togglePasswordVisibility()"
+          id="btn-toggle-pw"
+          style="position: absolute; right: 4px; min-height: 38px; padding: 0 10px; font-size: 12px; border: none; background: transparent; color: var(--agent-muted); font-weight: 600;"
+        >
+          Show
+        </button>
+      </div>
+    </div>
+
+    <div class="row">
+      <label class="m" style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+        <input type="checkbox" name="remember_me" checked style="width: 16px; height: 16px;">
+        Remember me
+      </label>
+      <button type="button" class="chip" onclick="showToast('Password reset link is sent to registered mobile/email upon admin verification.')" id="btn-forgot-pw" style="min-height: 34px; font-size: 12px; padding: 0 12px;">
+        Forgot password?
+      </button>
+    </div>
+
+    <button type="submit" class="btn" style="width: 100%; font-size: 16px; font-weight: 700; margin-top: 6px;" id="btn-agent-signin">
+      Sign in
+    </button>
+  </form>
+
+  <p class="demo">
+    <strong>Demo Credentials:</strong><br>
+    Delivery Agent: <code>partner@demo.test</code> / <code>demo1234</code><br>
+    Or sign in with any account configured with role <code>AGENT</code>.
+  </p>
+
+  <button type="button" class="chip" onclick="showToast('Helpline: +91 62812 38410 — support@freshmart.com')" style="align-self: center; margin-top: 10px;" id="btn-login-support">
+    Need help? Contact support
+  </button>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  function togglePasswordVisibility() {
+    var pw = document.getElementById("pw");
+    var btn = document.getElementById("btn-toggle-pw");
+    if (pw.type === "password") {
+      pw.type = "text";
+      btn.textContent = "Hide";
+    } else {
+      pw.type = "password";
+      btn.textContent = "Show";
+    }
+  }
+</script>
+{% endblock %}

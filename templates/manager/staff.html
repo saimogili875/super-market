@@ -1,0 +1,289 @@
+{% extends "manager/base_manager.html" %}
+{% load static %}
+
+{% block title %}Staff Management — Store Operations{% endblock %}
+{% block page_title %}Staff &amp; Workforce Management{% endblock %}
+
+{% block content %}
+<div x-data="{
+  addStaffModal: false,
+  editStaffModal: false,
+  detailModal: false,
+  staffId: '',
+  staffUsername: '',
+  staffFirst: '',
+  staffLast: '',
+  staffEmail: '',
+  staffPhone: '',
+  staffDept: '',
+  staffEmpId: '',
+  staffResp: '',
+  staffShift: '',
+  detailLines: [],
+  openEdit(id, user, first, last, email, phone, dept, empId, resp, shiftId) {
+    this.staffId = id;
+    this.staffUsername = user;
+    this.staffFirst = first;
+    this.staffLast = last;
+    this.staffEmail = email;
+    this.staffPhone = phone;
+    this.staffDept = dept;
+    this.staffEmpId = empId;
+    this.staffResp = resp;
+    this.staffShift = shiftId;
+    this.editStaffModal = true;
+  },
+  openDetail(user, name, empId, role, dept, shift, phone, email, resp, status, date) {
+    this.detailLines = [
+      {k: 'Employee Name', v: name + ' (@' + user + ')'},
+      {k: 'Employee ID', v: empId || 'N/A'},
+      {k: 'Role', v: role},
+      {k: 'Department', v: dept || 'Store Operations'},
+      {k: 'Assigned Shift', v: shift || 'General Shift'},
+      {k: 'Phone', v: phone || 'N/A'},
+      {k: 'Email', v: email || 'N/A'},
+      {k: 'Account Status', v: status},
+      {k: 'Joined Date', v: date},
+      {k: 'Responsibilities', v: resp}
+    ];
+    this.detailModal = true;
+  }
+}">
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+    <h1 class="h1">Store Staff Directory</h1>
+    {% if request.user.role == 'MANAGER' or request.user.is_superuser or request.user.role == 'ADMIN' %}
+    <button type="button" class="btn p" @click="addStaffModal = true" id="btn-add-staff-trigger">
+      + Add Staff Member
+    </button>
+    {% endif %}
+  </div>
+
+  <!-- Search & Role Filters -->
+  <div class="card" style="padding:10px 14px;">
+    <form method="get" action="{% url 'manager:staff' %}" class="fl">
+      <input class="in" type="search" name="q" placeholder="Search by Name, Username, or Employee ID..." value="{{ q }}" id="staff-search-input">
+
+      <select class="in" name="role" onchange="this.form.submit()" id="select-staff-role">
+        <option value="">All Staff Roles</option>
+        <option value="STAFF" {% if selected_role == "STAFF" %}selected{% endif %}>Store Staff</option>
+        <option value="INVENTORY" {% if selected_role == "INVENTORY" %}selected{% endif %}>Inventory Staff</option>
+        <option value="CASHIER" {% if selected_role == "CASHIER" %}selected{% endif %}>Cashier</option>
+      </select>
+
+      <select class="in" name="status" onchange="this.form.submit()" id="select-staff-status">
+        <option value="">All Statuses</option>
+        <option value="active" {% if selected_status == "active" %}selected{% endif %}>Active Only</option>
+        <option value="inactive" {% if selected_status == "inactive" %}selected{% endif %}>Inactive / Deactivated</option>
+      </select>
+
+      <div style="display:flex;gap:6px;">
+        <button type="submit" class="btn s p" id="btn-filter-staff">Filter</button>
+        {% if q or selected_role or selected_status %}
+        <a href="{% url 'manager:staff' %}" class="btn s d" id="btn-clear-staff-filter">Clear</a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+
+  <!-- Staff Roster Table -->
+  <div class="card" id="card-staff-list">
+    {% if staff_members %}
+      {% for u in staff_members %}
+      <div class="row">
+        <div class="av">{{ u.first_name|default:u.username|slice:":1"|upper }}</div>
+        <div class="grow">
+          <b>{{ u.get_full_name|default:u.username }}</b> <span class="sm">(@{{ u.username }})</span>
+          <div class="sm">
+            ID: {{ u.staff_profile.employee_id|default:"EMP-STF" }} · 
+            {{ u.get_role_display }} · 
+            Dept: {{ u.staff_profile.department|default:"Store Operations" }}
+            {% if u.staff_profile.current_shift %} · Shift: {{ u.staff_profile.current_shift.name }}{% endif %}
+          </div>
+        </div>
+
+        <span class="bg {% if u.is_active %}ok{% else %}nt{% endif %}">
+          {% if u.is_active %}Active{% else %}Inactive{% endif %}
+        </span>
+
+        <div style="display:flex;gap:4px;">
+          <button type="button" class="btn s" @click="openDetail('{{ u.username|escapejs }}', '{{ u.get_full_name|escapejs }}', '{{ u.staff_profile.employee_id|default:""|escapejs }}', '{{ u.get_role_display|escapejs }}', '{{ u.staff_profile.department|default:"Store Operations"|escapejs }}', '{{ u.staff_profile.current_shift.name|default:"General Shift"|escapejs }}', '{{ u.phone|default:""|escapejs }}', '{{ u.email|default:""|escapejs }}', '{{ u.staff_profile.responsibilities|default:"Order preparation, shelf restocking"|escapejs }}', '{{ u.is_active|yesno:"Active,Inactive" }}', '{{ u.date_joined|date:"M d, Y" }}')" id="btn-view-staff-{{ u.pk }}">
+            Profile
+          </button>
+
+          {% if request.user.role == 'MANAGER' or request.user.is_superuser or request.user.role == 'ADMIN' %}
+          <button type="button" class="btn s" @click="openEdit({{ u.pk }}, '{{ u.username|escapejs }}', '{{ u.first_name|escapejs }}', '{{ u.last_name|escapejs }}', '{{ u.email|escapejs }}', '{{ u.phone|escapejs }}', '{{ u.staff_profile.department|default:"Store Operations"|escapejs }}', '{{ u.staff_profile.employee_id|default:""|escapejs }}', '{{ u.staff_profile.responsibilities|default:""|escapejs }}', '{{ u.staff_profile.current_shift.pk|default:"" }}')" id="btn-edit-staff-{{ u.pk }}">
+            Edit
+          </button>
+
+          {% if u.pk != request.user.pk and not u.is_superuser %}
+          <form method="post" action="{% url 'manager:staff_toggle' u.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="btn s {% if u.is_active %}d{% else %}p{% endif %}" id="btn-toggle-staff-{{ u.pk }}">
+              {% if u.is_active %}Deactivate{% else %}Activate{% endif %}
+            </button>
+          </form>
+          {% endif %}
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="sm" style="padding:32px 0;text-align:center;">
+        No staff members found matching your search.
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Detail Profile Modal -->
+  <div class="ov" x-show="detailModal" x-cloak>
+    <div class="md" @click.away="detailModal = false">
+      <h2 class="h2">Staff Member Profile</h2>
+      <template x-for="l in detailLines" :key="l.k">
+        <div class="row">
+          <div class="sm" style="width:140px;" x-text="l.k"></div>
+          <div class="grow" style="font-weight:600;" x-text="l.v"></div>
+        </div>
+      </template>
+      <div style="display:flex;justify-content:flex-end;margin-top:8px;">
+        <button type="button" class="btn" @click="detailModal = false">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Staff Modal -->
+  <div class="ov" x-show="addStaffModal" x-cloak>
+    <div class="md" @click.away="addStaffModal = false">
+      <h2 class="h2">Add Staff Member</h2>
+      
+      <form method="post" action="{% url 'manager:staff_create' %}" style="display:flex;flex-direction:column;gap:10px;">
+        {% csrf_token %}
+        <div class="fl">
+          <label class="lab">
+            First Name
+            <input class="in" type="text" name="first_name" required placeholder="Priya" id="input-add-staff-first">
+          </label>
+          <label class="lab">
+            Last Name
+            <input class="in" type="text" name="last_name" placeholder="Sharma" id="input-add-staff-last">
+          </label>
+        </div>
+
+        <div class="fl">
+          <label class="lab">
+            Username
+            <input class="in" type="text" name="username" required placeholder="priya_staff" id="input-add-staff-user">
+          </label>
+          <label class="lab">
+            Employee ID
+            <input class="in" type="text" name="employee_id" placeholder="EMP-104" id="input-add-staff-empid">
+          </label>
+        </div>
+
+        <label class="lab">
+          Initial Password
+          <input class="in" type="password" name="password" required placeholder="••••••••" id="input-add-staff-pass">
+        </label>
+
+        <div class="fl">
+          <label class="lab">
+            Operational Role
+            <select class="in" name="role" required id="select-add-staff-role">
+              <option value="STAFF">Store Staff (General Operations)</option>
+              <option value="INVENTORY">Inventory Staff</option>
+              <option value="CASHIER">Cashier</option>
+            </select>
+          </label>
+          <label class="lab">
+            Assigned Shift
+            <select class="in" name="shift_id" id="select-add-staff-shift">
+              <option value="">No shift assigned</option>
+              {% for s in shifts %}
+              <option value="{{ s.pk }}">{{ s.name }}</option>
+              {% endfor %}
+            </select>
+          </label>
+        </div>
+
+        <div class="fl">
+          <label class="lab">
+            Department
+            <input class="in" type="text" name="department" value="Store Operations" placeholder="e.g. Order Fulfillment">
+          </label>
+          <label class="lab">
+            Phone Number
+            <input class="in" type="text" name="phone" placeholder="+91 98765 00000">
+          </label>
+        </div>
+
+        <label class="lab">
+          Assigned Responsibilities
+          <textarea class="in" name="responsibilities" placeholder="Order preparation, stock inspection, customer assistance"></textarea>
+        </label>
+
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
+          <button type="button" class="btn" @click="addStaffModal = false">Cancel</button>
+          <button type="submit" class="btn p" id="btn-save-new-staff">Create Staff Account</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Edit Staff Modal -->
+  <div class="ov" x-show="editStaffModal" x-cloak>
+    <div class="md" @click.away="editStaffModal = false">
+      <h2 class="h2">Edit Staff Member</h2>
+      
+      <form method="post" :action="'/manager/staff/' + staffId + '/edit/'" style="display:flex;flex-direction:column;gap:10px;">
+        {% csrf_token %}
+        <div class="fl">
+          <label class="lab">
+            First Name
+            <input class="in" type="text" name="first_name" required x-model="staffFirst">
+          </label>
+          <label class="lab">
+            Last Name
+            <input class="in" type="text" name="last_name" x-model="staffLast">
+          </label>
+        </div>
+
+        <div class="fl">
+          <label class="lab">
+            Email Address
+            <input class="in" type="email" name="email" x-model="staffEmail">
+          </label>
+          <label class="lab">
+            Phone Number
+            <input class="in" type="text" name="phone" x-model="staffPhone">
+          </label>
+        </div>
+
+        <div class="fl">
+          <label class="lab">
+            Department
+            <input class="in" type="text" name="department" x-model="staffDept">
+          </label>
+          <label class="lab">
+            Assigned Shift
+            <select class="in" name="shift_id" x-model="staffShift">
+              <option value="">No shift assigned</option>
+              {% for s in shifts %}
+              <option value="{{ s.pk }}">{{ s.name }}</option>
+              {% endfor %}
+            </select>
+          </label>
+        </div>
+
+        <label class="lab">
+          Assigned Responsibilities
+          <textarea class="in" name="responsibilities" x-model="staffResp"></textarea>
+        </label>
+
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
+          <button type="button" class="btn" @click="editStaffModal = false">Cancel</button>
+          <button type="submit" class="btn p" id="btn-update-staff">Update Staff Info</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

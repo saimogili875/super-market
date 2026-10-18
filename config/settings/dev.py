@@ -30,3 +30,13 @@ CHANNEL_LAYERS = {
 # Disable in dev so views never 500 on missing Redis.
 RATELIMIT_ENABLE = False
 
+# ---------- staticfiles (no manifest hashing needed in dev) ----------
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+    },
+}
+

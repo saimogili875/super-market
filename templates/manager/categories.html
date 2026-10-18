@@ -1,0 +1,96 @@
+{% extends "manager/base_manager.html" %}
+{% load static %}
+
+{% block title %}Categories — Store Operations{% endblock %}
+{% block page_title %}Product Categories{% endblock %}
+
+{% block content %}
+<div x-data="{
+  addCatModal: false,
+  editCatModal: false,
+  catId: '',
+  catName: '',
+  openEdit(id, name) {
+    this.catId = id;
+    this.catName = name;
+    this.editCatModal = true;
+  }
+}">
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+    <h1 class="h1">Product Categories</h1>
+    {% if request.user.role == 'MANAGER' or request.user.is_superuser or request.user.role == 'ADMIN' %}
+    <button type="button" class="btn p" @click="addCatModal = true" id="btn-add-category-trigger">
+      + Add Category
+    </button>
+    {% endif %}
+  </div>
+
+  <!-- Categories List -->
+  <div class="card" id="card-categories-list">
+    {% for c in categories %}
+    <div class="row">
+      <div class="grow">
+        <b>{{ c.name }}</b>
+        <div class="sm">{{ c.items.count }} active products linked</div>
+      </div>
+
+      <span class="bg {% if c.is_active %}ok{% else %}nt{% endif %}">
+        {% if c.is_active %}Active{% else %}Inactive{% endif %}
+      </span>
+
+      {% if request.user.role == 'MANAGER' or request.user.is_superuser or request.user.role == 'ADMIN' %}
+      <div style="display:flex;gap:4px;">
+        <button type="button" class="btn s" @click="openEdit({{ c.pk }}, '{{ c.name|escapejs }}')" id="btn-edit-cat-{{ c.pk }}">
+          Edit
+        </button>
+        <form method="post" action="{% url 'manager:category_toggle' c.pk %}">
+          {% csrf_token %}
+          <button type="submit" class="btn s {% if c.is_active %}d{% else %}p{% endif %}" id="btn-toggle-cat-{{ c.pk }}">
+            {% if c.is_active %}Deactivate{% else %}Activate{% endif %}
+          </button>
+        </form>
+      </div>
+      {% endif %}
+    </div>
+    {% empty %}
+    <div class="sm" style="padding:24px 0;text-align:center;">No categories configured yet.</div>
+    {% endfor %}
+  </div>
+
+  <!-- Add Category Modal -->
+  <div class="ov" x-show="addCatModal" x-cloak>
+    <div class="md" @click.away="addCatModal = false">
+      <h2 class="h2">Add Category</h2>
+      <form method="post" action="{% url 'manager:category_add' %}" style="display:flex;flex-direction:column;gap:10px;">
+        {% csrf_token %}
+        <label class="lab">
+          Category Name
+          <input class="in" type="text" name="name" required placeholder="e.g. Organic Dairy" id="input-add-cat-name">
+        </label>
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
+          <button type="button" class="btn" @click="addCatModal = false">Cancel</button>
+          <button type="submit" class="btn p" id="btn-save-new-category">Save Category</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Edit Category Modal -->
+  <div class="ov" x-show="editCatModal" x-cloak>
+    <div class="md" @click.away="editCatModal = false">
+      <h2 class="h2">Edit Category</h2>
+      <form method="post" :action="'/manager/categories/' + catId + '/edit/'" style="display:flex;flex-direction:column;gap:10px;">
+        {% csrf_token %}
+        <label class="lab">
+          Category Name
+          <input class="in" type="text" name="name" required x-model="catName" id="input-edit-cat-name">
+        </label>
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
+          <button type="button" class="btn" @click="editCatModal = false">Cancel</button>
+          <button type="submit" class="btn p" id="btn-update-category">Update Category</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

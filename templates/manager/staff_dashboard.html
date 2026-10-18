@@ -1,0 +1,150 @@
+{% extends "manager/base_manager.html" %}
+{% load static %}
+
+{% block title %}My Staff Dashboard — SuperMarket{% endblock %}
+{% block page_title %}Staff Operations Dashboard{% endblock %}
+
+{% block content %}
+<!-- Welcome & Attendance Banner -->
+<div class="card" style="background:#eaf5ee;border-color:#b8e0c8;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;" id="staff-welcome-banner">
+  <div style="display:flex;align-items:center;gap:12px;">
+    <div class="av" style="width:48px;height:48px;font-size:18px;background:var(--mgr-primary);color:#fff;">
+      {{ request.user.first_name|default:request.user.username|slice:":1"|upper }}
+    </div>
+    <div>
+      <h1 class="h1" style="font-size:18px;">Welcome, {{ request.user.get_full_name|default:request.user.username }}</h1>
+      <div class="sm">
+        <strong>Role:</strong> {{ request.user.get_role_display }} · 
+        <strong>Dept:</strong> {{ profile.department|default:"Store Operations" }} · 
+        <strong>ID:</strong> {{ profile.employee_id|default:"EMP-STF" }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Attendance Quick Action -->
+  <form method="post" action="{% url 'manager:attendance_check' %}" style="display:inline-flex;align-items:center;gap:8px;">
+    {% csrf_token %}
+    <input type="hidden" name="redirect" value="staff_dashboard">
+    {% if today_attendance and not today_attendance.check_out %}
+      <span class="sm" style="color:var(--mgr-success);font-weight:600;">Checked in: {{ today_attendance.check_in|date:"H:i" }}</span>
+      <button type="submit" name="action" value="check_out" class="btn d s" id="btn-staff-checkout">
+        ⏱️ Check Out Shift
+      </button>
+    {% elif today_attendance and today_attendance.check_out %}
+      <span class="bg ok">Shift Completed ({{ today_attendance.check_in|date:"H:i" }} - {{ today_attendance.check_out|date:"H:i" }})</span>
+    {% else %}
+      <button type="submit" name="action" value="check_in" class="btn p s" id="btn-staff-checkin">
+        🟢 Check In for Duty
+      </button>
+    {% endif %}
+  </form>
+</div>
+
+<!-- Shift & Responsibilities Card -->
+<div class="g2">
+  <div class="card" id="card-my-shift">
+    <h2 class="h2">My Shift & Schedule</h2>
+    <div style="font-size:15px;font-weight:600;margin-top:4px;">
+      {{ profile.current_shift.name|default:"Regular Day Shift" }}
+    </div>
+    <div class="sm" style="margin-top:2px;">
+      Hours: {{ profile.current_shift.start_time|time:"H:i"|default:"08:00" }} – {{ profile.current_shift.end_time|time:"H:i"|default:"17:00" }}
+    </div>
+    <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--mgr-border);">
+      <div class="sm" style="font-weight:600;">Assigned Operational Responsibilities:</div>
+      <div style="font-size:13px;margin-top:2px;">{{ profile.responsibilities|default:"Order preparation, shelf restocking, customer assistance, stock discrepancy reporting." }}</div>
+    </div>
+  </div>
+
+  <div class="card" id="card-quick-actions">
+    <h2 class="h2">Quick Operational Tasks</h2>
+    <div class="chips" style="margin-top:8px;">
+      <a href="{% url 'manager:orders' %}?status=APPROVED" class="btn p s" id="btn-go-prep-orders">
+        📦 Pick & Pack Orders
+      </a>
+      <a href="{% url 'manager:inventory' %}" class="btn s" id="btn-go-inventory">
+        🔍 Stock Inquiry
+      </a>
+      <a href="{% url 'manager:stock_requests' %}" class="btn s" id="btn-go-report-discrepancy">
+        ⚠️ Report Stock Discrepancy
+      </a>
+    </div>
+    <div class="sm" style="margin-top:12px;">
+      Need stock adjustment? Submit a request above for manager approval.
+    </div>
+  </div>
+</div>
+
+<!-- My Assigned Tasks -->
+<div class="card" id="card-my-tasks">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+    <h2 class="h2" style="margin:0;">My Assigned Tasks ({{ my_tasks.count }})</h2>
+    <a href="{% url 'manager:tasks' %}" class="sm" style="color:var(--mgr-primary);font-weight:600;text-decoration:none;">View all &rarr;</a>
+  </div>
+  {% if my_tasks %}
+    {% for t in my_tasks %}
+    <div class="row">
+      <div class="grow">
+        <b>{{ t.title }}</b>
+        <div class="sm">{{ t.description|default:"No special instructions" }}</div>
+        <div class="sm" style="margin-top:2px;">Due: {{ t.due_date|date:"M d, H:i"|default:"Today" }} · Category: {{ t.get_category_display }}</div>
+      </div>
+      <span class="bg {% if t.priority == 'URGENT' %}pr-urg{% elif t.priority == 'HIGH' %}pr-high{% elif t.priority == 'LOW' %}pr-low{% else %}pr-med{% endif %}">
+        {{ t.get_priority_display }}
+      </span>
+      <span class="bg {% if t.status == 'COMPLETED' %}ok{% elif t.status == 'IN_PROGRESS' %}bl{% else %}nt{% endif %}">
+        {{ t.get_status_display }}
+      </span>
+      
+      <!-- Task Action Buttons -->
+      <div style="display:flex;gap:4px;">
+        {% if t.status == 'PENDING' %}
+        <form method="post" action="{% url 'manager:task_update_status' t.pk %}">
+          {% csrf_token %}
+          <input type="hidden" name="status" value="IN_PROGRESS">
+          <button type="submit" class="btn s p" id="btn-start-task-{{ t.pk }}">Start</button>
+        </form>
+        {% elif t.status == 'IN_PROGRESS' %}
+        <form method="post" action="{% url 'manager:task_update_status' t.pk %}">
+          {% csrf_token %}
+          <input type="hidden" name="status" value="COMPLETED">
+          <input type="hidden" name="completion_notes" value="Completed by staff">
+          <button type="submit" class="btn s ok" id="btn-complete-task-{{ t.pk }}">Mark Done</button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  {% else %}
+    <div class="sm" style="padding:20px 0;text-align:center;color:var(--mgr-success);">
+      ✨ No pending tasks assigned. You're all caught up!
+    </div>
+  {% endif %}
+</div>
+
+<!-- Order Preparation Queue for Staff -->
+<div class="card" id="card-prep-queue">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+    <h2 class="h2" style="margin:0;">Order Preparation Queue</h2>
+    <a href="{% url 'manager:orders' %}" class="sm" style="color:var(--mgr-primary);font-weight:600;text-decoration:none;">Orders &rarr;</a>
+  </div>
+  {% if prep_orders %}
+    {% for o in prep_orders %}
+    <div class="row">
+      <div class="grow">
+        <b>#{{ o.pk }}</b> · <span class="sm">{{ o.contact_name|default:"Customer" }}</span>
+        <div class="sm">{{ o.items.count }} items to pick & pack · Slot: {{ o.slot|default:"Immediate" }}</div>
+      </div>
+      <span class="bg {% if o.status == 'KITCHEN' %}wn{% else %}bl{% endif %}">
+        {{ o.get_status_display }}
+      </span>
+      <a href="{% url 'manager:order_detail' o.pk %}" class="btn s p" id="btn-staff-pick-order-{{ o.pk }}">
+        Pick & Pack Checklist &rarr;
+      </a>
+    </div>
+    {% endfor %}
+  {% else %}
+    <div class="sm" style="padding:16px 0;text-align:center;">No orders currently requiring packing.</div>
+  {% endif %}
+</div>
+{% endblock %}

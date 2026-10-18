@@ -1,4 +1,4 @@
-"""Account URL routes (login, logout).
+"""Account URL routes (login, logout, captcha).
 
 Namespace: accounts
 """
@@ -12,4 +12,5 @@ app_name = "accounts"
 urlpatterns = [
     path("login/", views.RoleLoginView.as_view(), name="login"),
     path("logout/", LogoutView.as_view(), name="logout"),
+    path("captcha/", views.captcha_image_view, name="captcha"),
 ]

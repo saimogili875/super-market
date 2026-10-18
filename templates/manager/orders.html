@@ -1,0 +1,79 @@
+{% extends "manager/base_manager.html" %}
+{% load static %}
+
+{% block title %}Orders — Store Operations{% endblock %}
+{% block page_title %}Store Orders{% endblock %}
+
+{% block content %}
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+  <h1 class="h1">Orders Pipeline</h1>
+  <div style="display:flex;gap:8px;">
+    <a href="{% url 'manager:orders' %}" class="btn s" id="btn-refresh-orders">↻ Refresh</a>
+  </div>
+</div>
+
+<!-- Status Filter Chips -->
+<div class="chips" id="order-status-chips">
+  <a href="{% url 'manager:orders' %}" class="chip {% if not current_status %}on{% endif %}" id="chip-status-all">
+    All Orders
+  </a>
+  <a href="{% url 'manager:orders' %}?status=PLACED" class="chip {% if current_status == 'PLACED' %}on{% endif %}" id="chip-status-placed">
+    New ({{ counts.PLACED|default:0 }})
+  </a>
+  <a href="{% url 'manager:orders' %}?status=APPROVED" class="chip {% if current_status == 'APPROVED' %}on{% endif %}" id="chip-status-approved">
+    Accepted ({{ counts.APPROVED|default:0 }})
+  </a>
+  <a href="{% url 'manager:orders' %}?status=KITCHEN" class="chip {% if current_status == 'KITCHEN' %}on{% endif %}" id="chip-status-kitchen">
+    Preparing ({{ counts.KITCHEN|default:0 }})
+  </a>
+  <a href="{% url 'manager:orders' %}?status=READY" class="chip {% if current_status == 'READY' %}on{% endif %}" id="chip-status-ready">
+    Ready for Pickup ({{ counts.READY|default:0 }})
+  </a>
+  <a href="{% url 'manager:orders' %}?status=DISPATCH" class="chip {% if current_status == 'DISPATCH' %}on{% endif %}" id="chip-status-dispatch">
+    Handed Over ({{ counts.DISPATCH|default:0 }})
+  </a>
+  <a href="{% url 'manager:orders' %}?status=PAID" class="chip {% if current_status == 'PAID' %}on{% endif %}" id="chip-status-paid">
+    Delivered / Paid ({{ counts.PAID|default:0 }})
+  </a>
+  <a href="{% url 'manager:orders' %}?status=CANCEL" class="chip {% if current_status == 'CANCEL' %}on{% endif %}" id="chip-status-cancel">
+    Cancelled ({{ counts.CANCEL|default:0 }})
+  </a>
+</div>
+
+<!-- Search Bar -->
+<div class="card" style="padding:10px 14px;">
+  <form method="get" action="{% url 'manager:orders' %}" style="display:flex;gap:10px;align-items:center;">
+    {% if current_status %}<input type="hidden" name="status" value="{{ current_status }}">{% endif %}
+    <input class="in" type="search" name="q" placeholder="Search by Order ID (#1048) or Customer Name..." value="{{ q }}" id="orders-search-input">
+    <button type="submit" class="btn s p" id="btn-search-orders">Search</button>
+    {% if q %}
+    <a href="{% url 'manager:orders' %}{% if current_status %}?status={{ current_status }}{% endif %}" class="btn s d" id="btn-clear-search">Clear</a>
+    {% endif %}
+  </form>
+</div>
+
+<!-- Order Rows List -->
+<div class="card" id="card-orders-list">
+  {% if orders %}
+    {% for o in orders %}
+    <div class="row">
+      <div class="grow">
+        <b>#{{ o.pk }}</b> · <span class="sm">{{ o.contact_name|default:"Walk-in Customer" }}</span>
+        <div class="sm">
+          {{ o.created_at|date:"M d, H:i" }} · {{ o.items.count }} items · <strong>₹{{ o.total_amount }}</strong> · {{ o.order_type }}
+          {% if o.agent %}· Driver: {{ o.agent.first_name|default:o.agent.username }}{% endif %}
+        </div>
+      </div>
+      <span class="bg {% if o.status == 'PLACED' %}bl{% elif o.status == 'APPROVED' or o.status == 'KITCHEN' %}wn{% elif o.status == 'READY' or o.status == 'PAID' %}ok{% else %}er{% endif %}">
+        {{ o.get_status_display }}
+      </span>
+      <a href="{% url 'manager:order_detail' o.pk %}" class="btn s" id="btn-view-order-{{ o.pk }}">View Order</a>
+    </div>
+    {% endfor %}
+  {% else %}
+    <div class="sm" style="padding:32px 0;text-align:center;">
+      No orders found matching the selected filter.
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

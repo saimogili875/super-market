@@ -1,0 +1,166 @@
+{% extends "manager/base_manager.html" %}
+{% load static %}
+
+{% block title %}Order #{{ order.pk }} — Store Operations{% endblock %}
+{% block page_title %}Order #{{ order.pk }}{% endblock %}
+
+{% block content %}
+<div class="chips">
+  <a href="{% url 'manager:orders' %}" class="btn s" id="btn-back-orders">‹ All orders</a>
+</div>
+
+<!-- Order Summary Card -->
+<div class="card" id="card-order-summary">
+  <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+    <h1 class="h1" style="flex:1;">Order #{{ order.pk }}</h1>
+    <span class="bg {% if order.status == 'PLACED' %}bl{% elif order.status == 'APPROVED' or order.status == 'KITCHEN' %}wn{% elif order.status == 'READY' or order.status == 'PAID' or order.status == 'DISPATCH' %}ok{% else %}er{% endif %}" id="order-status-badge">
+      {{ order.get_status_display }}
+    </span>
+  </div>
+
+  <div class="sm" style="margin-top:8px;">
+    <strong>Customer:</strong> {{ order.contact_name|default:"Customer" }} ({{ order.contact_phone|default:"No phone" }}) · 
+    <strong>Placed:</strong> {{ order.created_at|date:"M d, H:i" }} · 
+    <strong>Type:</strong> {{ order.get_order_type_display }}
+  </div>
+
+  <div style="margin-top:6px;font-size:13px;">
+    <strong>Delivery Address:</strong> {{ order.delivery_address }}
+  </div>
+
+  {% if order.instructions %}
+  <div style="margin-top:6px;background:#f9faf9;border-left:3px solid var(--mgr-primary);padding:6px 10px;border-radius:4px;" class="sm">
+    <strong>Customer Note:</strong> {{ order.instructions }}
+  </div>
+  {% endif %}
+
+  <!-- Operational Phase Note -->
+  <div class="sm" style="margin-top:10px;padding-top:8px;border-top:1px solid var(--mgr-border);color:var(--mgr-primary);font-weight:600;">
+    {% if order.status == 'READY' %}
+      ✓ Packed and ready. Waiting for Delivery Agent to collect.
+    {% elif order.status == 'DISPATCH' %}
+      ✓ Handed over to Delivery Agent ({{ order.agent.get_full_name|default:order.agent.username|default:"Assigned driver" }}). In transit.
+    {% elif order.status == 'CANCEL' %}
+      ⚠️ Order has been cancelled.
+    {% else %}
+      Store preparation stage: pick all items below before marking packed.
+    {% endif %}
+  </div>
+</div>
+
+<!-- Pick & Pack Checklist -->
+<div class="card" id="card-pick-checklist">
+  <h2 class="h2">Pick &amp; Pack Checklist</h2>
+  <div class="sm" style="margin-bottom:8px;">Verify and check off each item from the shelves:</div>
+
+  {% for item in order.items.all %}
+  <div class="row">
+    <div class="av">{{ item.name_snap|slice:":1"|upper }}</div>
+    <div class="grow">
+      <b>{{ item.name_snap }}</b>
+      <div class="sm">
+        SKU: {{ item.menu_item.sku|default:"N/A" }} · 
+        Qty: <strong>{{ item.quantity }}</strong> × ₹{{ item.unit_price }} = ₹{{ item.line_total }} · 
+        In Stock: {{ item.menu_item.stock_quantity }} {{ item.menu_item.unit }}
+      </div>
+    </div>
+
+    <!-- Pick status badge -->
+    <span class="bg {% if item.is_picked %}ok{% elif item.menu_item.stock_quantity < item.quantity %}er{% else %}nt{% endif %}" id="badge-item-{{ item.pk }}">
+      {% if item.is_picked %}
+        Picked
+      {% elif item.menu_item.stock_quantity < item.quantity %}
+        Insufficient stock
+      {% else %}
+        Not picked
+      {% endif %}
+    </span>
+
+    <!-- Mark Picked / Unpick Action -->
+    <form method="post" action="{% url 'manager:order_toggle_pick' order.pk item.pk %}">
+      {% csrf_token %}
+      <button type="submit" class="btn s {% if item.is_picked %}d{% else %}p{% endif %}" id="btn-toggle-pick-{{ item.pk }}">
+        {% if item.is_picked %}Unpick{% else %}Mark Picked{% endif %}
+      </button>
+    </form>
+  </div>
+  {% endfor %}
+
+  <div style="text-align:right;font-weight:700;font-size:16px;padding-top:12px;border-top:1px solid var(--mgr-border);">
+    Total Order Amount: ₹{{ order.total_amount }}
+  </div>
+</div>
+
+<!-- Workflow Action Bar -->
+<div class="card" style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;" id="card-order-actions" x-data="{ cancelModal: false }">
+  {% if next_action %}
+  <form method="post" action="{% url 'manager:order_action' order.pk %}">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="{{ next_action.value }}">
+    <button type="submit" class="btn p" {% if next_action.disabled %}disabled{% endif %} id="btn-next-action">
+      {{ next_action.label }}
+    </button>
+  </form>
+  {% endif %}
+
+  {% if can_cancel %}
+  <button type="button" class="btn d" @click="cancelModal = true" id="btn-cancel-modal-trigger">
+    Cancel / Report Issue
+  </button>
+
+  <!-- Cancel / Issue Modal -->
+  <div class="ov" x-show="cancelModal" x-cloak>
+    <div class="md" @click.away="cancelModal = false">
+      <h2 class="h2">Cancel Order #{{ order.pk }}</h2>
+      <div class="sm">Reporting an issue will cancel the order and restock any tracked items.</div>
+
+      <form method="post" action="{% url 'manager:order_action' order.pk %}" style="display:flex;flex-direction:column;gap:10px;">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="cancel">
+
+        <label class="lab">
+          Cancellation Reason
+          <select class="in" name="reason" required id="select-cancel-reason">
+            <option value="Out of stock item">Out of stock item</option>
+            <option value="Customer requested cancellation">Customer requested cancellation</option>
+            <option value="Store closing / power outage">Store closing / power outage</option>
+            <option value="Other store operational issue">Other operational issue</option>
+          </select>
+        </label>
+
+        <label class="lab">
+          Notes
+          <textarea class="in" name="notes" placeholder="Describe the issue..."></textarea>
+        </label>
+
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:6px;">
+          <button type="button" class="btn" @click="cancelModal = false">Back</button>
+          <button type="submit" class="btn d" id="btn-confirm-cancel-order">Confirm Cancellation</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if action_hint %}
+  <div class="sm" style="color:var(--mgr-muted);" id="action-hint">{{ action_hint }}</div>
+  {% endif %}
+</div>
+
+<!-- Order Timeline / Audit Trail -->
+<div class="card" id="card-order-timeline">
+  <h2 class="h2">Order Timeline</h2>
+  {% for ev in order.events.all %}
+  <div class="row">
+    <div class="grow">
+      <b>{{ ev.to_status }}</b>
+      {% if ev.from_status %}<span class="sm">(from {{ ev.from_status }})</span>{% endif %}
+      <div class="sm">By: {{ ev.actor.username|default:"System" }}</div>
+    </div>
+    <div class="sm">{{ ev.created_at|date:"M d, H:i:s" }}</div>
+  </div>
+  {% empty %}
+  <div class="sm" style="padding:12px 0;">No audit events recorded yet.</div>
+  {% endfor %}
+</div>
+{% endblock %}

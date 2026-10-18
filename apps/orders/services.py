@@ -275,7 +275,22 @@ def transition(order: Order, to_status: str, actor) -> Order:
 
     with transaction.atomic():
         order.status = to_status
-        order.save(update_fields=["status"])
+        from django.utils.timezone import now
+        current_time = now()
+        update_fields = ["status"]
+
+        if actor.role == "AGENT":
+            if to_status == OrderStatus.ARRIVED and not order.delivery_arrived_at:
+                order.delivery_arrived_at = current_time
+                update_fields.append("delivery_arrived_at")
+            elif to_status == OrderStatus.COLLECTED and not order.delivery_picked_at:
+                order.delivery_picked_at = current_time
+                update_fields.append("delivery_picked_at")
+            elif to_status == OrderStatus.PAID and not order.delivery_completed_at:
+                order.delivery_completed_at = current_time
+                update_fields.append("delivery_completed_at")
+
+        order.save(update_fields=update_fields)
 
         if to_status == OrderStatus.CANCELLED and frm != OrderStatus.CANCELLED:
             for item in order.items.select_related("menu_item").all():
@@ -283,6 +298,17 @@ def transition(order: Order, to_status: str, actor) -> Order:
                     item.menu_item.stock_quantity = F("stock_quantity") + item.quantity
                     item.menu_item.save(update_fields=["stock_quantity"])
                     invalidate_menu_cache()
+
+            if order.agent_id:
+                from apps.notifications.models import AdminNotification
+                AdminNotification.objects.create(
+                    notification_type="Delivery",
+                    severity="er",
+                    title=f"Order #{order.pk} cancelled",
+                    message=f"Order #{order.pk} was cancelled by administration.",
+                    reference_id=f"ORD-{order.pk}",
+                    recipient=order.agent,
+                )
 
         OrderEvent.objects.create(
             order=order,
@@ -310,29 +336,14 @@ def transition(order: Order, to_status: str, actor) -> Order:
 
 
 def assign_agent(order: Order, agent_user, actor) -> Order:
-    """Assign a delivery order to an available agent (admin action).
+    """Assign a delivery order to an available agent (admin/manager action).
 
     Assigning here IS the handoff: this is how the admin forwards the
-    delivery to a courier. Assigning an agent set order.agent AND
+    delivery to a courier. Assigning an agent sets order.agent AND
     transitions the order to DISPATCH atomically, so the agent immediately
     sees action buttons on their dashboard.
-
-    Args:
-        order:      The delivery Order to assign.
-        agent_user: The User (role AGENT) who will deliver it.
-        actor:      The User performing the assignment (must be ADMIN).
-
-    Returns:
-        The updated Order with its ``agent`` set and status transitioned to DISPATCH.
-
-    Raises:
-        PermissionDenied: If the actor is not an ADMIN, if agent_user is not
-                          an AGENT, or if that agent is not currently available.
-
-    Calls transition() so the status moves to DISPATCHED and an audit OrderEvent
-    is logged, then broadcasts notifications to the agent's room and order room.
     """
-    if actor.role != "ADMIN":
+    if actor.role not in ("ADMIN", "MANAGER") and not getattr(actor, "is_superuser", False):
         raise PermissionDenied("Only an admin may assign delivery agents.")
 
     if order.order_type != "DELV":
@@ -353,6 +364,17 @@ def assign_agent(order: Order, agent_user, actor) -> Order:
         if order.status != OrderStatus.DISPATCHED:
             transition(order, OrderStatus.DISPATCHED, actor)
 
+    # Create in-app operational alert for assigned agent
+    from apps.notifications.models import AdminNotification
+    AdminNotification.objects.create(
+        notification_type="Delivery",
+        severity="ok",
+        title=f"New delivery assignment #{order.pk}",
+        message=f"Store: SuperMarket Store 01 | Customer: {order.contact_name or 'Customer'} | Drop: {order.delivery_area}",
+        reference_id=f"ORD-{order.pk}",
+        recipient=agent_user,
+    )
+
     # Notify the agent's room and the order room (fire-and-forget, after commit).
     from apps.realtime.broadcast import broadcast
 
@@ -363,6 +385,177 @@ def assign_agent(order: Order, agent_user, actor) -> Order:
     }
     broadcast(f"agent.{agent_user.pk}", "order.status", payload)
     broadcast(f"order.{order.pk}", "order.status", payload)
+
+    return order
+
+
+def accept_delivery(order: Order, actor) -> Order:
+    """Agent accepts an assigned delivery order."""
+    if actor.role != "AGENT" or order.agent_id != actor.pk:
+        raise PermissionDenied("Only the assigned agent may accept this delivery.")
+
+    if order.status != OrderStatus.DISPATCHED:
+        raise ValidationError(f"Order #{order.pk} is in status '{order.status}', cannot be accepted.")
+
+    from django.utils.timezone import now
+    with transaction.atomic():
+        if not order.delivery_accepted_at:
+            order.delivery_accepted_at = now()
+            order.save(update_fields=["delivery_accepted_at"])
+
+            OrderEvent.objects.create(
+                order=order,
+                from_status=order.status,
+                to_status=order.status,
+                actor=actor,
+            )
+
+    from apps.realtime.broadcast import broadcast
+    payload = {
+        "order_id": order.pk,
+        "status": order.status,
+        "accepted": True,
+        "at": order.updated_at.isoformat(),
+    }
+    broadcast(f"agent.{actor.pk}", "order.status", payload)
+    broadcast(f"order.{order.pk}", "order.status", payload)
+    broadcast("admin.dashboard", "order.status", payload)
+    return order
+
+
+def reject_delivery(order: Order, reason: str, actor) -> Order:
+    """Agent rejects an assigned delivery order.
+
+    Unassigns agent, returns order to READY pool for reassignment,
+    logs OrderEvent, and notifies admin/manager.
+    """
+    if actor.role != "AGENT" or order.agent_id != actor.pk:
+        raise PermissionDenied("Only the assigned agent may reject this delivery.")
+
+    if order.status in (OrderStatus.PAID, OrderStatus.CANCELLED):
+        raise ValidationError("Cannot reject a completed or cancelled order.")
+
+    reason = reason.strip() or "Unavailable"
+
+    with transaction.atomic():
+        order.delivery_issue_reason = f"Rejected: {reason}"
+        order.agent = None
+        order.delivery_accepted_at = None
+        if order.status == OrderStatus.DISPATCHED:
+            order.status = OrderStatus.READY
+        order.save(update_fields=["agent", "status", "delivery_issue_reason", "delivery_accepted_at"])
+
+        OrderEvent.objects.create(
+            order=order,
+            from_status=OrderStatus.DISPATCHED,
+            to_status=OrderStatus.READY,
+            actor=actor,
+        )
+
+    from apps.notifications.models import AdminNotification
+    AdminNotification.objects.create(
+        notification_type="Delivery",
+        severity="wn",
+        title=f"Delivery Rejected: Order #{order.pk}",
+        message=f"Agent {actor.username} rejected order #{order.pk}. Reason: {reason}. Order returned to pool.",
+        reference_id=f"ORD-{order.pk}",
+    )
+
+    from apps.realtime.broadcast import broadcast
+    payload = {
+        "order_id": order.pk,
+        "status": order.status,
+        "at": order.updated_at.isoformat(),
+        "unassigned": True,
+    }
+    broadcast("admin.dashboard", "order.status", payload)
+    broadcast(f"agent.{actor.pk}", "order.status", payload)
+    broadcast(f"order.{order.pk}", "order.status", payload)
+
+    return order
+
+
+def report_delivery_issue(order: Order, reason: str, notes: str, actor) -> Order:
+    """Agent reports an operational issue on an active delivery."""
+    if actor.role != "AGENT" or order.agent_id != actor.pk:
+        raise PermissionDenied("Only the assigned agent may report an issue on this delivery.")
+
+    reason = reason.strip() or "Operational issue"
+    notes = notes.strip()
+
+    with transaction.atomic():
+        order.delivery_issue_reason = reason
+        order.delivery_issue_notes = notes
+        order.save(update_fields=["delivery_issue_reason", "delivery_issue_notes"])
+
+        OrderEvent.objects.create(
+            order=order,
+            from_status=order.status,
+            to_status=order.status,
+            actor=actor,
+        )
+        post_message(order, actor, f"Issue reported: {reason}. {notes}".strip())
+
+    from apps.notifications.models import AdminNotification
+    AdminNotification.objects.create(
+        notification_type="Delivery",
+        severity="er",
+        title=f"Delivery Issue: Order #{order.pk}",
+        message=f"Agent {actor.username} reported issue on Order #{order.pk}: {reason}. Notes: {notes}",
+        reference_id=f"ORD-{order.pk}",
+    )
+
+    from apps.realtime.broadcast import broadcast
+    broadcast(f"order.{order.pk}", "order.status", {"order_id": order.pk, "issue": reason})
+    broadcast("admin.dashboard", "order.status", {"order_id": order.pk, "issue": reason})
+
+    return order
+
+
+def complete_delivery(
+    order: Order,
+    pod_type: str = "otp",
+    pod_detail: str = "",
+    notes: str = "",
+    pod_image=None,
+    actor=None,
+) -> Order:
+    """Complete a delivery order with POD and transition to PAID."""
+    if actor.role != "AGENT" or order.agent_id != actor.pk:
+        raise PermissionDenied("Only the assigned agent may complete this delivery.")
+
+    if order.status != OrderStatus.COLLECTED:
+        raise ValidationError(f"Order must be out for delivery (collected) before completion. Current status: '{order.status}'.")
+
+    from django.utils.timezone import now
+    with transaction.atomic():
+        order.delivery_completed_at = now()
+        order.delivery_pod_type = pod_type or "handover"
+        order.delivery_pod_detail = pod_detail
+        order.delivery_notes = notes
+        update_fields = [
+            "delivery_completed_at",
+            "delivery_pod_type",
+            "delivery_pod_detail",
+            "delivery_notes",
+        ]
+        if pod_image:
+            order.delivery_pod_image = pod_image
+            update_fields.append("delivery_pod_image")
+
+        order.save(update_fields=update_fields)
+
+        # Transition to PAID (Delivered)
+        transition(order, OrderStatus.PAID, actor)
+
+    from apps.notifications.models import AdminNotification
+    AdminNotification.objects.create(
+        notification_type="Delivery",
+        severity="ok",
+        title=f"Delivery Completed: Order #{order.pk}",
+        message=f"Agent {actor.username} completed delivery of Order #{order.pk}. POD: {pod_type}.",
+        reference_id=f"ORD-{order.pk}",
+    )
 
     return order
 
@@ -437,3 +630,17 @@ def is_within_delivery_radius(distance_km: float, limit_km: float = 3.0) -> bool
     NOT do live geolocation; this just enforces the <3 km business rule.
     """
     return distance_km <= limit_km
+
+
+def toggle_item_picked(order_item_id: int, actor) -> OrderItem:
+    """Toggle is_picked for an order item in the store pick & pack checklist."""
+    item = OrderItem.objects.select_related("order", "menu_item").get(pk=order_item_id)
+    item.is_picked = not item.is_picked
+    item.save(update_fields=["is_picked"])
+    return item
+
+
+def all_items_picked(order: Order) -> bool:
+    """Return True if all line items in an order have been picked and verified."""
+    return order.items.exists() and not order.items.filter(is_picked=False).exists()
+

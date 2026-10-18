@@ -1,0 +1,137 @@
+{% extends "manager/base_manager.html" %}
+{% load static %}
+
+{% block title %}Shifts &amp; Attendance — Store Operations{% endblock %}
+{% block page_title %}Shifts &amp; Staff Attendance{% endblock %}
+
+{% block content %}
+<div x-data="{
+  addShiftModal: false,
+  leaveModal: false,
+}">
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+    <h1 class="h1">Store Shifts &amp; Attendance</h1>
+    <div style="display:flex;gap:8px;">
+      <!-- Quick Check In/Out for authenticated staff/manager -->
+      <form method="post" action="{% url 'manager:attendance_check' %}" style="display:inline-flex;">
+        {% csrf_token %}
+        <input type="hidden" name="redirect" value="attendance">
+        {% if my_attendance and not my_attendance.check_out %}
+          <button type="submit" name="action" value="check_out" class="btn d s" id="btn-quick-checkout">
+            ⏱️ Check Out ({{ my_attendance.check_in|date:"H:i" }})
+          </button>
+        {% elif my_attendance and my_attendance.check_out %}
+          <span class="bg ok" style="padding:6px 12px;">Shift Logged Today</span>
+        {% else %}
+          <button type="submit" name="action" value="check_in" class="btn p s" id="btn-quick-checkin">
+            🟢 Check In Now
+          </button>
+        {% endif %}
+      </form>
+
+      {% if request.user.role == 'MANAGER' or request.user.is_superuser or request.user.role == 'ADMIN' %}
+      <button type="button" class="btn p s" @click="addShiftModal = true" id="btn-create-shift-trigger">
+        + Add Shift Schedule
+      </button>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Shifts Overview Grid -->
+  <div class="g2" style="margin-top:4px;">
+    <div class="card" id="card-shifts-roster">
+      <h2 class="h2">Store Shift Schedules</h2>
+      {% for s in shifts %}
+      <div class="row">
+        <div class="grow">
+          <b>{{ s.name }}</b>
+          <div class="sm">Time: {{ s.start_time|time:"H:i" }} – {{ s.end_time|time:"H:i" }}</div>
+        </div>
+        <span class="bg ok">{{ s.assigned_staff.count }} Assigned</span>
+      </div>
+      {% empty %}
+      <div class="sm" style="padding:16px 0;">No shift schedules configured yet.</div>
+      {% endfor %}
+    </div>
+
+    <!-- Attendance Today Summary -->
+    <div class="card" id="card-attendance-summary">
+      <h2 class="h2">Today's Store Attendance Summary</h2>
+      <div style="margin-top:10px;display:flex;gap:16px;flex-wrap:wrap;">
+        <div>
+          <b style="font-size:24px;color:var(--mgr-success);">{{ attendance_today.count }}</b>
+          <div class="sm">Present Today</div>
+        </div>
+        <div>
+          <b style="font-size:24px;color:var(--mgr-brand);">{{ on_duty_count }}</b>
+          <div class="sm">Currently Active on Shift</div>
+        </div>
+      </div>
+      <div class="sm" style="margin-top:14px;">
+        Staff verify presence upon store arrival. Shift check-outs are recorded at departure.
+      </div>
+    </div>
+  </div>
+
+  <!-- Attendance Log Table -->
+  <div class="card" id="card-attendance-log" style="margin-top:8px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+      <h2 class="h2" style="margin:0;">Attendance Log (Recent Records)</h2>
+      <span class="sm">Date: {{ today|date:"M d, Y" }}</span>
+    </div>
+
+    {% if attendance_records %}
+      {% for att in attendance_records %}
+      <div class="row">
+        <div class="av">{{ att.staff.first_name|default:att.staff.username|slice:":1"|upper }}</div>
+        <div class="grow">
+          <b>{{ att.staff.get_full_name|default:att.staff.username }}</b>
+          <div class="sm">
+            Date: {{ att.date|date:"Y-m-d" }} · Shift: {{ att.shift.name|default:"General Shift" }} · 
+            In: <strong>{{ att.check_in|date:"H:i"|default:"—" }}</strong> · 
+            Out: <strong>{{ att.check_out|date:"H:i"|default:"Active" }}</strong>
+          </div>
+          {% if att.notes %}<div class="sm" style="color:var(--mgr-muted);">Note: {{ att.notes }}</div>{% endif %}
+        </div>
+
+        <span class="bg {% if att.status == 'PRESENT' %}ok{% elif att.status == 'LATE' %}wn{% elif att.status == 'ABSENT' %}er{% else %}bl{% endif %}">
+          {{ att.get_status_display }}
+        </span>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="sm" style="padding:24px 0;text-align:center;">
+        No attendance records found.
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Add Shift Modal -->
+  <div class="ov" x-show="addShiftModal" x-cloak>
+    <div class="md" @click.away="addShiftModal = false">
+      <h2 class="h2">Add Shift Schedule</h2>
+      <form method="post" action="{% url 'manager:shift_create' %}" style="display:flex;flex-direction:column;gap:10px;">
+        {% csrf_token %}
+        <label class="lab">
+          Shift Name
+          <input class="in" type="text" name="name" required placeholder="e.g. Morning Shift (06:00 - 14:00)" id="input-shift-name">
+        </label>
+        <div class="fl">
+          <label class="lab">
+            Start Time
+            <input class="in" type="time" name="start_time" required id="input-shift-start">
+          </label>
+          <label class="lab">
+            End Time
+            <input class="in" type="time" name="end_time" required id="input-shift-end">
+          </label>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
+          <button type="button" class="btn" @click="addShiftModal = false">Cancel</button>
+          <button type="submit" class="btn p" id="btn-save-new-shift">Save Shift</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -3,39 +3,46 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-  <title>{% block title %}{{ BRAND_NAME|default:"FreshMart" }}{% endblock %} — {{ BRAND_TAGLINE|default:"Fresh groceries, delivered fast" }}</title>
+  <title>{% block title %}FreshMart — Fresh food. Everyday low prices.{% endblock %}</title>
   
-  <!-- DM Sans Font -->
+  <!-- Fonts: Fraunces (headings) & Inter (body) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;0,9..144,800;1,9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   
   <!-- HTMX & Alpine.js -->
   <script src="https://unpkg.com/htmx.org@1.9.10"></script>
   <script defer src="https://unpkg.com/alpinejs@3.13.3/dist/cdn.min.js"></script>
 
   <!-- Open Graph / Meta -->
-  <meta property="og:title" content="{{ BRAND_NAME }} — {{ BRAND_TAGLINE }}" />
-  <meta property="og:description" content="Fresh groceries, daily essentials, organic fruits & vegetables, and pantry staples delivered directly to your doorstep." />
+  <meta property="og:title" content="FreshMart — Fresh food. Everyday low prices." />
+  <meta property="og:description" content="Shop groceries, daily essentials, fresh fruits, vegetables, and pantry staples with guaranteed lower-than-MRP everyday low prices." />
   <meta property="og:type" content="website" />
-  <meta name="theme-color" content="#176B45">
+  <meta name="theme-color" content="#14532d">
 
   <style>
     :root {
-      --bg: #F7F8F5;
-      --surface: #FFFFFF;
-      --border: #E5E9E3;
-      --primary: #176B45;
-      --primary-dark: #104C32;
-      --primary-pill: #E8F4EC;
-      --accent-gold: #F4B942;
-      --danger: #B3261E;
-      --text: #171A17;
-      --text-muted: #5C645D;
-      --text-secondary: #4F5A52;
-      --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
-      --shadow-md: 0 4px 14px rgba(0,0,0,0.08);
-      --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
+      --deep-green: #14532d;
+      --deep-green-dark: #0f3d21;
+      --leaf: #22a05a;
+      --leaf-hover: #1b874b;
+      --cream: #fbf7ef;
+      --cream-card: #ffffff;
+      --tomato: #e8532f;
+      --bg: #fbf7ef;
+      --surface: #ffffff;
+      --border: #e2e8e3;
+      --primary: #14532d;
+      --primary-dark: #0f3d21;
+      --primary-pill: #eaf5ee;
+      --accent-gold: #f59e0b;
+      --danger: #dc2626;
+      --text: #1f2937;
+      --text-muted: #6b7280;
+      --text-secondary: #4b5563;
+      --shadow-sm: 0 1px 3px rgba(20,83,45,0.06);
+      --shadow-md: 0 4px 14px rgba(20,83,45,0.09);
+      --shadow-lg: 0 8px 24px rgba(20,83,45,0.14);
       --radius-sm: 8px;
       --radius-md: 12px;
       --radius-lg: 16px;
@@ -50,7 +57,7 @@
 
     body {
       margin: 0;
-      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       color: var(--text);
       background-color: var(--bg);
       -webkit-font-smoothing: antialiased;
@@ -58,6 +65,10 @@
       min-height: 100vh;
       display: flex;
       flex-direction: column;
+    }
+
+    h1, h2, h3, h4, .brand-font {
+      font-family: 'Fraunces', Georgia, serif;
     }
 
     a {
@@ -74,7 +85,6 @@
       font-family: inherit;
     }
 
-    /* Accessibility touch targets */
     button, a.touch-target, .btn-action {
       min-height: 44px;
     }
@@ -155,14 +165,14 @@
 
     /* Add Button */
     .btn-add {
-      min-height: 44px;
+      min-height: 40px;
       min-width: 64px;
       border: 0;
-      border-radius: 10px;
+      border-radius: 8px;
       background: var(--primary);
       color: #fff;
       font-weight: 700;
-      font-size: 14px;
+      font-size: 13.5px;
       padding: 0 14px;
       display: inline-flex;
       align-items: center;
@@ -171,7 +181,7 @@
     }
 
     .btn-add:hover {
-      background: var(--primary-dark);
+      background: var(--leaf);
     }
 
     .btn-add:active {
@@ -191,57 +201,99 @@
     /* Container wrapper */
     .app-shell {
       width: 100%;
-      max-width: 1200px;
-      margin: 0 auto;
+      max-width: 100%;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
       position: relative;
     }
 
-    /* Customer Header */
+    /* Top Announcement Bar */
+    .top-announcement-bar {
+      background: #0b341c;
+      color: #ecfdf5;
+      padding: 8px 16px;
+      font-size: 12.5px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      letter-spacing: 0.01em;
+    }
+
+    .announcement-badge {
+      background: var(--tomato);
+      color: #ffffff;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-weight: 700;
+      font-size: 10.5px;
+      margin-right: 8px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      display: inline-block;
+    }
+
+    /* Supermarket Header */
     .supermarket-header {
       background: #FFFFFF;
-      border-bottom: 1px solid var(--border);
-      padding: 12px 16px 10px;
+      border-bottom: 1.5px solid var(--border);
+      padding: 10px 24px;
       display: flex;
       flex-direction: column;
       gap: 10px;
       position: sticky;
       top: 0;
       z-index: 900;
+      box-shadow: 0 2px 10px rgba(20, 83, 45, 0.06);
     }
 
     .header-top-row {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 12px;
+      gap: 16px;
+      flex-wrap: wrap;
     }
 
     .store-brand-logo {
-      font-weight: 700;
-      font-size: 22px;
-      color: var(--primary);
+      font-family: 'Fraunces', Georgia, serif;
+      font-weight: 800;
+      font-size: 26px;
+      color: var(--deep-green);
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
       text-decoration: none;
+      letter-spacing: -0.02em;
     }
 
     .store-brand-logo svg {
-      color: var(--primary);
+      color: var(--leaf);
+    }
+
+    .brand-subtag-pill {
+      font-family: 'Inter', sans-serif;
+      font-size: 9.5px;
+      font-weight: 800;
+      background: #e8f5ec;
+      color: var(--deep-green);
+      padding: 2px 6px;
+      border-radius: 4px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
     }
 
     .header-actions {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
     }
 
     .sound-toggle-btn {
-      width: 44px;
-      height: 44px;
+      width: 40px;
+      height: 40px;
       border-radius: 50%;
       border: 1px solid var(--border);
       background: #fff;
@@ -249,8 +301,9 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 16px;
+      font-size: 15px;
       transition: all 0.15s ease;
+      text-decoration: none;
     }
 
     .sound-toggle-btn:hover {
@@ -260,20 +313,70 @@
     }
 
     .account-link-btn {
-      min-height: 44px;
+      min-height: 40px;
+      padding: 0 16px;
+      border-radius: var(--radius-md);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 13.5px;
+      color: #ffffff;
+      background: var(--deep-green);
+      box-shadow: 0 2px 6px rgba(20, 83, 45, 0.2);
+      transition: all 0.15s ease;
+      text-decoration: none;
+    }
+
+    .account-link-btn:hover {
+      background: var(--leaf-hover);
+      color: #ffffff;
+    }
+
+    .account-logged-in-btn {
+      min-height: 40px;
+      padding: 0 12px;
+      border-radius: var(--radius-md);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 600;
+      font-size: 13px;
+      color: var(--deep-green);
+      background: #eaf5ee;
+      border: 1px solid #cce5d4;
+      cursor: pointer;
+    }
+
+    .header-cart-btn {
+      min-height: 40px;
       padding: 0 14px;
       border-radius: var(--radius-md);
       display: inline-flex;
       align-items: center;
+      gap: 8px;
       font-weight: 700;
-      font-size: 14px;
-      color: var(--primary-dark);
-      background: var(--primary-pill);
+      font-size: 13.5px;
+      color: #ffffff;
+      background: var(--leaf);
+      box-shadow: 0 2px 6px rgba(34, 160, 90, 0.25);
       transition: all 0.15s ease;
+      text-decoration: none;
     }
 
-    .account-link-btn:hover {
-      background: #d4ebd9;
+    .header-cart-btn:hover {
+      background: var(--leaf-hover);
+    }
+
+    .header-cart-count-badge {
+      background: #ffffff;
+      color: var(--deep-green);
+      font-size: 11px;
+      font-weight: 800;
+      padding: 1px 6px;
+      border-radius: 99px;
+      min-width: 18px;
+      text-align: center;
     }
 
     /* Location Picker Bar */
@@ -281,80 +384,165 @@
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      min-height: 44px;
-      font-size: 14px;
-      color: var(--primary-dark);
+      min-height: 38px;
+      font-size: 13px;
+      color: var(--deep-green);
       font-weight: 500;
       background: transparent;
       border: 0;
       padding: 0 4px;
       text-align: left;
+      cursor: pointer;
     }
 
     .location-picker-btn:hover {
-      color: var(--primary);
+      color: var(--leaf);
     }
 
-    /* Search Input Box */
+    /* Search Input Box with Category Dropdown */
     .header-search-form {
-      position: relative;
-      display: block;
-      width: 100%;
-    }
-
-    .search-icon-wrapper {
-      position: absolute;
-      left: 14px;
-      top: 0;
-      bottom: 0;
       display: flex;
       align-items: center;
-      color: var(--text-muted);
-      pointer-events: none;
+      flex: 1 1 360px;
+      max-width: 580px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-md);
+      background: #FFFFFF;
+      overflow: hidden;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .header-search-form:focus-within {
+      border-color: var(--leaf);
+      box-shadow: 0 0 0 3px rgba(34, 160, 90, 0.15);
+    }
+
+    .search-category-dropdown {
+      height: 42px;
+      border: 0;
+      border-right: 1.5px solid var(--border);
+      padding: 0 10px;
+      background: #f8faf8;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: #374151;
+      cursor: pointer;
+      outline: none;
+      flex-shrink: 0;
+      max-width: 140px;
     }
 
     .header-search-input {
-      width: 100%;
-      min-height: 48px;
-      border: 1.5px solid var(--border);
-      border-radius: var(--radius-md);
-      padding: 0 14px 0 44px;
-      font: 400 15px 'DM Sans', sans-serif;
-      background: var(--bg);
+      flex: 1;
+      height: 42px;
+      border: 0;
+      padding: 0 12px;
+      font: 400 14px 'Inter', sans-serif;
+      background: transparent;
       color: var(--text);
-      transition: border-color 0.15s ease, background 0.15s ease;
+      outline: none;
+      min-width: 0;
     }
 
-    .header-search-input:focus {
-      outline: none;
-      border-color: var(--primary);
-      background: #FFFFFF;
+    .search-submit-btn {
+      height: 42px;
+      width: 44px;
+      border: 0;
+      background: var(--deep-green);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: background 0.15s ease;
+    }
+
+    .search-submit-btn:hover {
+      background: var(--leaf);
     }
 
     /* Main Content Area */
     .main-scroll-area {
       flex: 1;
-      padding: 16px 16px 84px;
+      width: 100%;
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 20px 16px 60px;
       display: flex;
       flex-direction: column;
-      gap: 24px;
+      gap: 32px;
     }
 
-    @media (min-width: 1024px) {
-      .main-scroll-area {
-        padding-bottom: 40px;
-      }
+    /* Supermarket Footer */
+    .supermarket-footer {
+      background: #0f3d21;
+      color: #e5f5ec;
+      padding: 56px 24px 32px;
+      margin-top: 48px;
+      border-top: 4px solid var(--leaf);
+    }
+
+    .footer-grid {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1.5fr;
+      gap: 36px;
+      margin-bottom: 40px;
+    }
+
+    .footer-col-title {
+      font-family: 'Fraunces', Georgia, serif;
+      font-size: 18px;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 16px;
+      letter-spacing: -0.01em;
+    }
+
+    .footer-links-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      font-size: 13.5px;
+    }
+
+    .footer-links-list a {
+      color: #bbf0d3;
+      text-decoration: none;
+      transition: color 0.1s ease;
+    }
+
+    .footer-links-list a:hover {
+      color: #ffffff;
+      text-decoration: underline;
+    }
+
+    .footer-bottom-bar {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding-top: 24px;
+      border-top: 1px solid rgba(255, 255, 255, 0.15);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 14px;
+      font-size: 12.5px;
+      color: #9cd4b5;
     }
 
     /* Floating Swecha Button */
     .swecha-floating-btn {
       position: fixed;
       bottom: 76px;
-      right: 18px;
+      right: 20px;
       width: 58px;
       height: 58px;
       border-radius: 29px;
-      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      background: linear-gradient(135deg, var(--deep-green) 0%, var(--deep-green-dark) 100%);
       color: #fff;
       border: 2px solid #FFFFFF;
       box-shadow: 0 6px 20px rgba(16, 76, 50, 0.35);
@@ -432,7 +620,7 @@
     .customer-modal-card {
       background: #FFFFFF;
       border-radius: var(--radius-xl);
-      max-width: 420px;
+      max-width: 440px;
       width: 100%;
       padding: 24px;
       box-shadow: var(--shadow-lg);
@@ -440,81 +628,159 @@
       flex-direction: column;
       gap: 16px;
     }
+
+    @media (max-width: 768px) {
+      .supermarket-header {
+        padding: 8px 12px;
+      }
+      .header-search-form {
+        max-width: 100%;
+        order: 3;
+        width: 100%;
+      }
+      .search-category-dropdown {
+        display: none;
+      }
+      .footer-grid {
+        grid-template-columns: 1fr;
+        gap: 24px;
+      }
+      .main-scroll-area {
+        padding: 14px 12px 70px;
+      }
+    }
   </style>
 
   {% block extra_head %}{% endblock %}
 </head>
 <body>
   <div class="app-shell">
+    <!-- Top Announcement Bar -->
+    <div class="top-announcement-bar">
+      <span class="announcement-badge">Everyday Low Prices</span>
+      <span>
+        🔥 Guaranteed Lower-than-MRP Everyday Savings | Extra 20% OFF with code <strong>FRESH20</strong> | Free Express Delivery on orders above ₹499
+      </span>
+    </div>
+
     <!-- Supermarket Header -->
     <header class="supermarket-header">
       <div class="header-top-row">
-        <a href="{% url 'home' %}" class="store-brand-logo">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M3 4h2.5l2 11h10l2-8H7"></path>
-            <circle cx="9" cy="19.5" r="1.3"></circle>
-            <circle cx="17" cy="19.5" r="1.3"></circle>
+        <!-- Brand Logo -->
+        <a href="{% url 'home' %}" class="store-brand-logo" id="brandLogoLink">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <path d="M16 10a4 4 0 0 1-8 0"></path>
           </svg>
-          <span>{{ BRAND_NAME|default:"FreshMart" }}</span>
+          <span>FreshMart</span>
+          <span class="brand-subtag-pill">DMart Style</span>
         </a>
 
+        <!-- Location Selector -->
+        <button type="button" class="location-picker-btn" onclick="openLocationModal()" id="btnLocationPicker" title="Change delivery pincode or area">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color:var(--leaf);flex-shrink:0">
+            <path d="M12 21s7-6.2 7-11.5a7 7 0 0 0-14 0C5 14.8 12 21 12 21z"></path>
+            <circle cx="12" cy="9.5" r="2.5"></circle>
+          </svg>
+          <span style="display:flex;flex-direction:column;line-height:1.2;font-size:12px;text-align:left;">
+            <span style="color:var(--text-muted);font-size:10px;">Deliver to</span>
+            <strong style="color:var(--deep-green);">{{ customer_location|default:"500074, Hyderabad" }}</strong>
+          </span>
+        </button>
+
+        <!-- Search Bar with Category Dropdown (DMart Supermarket Style) -->
+        <form action="{% url 'orders_customer:menu' %}" method="GET" class="header-search-form" id="globalSearchForm">
+          <select name="category" class="search-category-dropdown" aria-label="Filter by department">
+            <option value="">All Categories</option>
+            {% for cat in categories %}
+              <option value="{{ cat.name }}">{{ cat.name }}</option>
+            {% endfor %}
+          </select>
+          <input type="text" 
+                 name="search" 
+                 value="{{ search|default:'' }}"
+                 aria-label="Search products" 
+                 placeholder="Search rice, atta, dal, milk, cooking oil, detergent, biscuits..." 
+                 class="header-search-input">
+          <button type="submit" class="search-submit-btn" aria-label="Search Supermarket">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <circle cx="11" cy="11" r="6.5"></circle>
+              <path d="M16 16l4.5 4.5"></path>
+            </svg>
+          </button>
+        </form>
+
+        <!-- Header Actions: Location, Login, Cart -->
         <div class="header-actions">
-          <!-- Sound Preference Button -->
+          <!-- Wishlist link -->
+          <a href="{% url 'orders_customer:wishlist' %}" class="sound-toggle-btn" title="Saved Wishlist" aria-label="Wishlist">
+            ❤️
+          </a>
+
+          <!-- Sound Toggle -->
           <button type="button" 
                   id="soundToggleBtn" 
                   class="sound-toggle-btn" 
                   onclick="toggleSoundPreference()"
-                  title="Toggle Sound Effects">
+                  title="Toggle Sound Effects"
+                  aria-label="Toggle Sound">
             🔊
           </button>
 
-          <!-- Account / Sign In -->
-          {% if delivery_customer %}
-            <a href="{% url 'orders_customer:settings' %}" class="account-link-btn" title="{{ delivery_customer.phone }}">
+          <!-- Account / Sign In — Full Page Navigation to /login/ as requested -->
+          {% if request.user.is_authenticated %}
+            <div style="position:relative;display:inline-block;" x-data="{ open: false }">
+              <button type="button" @click="open = !open" class="account-logged-in-btn" id="btnUserMenu">
+                <span>👤 {{ request.user.first_name|default:request.user.username|truncatechars:12 }}</span>
+                <span style="font-size:10px;">▼</span>
+              </button>
+              <div x-show="open" @click.away="open = false" style="position:absolute;right:0;top:44px;background:#fff;border:1px solid #d1d5db;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.12);width:200px;z-index:999;padding:6px;display:flex;flex-direction:column;gap:4px;">
+                <div style="padding:8px 10px;font-size:12px;border-bottom:1px solid #e5e7eb;">
+                  <strong>{{ request.user.username }}</strong>
+                  <div style="color:#6b7280;font-size:11px;">Role: {{ request.user.get_role_display|default:request.user.role }}</div>
+                </div>
+                {% if request.user.role == 'ADMIN' %}
+                  <a href="/admin/orders/dashboard/" style="padding:8px 10px;font-size:13px;border-radius:6px;color:#14532d;font-weight:600;">Admin Dashboard &rarr;</a>
+                {% elif request.user.role == 'MANAGER' %}
+                  <a href="/manager/" style="padding:8px 10px;font-size:13px;border-radius:6px;color:#14532d;font-weight:600;">Manager Dashboard &rarr;</a>
+                {% elif request.user.role == 'STAFF' %}
+                  <a href="/manager/staff-dashboard/" style="padding:8px 10px;font-size:13px;border-radius:6px;color:#14532d;font-weight:600;">Staff Dashboard &rarr;</a>
+                {% elif request.user.role == 'AGENT' %}
+                  <a href="/agent/" style="padding:8px 10px;font-size:13px;border-radius:6px;color:#14532d;font-weight:600;">Delivery Dashboard &rarr;</a>
+                {% endif %}
+                <a href="{% url 'orders_customer:my_orders' %}" style="padding:8px 10px;font-size:13px;border-radius:6px;color:#374151;">My Orders</a>
+                <a href="{% url 'orders_customer:addresses' %}" style="padding:8px 10px;font-size:13px;border-radius:6px;color:#374151;">Saved Addresses</a>
+                <a href="{% url 'accounts:logout' %}" style="padding:8px 10px;font-size:13px;border-radius:6px;color:#dc2626;font-weight:600;border-top:1px solid #e5e7eb;">Sign Out</a>
+              </div>
+            </div>
+          {% elif delivery_customer %}
+            <a href="{% url 'orders_customer:settings' %}" class="account-logged-in-btn" title="{{ delivery_customer.phone }}">
               <span>👤 {{ delivery_customer.name|default:delivery_customer.phone|truncatechars:12 }}</span>
             </a>
           {% else %}
-            <a href="{% url 'customer_auth:login' %}?next={{ request.path }}" class="account-link-btn">
-              <span>Sign in</span>
+            <!-- Full page login navigation as explicitly required by prompt -->
+            <a href="/login/" class="account-link-btn" id="navLoginBtn">
+              <span>Login</span>
             </a>
           {% endif %}
+
+          <!-- Cart Button with live count -->
+          <a href="{% url 'orders_customer:cart' %}" class="header-cart-btn" id="navCartBtn" title="View Shopping Cart">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
+              <circle cx="9" cy="21" r="1"></circle>
+              <circle cx="20" cy="21" r="1"></circle>
+              <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+            </svg>
+            <span class="header-cart-count-badge" id="nav-cart-badge">{{ cart_count|default:"0" }}</span>
+          </a>
         </div>
       </div>
-
-      <!-- Location Selector Bar -->
-      <button type="button" class="location-picker-btn" onclick="openLocationModal()">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color:var(--primary);flex-shrink:0">
-          <path d="M12 21s7-6.2 7-11.5a7 7 0 0 0-14 0C5 14.8 12 21 12 21z"></path>
-          <circle cx="12" cy="9.5" r="2.5"></circle>
-        </svg>
-        <span style="display:flex;align-items:center;gap:4px">
-          <span>Delivering to <strong>{{ customer_location|default:"Hyderabad" }}</strong></span>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M6 9l6 6 6-6"></path>
-          </svg>
-        </span>
-      </button>
-
-      <!-- Global Search Bar -->
-      <form action="{% url 'orders_customer:menu' %}" method="GET" class="header-search-form">
-        <span class="search-icon-wrapper">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <circle cx="11" cy="11" r="6.5"></circle>
-            <path d="M16 16l4.5 4.5"></path>
-          </svg>
-        </span>
-        <input type="text" 
-               name="search" 
-               value="{{ search|default:'' }}"
-               aria-label="Search products" 
-               placeholder="Search rice, milk, cooking oil, brands..." 
-               class="header-search-input">
-      </form>
     </header>
 
     <!-- Global Messages Toast -->
     {% if messages %}
-      <div style="padding: 10px 16px 0;">
+      <div style="padding: 10px 16px 0; max-width: 1240px; margin: 0 auto; width: 100%;">
         {% for message in messages %}
           <div style="padding: 10px 14px; border-radius: 12px; margin-bottom: 8px; font-size: 14px; font-weight: 500; display: flex; align-items: center; justify-content: space-between; {% if message.tags == 'error' %}background:#FDE8E8;color:#9B1C1C;border:1px solid #F8B4B4;{% elif message.tags == 'success' %}background:#DEF7EC;color:#03543F;border:1px solid #BCF0DA;{% else %}background:#E1EFFE;color:#1E429F;border:1px solid #B4C6FC;{% endif %}">
             <span>{{ message }}</span>
@@ -528,6 +794,81 @@
     <main class="main-scroll-area">
       {% block content %}{% endblock %}
     </main>
+
+    <!-- Supermarket Footer (DMart Supermarket Style) -->
+    <footer class="supermarket-footer">
+      <div class="footer-grid">
+        <!-- Col 1: Brand & Value Promise -->
+        <div>
+          <div class="store-brand-logo" style="color:#ffffff;margin-bottom:12px;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
+              <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <path d="M16 10a4 4 0 0 1-8 0"></path>
+            </svg>
+            <span>FreshMart</span>
+          </div>
+          <p style="font-size:13.5px;line-height:1.6;color:#bbf0d3;margin-bottom:16px;">
+            Fresh food. Everyday low prices. FreshMart is your neighborhood online hypermarket offering over 5,000+ daily grocery staples, farm produce, dairy, and household essentials at guaranteed lower-than-MRP prices.
+          </p>
+          <div style="display:flex;gap:8px;font-size:12px;font-weight:600;color:#86efac;">
+            <span>🛡️ 100% Quality Guarantee</span> &bull; <span>⚡ 2-Hr Delivery</span>
+          </div>
+        </div>
+
+        <!-- Col 2: Popular Categories -->
+        <div>
+          <h4 class="footer-col-title">Categories</h4>
+          <ul class="footer-links-list">
+            <li><a href="{% url 'orders_customer:menu' %}?category=Fruits+and+Vegetables">Fruits &amp; Vegetables</a></li>
+            <li><a href="{% url 'orders_customer:menu' %}?category=Rice%2C+Pulses+and+Grains">Rice, Pulses &amp; Atta</a></li>
+            <li><a href="{% url 'orders_customer:menu' %}?category=Dairy+and+Eggs">Dairy, Eggs &amp; Bread</a></li>
+            <li><a href="{% url 'orders_customer:menu' %}?category=Cooking+Essentials">Cooking Oils &amp; Ghee</a></li>
+            <li><a href="{% url 'orders_customer:menu' %}?category=Snacks+and+Biscuits">Snacks &amp; Munchies</a></li>
+            <li><a href="{% url 'orders_customer:menu' %}?category=Household+Essentials">Household Cleaners</a></li>
+          </ul>
+        </div>
+
+        <!-- Col 3: Customer Care & Services -->
+        <div>
+          <h4 class="footer-col-title">Customer Care</h4>
+          <ul class="footer-links-list">
+            <li><a href="{% url 'contact' %}">Contact &amp; Store Support</a></li>
+            <li><a href="{% url 'orders_customer:my_orders' %}">Track My Orders</a></li>
+            <li><a href="{% url 'orders_customer:addresses' %}">Delivery Locations</a></li>
+            <li><a href="{% url 'orders_customer:wishlist' %}">Saved Wishlist</a></li>
+            <li><a href="javascript:void(0)" onclick="openLocationModal()">Pincode Checker</a></li>
+            <li><a href="/login/">Partner &amp; Staff Login</a></li>
+          </ul>
+        </div>
+
+        <!-- Col 4: Store Helpline & Payments -->
+        <div>
+          <h4 class="footer-col-title">Store Helpline</h4>
+          <p style="font-size:13px;line-height:1.5;color:#bbf0d3;margin-bottom:12px;">
+            Questions about your order or grocery deliveries? We're here 7:00 AM – 10:00 PM everyday.
+          </p>
+          <div style="font-size:15px;font-weight:700;color:#ffffff;margin-bottom:6px;">
+            📞 <a href="tel:18002662255" style="color:#ffffff;">1800-266-2255 (Toll Free)</a>
+          </div>
+          <div style="font-size:13px;color:#a7f3d0;margin-bottom:16px;">
+            ✉️ <a href="mailto:support@freshmart.com" style="color:#a7f3d0;">support@freshmart.com</a>
+          </div>
+          <div style="font-size:11.5px;color:#86efac;line-height:1.4;">
+            Accepted Payments: UPI &bull; Visa &bull; Mastercard &bull; RuPay &bull; NetBanking &bull; Cash on Delivery
+          </div>
+        </div>
+      </div>
+
+      <div class="footer-bottom-bar">
+        <div>&copy; 2026 FreshMart Supermarket Limited. All rights reserved.</div>
+        <div style="display:flex;gap:16px;">
+          <a href="/contact/" style="color:inherit;">Privacy Policy</a>
+          <a href="/contact/" style="color:inherit;">Terms of Service</a>
+          <a href="/contact/" style="color:inherit;">Refund Policy</a>
+        </div>
+      </div>
+    </footer>
 
     <!-- Floating Swecha AI Button -->
     <button type="button" 
@@ -553,20 +894,18 @@
         <h3 style="margin:0;font-size:18px;font-weight:700;color:var(--text)">Choose Delivery Area</h3>
         <button type="button" onclick="closeLocationModal()" style="border:0;background:transparent;font-size:20px;color:var(--text-muted);cursor:pointer">&times;</button>
       </div>
-      <p style="margin:0;font-size:13px;color:var(--text-muted)">Select your neighbourhood to check delivery slots and local store inventory:</p>
+      <p style="margin:0;font-size:13px;color:var(--text-muted)">Select your neighbourhood or pincode to check delivery slots and local store inventory:</p>
       
       <form action="{% url 'orders_customer:set_location' %}" method="POST" style="display:flex;flex-direction:column;gap:8px">
         {% csrf_token %}
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-          {% for loc in "Hyderabad,Banjara Hills,Jubilee Hills,Hitec City,Gachibowli,Madhapur,Kondapur,Secunderabad"|make_list %}
-          {% endfor %}
-          <button type="submit" name="location" value="Hyderabad" class="customer-card" style="padding:10px;text-align:center;font-weight:600;font-size:13px">Hyderabad</button>
-          <button type="submit" name="location" value="Banjara Hills" class="customer-card" style="padding:10px;text-align:center;font-weight:600;font-size:13px">Banjara Hills</button>
-          <button type="submit" name="location" value="Jubilee Hills" class="customer-card" style="padding:10px;text-align:center;font-weight:600;font-size:13px">Jubilee Hills</button>
-          <button type="submit" name="location" value="Hitec City" class="customer-card" style="padding:10px;text-align:center;font-weight:600;font-size:13px">Hitec City</button>
-          <button type="submit" name="location" value="Gachibowli" class="customer-card" style="padding:10px;text-align:center;font-weight:600;font-size:13px">Gachibowli</button>
-          <button type="submit" name="location" value="Madhapur" class="customer-card" style="padding:10px;text-align:center;font-weight:600;font-size:13px">Madhapur</button>
-          <button type="submit" name="location" value="Kondapur" class="customer-card" style="padding:10px;text-align:center;font-weight:600;font-size:13px">Kondapur</button>
+          <button type="submit" name="location" value="500074, Hyderabad" class="customer-card" style="padding:10px;text-align:center;font-weight:600;font-size:13px">500074, Hyderabad</button>
+          <button type="submit" name="location" value="Banjara Hills, Hyd" class="customer-card" style="padding:10px;text-align:center;font-weight:600;font-size:13px">Banjara Hills</button>
+          <button type="submit" name="location" value="Jubilee Hills, Hyd" class="customer-card" style="padding:10px;text-align:center;font-weight:600;font-size:13px">Jubilee Hills</button>
+          <button type="submit" name="location" value="Hitec City, Hyd" class="customer-card" style="padding:10px;text-align:center;font-weight:600;font-size:13px">Hitec City</button>
+          <button type="submit" name="location" value="Gachibowli, Hyd" class="customer-card" style="padding:10px;text-align:center;font-weight:600;font-size:13px">Gachibowli</button>
+          <button type="submit" name="location" value="Madhapur, Hyd" class="customer-card" style="padding:10px;text-align:center;font-weight:600;font-size:13px">Madhapur</button>
+          <button type="submit" name="location" value="Kukatpally, Hyd" class="customer-card" style="padding:10px;text-align:center;font-weight:600;font-size:13px">Kukatpally</button>
           <button type="submit" name="location" value="Secunderabad" class="customer-card" style="padding:10px;text-align:center;font-weight:600;font-size:13px">Secunderabad</button>
         </div>
       </form>
@@ -613,7 +952,7 @@
              id="swechaInput" 
              placeholder="Ask about groceries or budget..." 
              onkeydown="if(event.key==='Enter') sendSwechaMessage()"
-             style="flex:1;min-width:0;min-height:48px;border:1.5px solid var(--border);border-radius:24px;padding:0 16px;font:400 14px 'DM Sans',sans-serif;background:var(--bg)">
+             style="flex:1;min-width:0;min-height:48px;border:1.5px solid var(--border);border-radius:24px;padding:0 16px;font:400 14px 'Inter',sans-serif;background:var(--bg)">
       <button type="button" 
               onclick="sendSwechaMessage()" 
               aria-label="Send" 
@@ -625,82 +964,7 @@
     </div>
   </div>
 
-  <!-- Audio Assets (Phase 17 - Exactly Two Sound Effects) -->
-  <audio id="audioOrderSuccess" preload="auto">
-    <source src="{% static 'audio/order_success.mp3' %}" type="audio/mpeg">
-    <source src="{% static 'audio/order_success.wav' %}" type="audio/wav">
-  </audio>
-  <audio id="audioSwechaResponse" preload="auto">
-    <source src="{% static 'audio/swecha_response.mp3' %}" type="audio/mpeg">
-    <source src="{% static 'audio/swecha_response.wav' %}" type="audio/wav">
-  </audio>
-
-  <!-- Client-side Audio & Swecha JavaScript Engine -->
   <script>
-    /* ==============================================================
-       PHASE 17: EXACTLY TWO SOUND EFFECTS ENGINE
-       ============================================================== */
-    const SOUND_PREF_KEY = 'freshmart_sound_enabled';
-
-    function isSoundEnabled() {
-      const val = localStorage.getItem(SOUND_PREF_KEY);
-      return val === null || val === '1' || val === 'true';
-    }
-
-    function updateSoundIcons() {
-      const enabled = isSoundEnabled();
-      const btns = document.querySelectorAll('#soundToggleBtn, .sound-pref-btn');
-      btns.forEach(btn => {
-        btn.textContent = enabled ? '🔊' : '🔇';
-        btn.setAttribute('aria-label', enabled ? 'Sound effects enabled' : 'Sound effects disabled');
-      });
-    }
-
-    function toggleSoundPreference() {
-      const current = isSoundEnabled();
-      const next = !current;
-      localStorage.setItem(SOUND_PREF_KEY, next ? '1' : '0');
-      updateSoundIcons();
-      showToast(next ? 'Sound effects enabled 🔊' : 'Sound effects muted 🔇');
-    }
-
-    // SOUND 1: ORDER SUCCESS SOUND
-    // Plays ONCE for confirmed order, deduplicated using orderId
-    function playOrderSuccessSound(orderId) {
-      if (!orderId || !isSoundEnabled()) return;
-      const key = 'played_order_' + orderId;
-      if (sessionStorage.getItem(key)) return; // Deduplicated!
-
-      const audio = document.getElementById('audioOrderSuccess');
-      if (audio) {
-        audio.currentTime = 0;
-        audio.play().then(() => {
-          sessionStorage.setItem(key, '1');
-        }).catch(err => {
-          console.warn('[Audio] Autoplay blocked:', err);
-        });
-      }
-    }
-
-    // SOUND 2: SWECHA RESPONSE SOUND
-    // Plays ONCE per completed assistant response, deduplicated using messageId
-    function playSwechaResponseSound(messageId) {
-      if (!messageId || !isSoundEnabled()) return;
-      const key = 'played_swecha_' + messageId;
-      if (sessionStorage.getItem(key)) return; // Deduplicated!
-
-      const audio = document.getElementById('audioSwechaResponse');
-      if (audio) {
-        audio.currentTime = 0;
-        audio.play().then(() => {
-          sessionStorage.setItem(key, '1');
-        }).catch(err => {
-          console.warn('[Audio] Autoplay blocked:', err);
-        });
-      }
-    }
-
-    // Modal & Toast Helpers
     function openLocationModal() {
       const modal = document.getElementById('locationModal');
       if (modal) modal.style.display = 'flex';
@@ -711,19 +975,20 @@
       if (modal) modal.style.display = 'none';
     }
 
-    function showToast(msg) {
-      const toast = document.createElement('div');
-      toast.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#104C32;color:#fff;padding:8px 16px;border-radius:20px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.15);transition:opacity 0.3s ease';
-      toast.textContent = msg;
-      document.body.appendChild(toast);
-      setTimeout(() => {
-        toast.style.opacity = '0';
-        setTimeout(() => toast.remove(), 300);
-      }, 2500);
+    function toggleSoundPreference() {
+      const soundPref = localStorage.getItem('freshmart_sound') === 'muted' ? 'unmuted' : 'muted';
+      localStorage.setItem('freshmart_sound', soundPref);
+      updateSoundIcons();
+    }
+
+    function updateSoundIcons() {
+      const isMuted = localStorage.getItem('freshmart_sound') === 'muted';
+      const btn = document.getElementById('soundToggleBtn');
+      if (btn) btn.textContent = isMuted ? '🔇' : '🔊';
     }
 
     /* ==============================================================
-       PHASE 16: SWECHA AI DRAWER ENGINE
+       SWECHA AI DRAWER ENGINE
        ============================================================== */
     let swechaHistory = [];
 
@@ -771,11 +1036,10 @@
       thinkingEl.id = 'swechaThinking';
       thinkingEl.className = 'customer-card';
       thinkingEl.style.cssText = 'max-width:260px;padding:10px 14px;font-size:13px;color:var(--text-muted);display:flex;align-items:center;gap:8px';
-      thinkingEl.innerHTML = '<span style="animation:spin 1s linear infinite">✨</span> Swecha is checking catalog...';
+      thinkingEl.innerHTML = '<span style="animation:spin 1s linear infinite">✨</span> Swecha is checking FreshMart catalog...';
       msgContainer.appendChild(thinkingEl);
       msgContainer.scrollTop = msgContainer.scrollHeight;
 
-      // Update history
       swechaHistory.push({ role: 'user', content: message });
 
       try {
@@ -829,11 +1093,6 @@
           });
         }
 
-        // Trigger Sound Effect 2 (Deduplicated via message_id)
-        if (data.audio_trigger && data.message_id) {
-          playSwechaResponseSound(data.message_id);
-        }
-
         swechaHistory.push({ role: 'assistant', content: data.response });
         msgContainer.scrollTop = msgContainer.scrollHeight;
 
@@ -865,12 +1124,10 @@
       return cookieValue;
     }
 
-    // Initialize on page load
     document.addEventListener('DOMContentLoaded', () => {
       updateSoundIcons();
     });
 
-    // Listen for HTMX cart update events to refresh cart badge
     document.body.addEventListener('cartUpdated', () => {
       fetch("{% url 'orders_customer:cart' %}")
         .then(r => r.text())

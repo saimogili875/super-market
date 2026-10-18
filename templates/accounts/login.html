@@ -1,78 +1,864 @@
-{% extends "base.html" %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign In — FreshMart · Fresh food. Everyday low prices.</title>
+  
+  <!-- Fonts: Fraunces (headings) & Inter (body) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --deep-green: #14532d;
+      --deep-green-dark: #0f3d21;
+      --leaf: #22a05a;
+      --leaf-hover: #1b874b;
+      --cream: #fbf7ef;
+      --cream-card: #ffffff;
+      --tomato: #e8532f;
+      --text-main: #1f2937;
+      --text-muted: #6b7280;
+      --border-color: #d1d5db;
+      --input-bg: #f9fafb;
+      --focus-ring: rgba(34, 160, 90, 0.25);
+    }
 
-{% block title %}Sign In — {{ BRAND_SHORT }} · {{ BRAND_NAME }}{% endblock %}
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
-{% block header_subtitle %}Staff Sign In{% endblock %}
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: var(--text-main);
+      background-color: var(--cream);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      -webkit-font-smoothing: antialiased;
+    }
 
-{% block header_actions %}
-<div class="badge badge-primary icon-text">
-  {% include "partials/icon.html" with name="lock" %} Login
-</div>
-{% endblock %}
+    .login-container {
+      display: flex;
+      min-height: 100vh;
+      width: 100%;
+    }
 
-{% block content %}
-<div style="max-width: 420px; margin: var(--space-8) auto;">
+    /* Left Hero / Brand Visual Panel */
+    .brand-hero-panel {
+      flex: 1 1 50%;
+      background: linear-gradient(135deg, #0b341c 0%, #14532d 55%, #1e7240 100%);
+      color: #ffffff;
+      padding: 60px 48px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      overflow: hidden;
+    }
 
-  <div class="card">
-    <div class="card-body">
-      <h2 class="text-2xl text-bold mb-2" style="text-align: center; color: var(--text-primary);">
-        Welcome Back
-      </h2>
-      <p class="text-sm text-muted mb-6" style="text-align: center;">
-        Delivery agent sign in — admins can use this too.
+    /* Decorative background circles */
+    .brand-hero-panel::before {
+      content: '';
+      position: absolute;
+      top: -80px;
+      right: -80px;
+      width: 320px;
+      height: 320px;
+      border-radius: 50%;
+      background: rgba(34, 160, 90, 0.18);
+      pointer-events: none;
+    }
+
+    .brand-hero-panel::after {
+      content: '';
+      position: absolute;
+      bottom: -100px;
+      left: -60px;
+      width: 360px;
+      height: 360px;
+      border-radius: 50%;
+      background: rgba(232, 83, 47, 0.12);
+      pointer-events: none;
+    }
+
+    .brand-top-nav {
+      position: relative;
+      z-index: 2;
+    }
+
+    .brand-logo-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: #ffffff;
+    }
+
+    .brand-icon-box {
+      width: 44px;
+      height: 44px;
+      background: #ffffff;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      color: var(--deep-green);
+    }
+
+    .brand-logo-text {
+      font-family: 'Fraunces', Georgia, serif;
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: #ffffff;
+    }
+
+    .brand-content-body {
+      position: relative;
+      z-index: 2;
+      margin: 40px 0;
+      max-width: 540px;
+    }
+
+    .hero-pretitle {
+      display: inline-block;
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(8px);
+      color: #bbf7d0;
+      padding: 6px 14px;
+      border-radius: 99px;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .hero-title {
+      font-family: 'Fraunces', Georgia, serif;
+      font-size: 42px;
+      line-height: 1.15;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 16px;
+      letter-spacing: -0.02em;
+    }
+
+    .hero-tagline {
+      font-size: 18px;
+      line-height: 1.5;
+      color: #d1fae5;
+      margin-bottom: 32px;
+    }
+
+    .hero-features-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .hero-feature-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 15px;
+      color: #ecfdf5;
+    }
+
+    .feature-check {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--leaf);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: bold;
+      flex-shrink: 0;
+    }
+
+    .brand-hero-footer {
+      position: relative;
+      z-index: 2;
+      border-top: 1px solid rgba(255, 255, 255, 0.18);
+      padding-top: 24px;
+      display: flex;
+      gap: 32px;
+    }
+
+    .stat-box-num {
+      font-family: 'Fraunces', Georgia, serif;
+      font-size: 24px;
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    .stat-box-label {
+      font-size: 12px;
+      color: #a7f3d0;
+    }
+
+    /* Right Login Form Panel */
+    .login-form-panel {
+      flex: 1 1 50%;
+      background: var(--cream);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 24px;
+      position: relative;
+    }
+
+    .login-card {
+      width: 100%;
+      max-width: 460px;
+      background: var(--cream-card);
+      border-radius: 20px;
+      padding: 40px 36px;
+      box-shadow: 0 10px 35px rgba(20, 83, 45, 0.08);
+      border: 1px solid #e5e9e2;
+    }
+
+    .card-top-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+
+    .back-store-link {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--deep-green);
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 6px 10px;
+      border-radius: 8px;
+      background: #edf7f0;
+      transition: all 0.15s ease;
+    }
+
+    .back-store-link:hover {
+      background: #d8efe0;
+    }
+
+    .login-card-header {
+      margin-bottom: 24px;
+    }
+
+    .login-card-title {
+      font-family: 'Fraunces', Georgia, serif;
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--deep-green);
+      letter-spacing: -0.02em;
+      margin-bottom: 6px;
+    }
+
+    .login-card-subtitle {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    /* Alerts */
+    .alert-banner {
+      padding: 12px 16px;
+      border-radius: 10px;
+      font-size: 13px;
+      line-height: 1.45;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .alert-danger {
+      background: #fef2f2;
+      color: #991b1b;
+      border: 1px solid #fecaca;
+    }
+
+    .alert-warning {
+      background: #fffbeb;
+      color: #92400e;
+      border: 1px solid #fde68a;
+    }
+
+    /* Form Styles */
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 6px;
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .form-input {
+      width: 100%;
+      height: 48px;
+      padding: 0 14px;
+      font-size: 14px;
+      font-family: inherit;
+      color: var(--text-main);
+      background: var(--input-bg);
+      border: 1.5px solid var(--border-color);
+      border-radius: 10px;
+      transition: all 0.15s ease;
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: var(--leaf);
+      background: #ffffff;
+      box-shadow: 0 0 0 3px var(--focus-ring);
+    }
+
+    .input-with-toggle {
+      padding-right: 48px;
+    }
+
+    .btn-pwd-toggle {
+      position: absolute;
+      right: 12px;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 15px;
+      padding: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn-pwd-toggle:hover {
+      color: var(--text-main);
+    }
+
+    /* Captcha Section */
+    .captcha-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .captcha-frame {
+      border: 1.5px solid #d1d5db;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 48px;
+      width: 150px;
+      flex-shrink: 0;
+    }
+
+    .btn-captcha-refresh {
+      background: #f3f4f6;
+      border: 1px solid #e5e7eb;
+      color: #374151;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 8px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.15s ease;
+      height: 40px;
+    }
+
+    .btn-captcha-refresh:hover {
+      background: #e5e7eb;
+      color: var(--deep-green);
+    }
+
+    .form-row-between {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+      margin-bottom: 24px;
+    }
+
+    .checkbox-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: #4b5563;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .checkbox-label input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--leaf);
+      border-radius: 4px;
+    }
+
+    .forgot-password-link {
+      color: var(--deep-green);
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    .forgot-password-link:hover {
+      text-decoration: underline;
+    }
+
+    /* Submit Button */
+    .btn-submit-login {
+      width: 100%;
+      height: 50px;
+      background: linear-gradient(135deg, #14532d 0%, #1e7240 100%);
+      color: #ffffff;
+      border: none;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 14px rgba(20, 83, 45, 0.25);
+      transition: all 0.15s ease;
+    }
+
+    .btn-submit-login:hover:not(:disabled) {
+      background: linear-gradient(135deg, #0f3d21 0%, #176035 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(20, 83, 45, 0.32);
+    }
+
+    .btn-submit-login:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    .btn-submit-login:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    /* Sub-notes & Footer text */
+    .form-manual-note {
+      font-size: 12px;
+      color: #92400e;
+      background: #fef3c7;
+      border: 1px solid #fde68a;
+      border-radius: 8px;
+      padding: 8px 12px;
+      margin-top: 16px;
+      text-align: center;
+      font-weight: 500;
+    }
+
+    .login-footer-help {
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid #f3f4f6;
+      font-size: 12px;
+      color: var(--text-muted);
+      text-align: center;
+      line-height: 1.5;
+    }
+
+    .login-footer-help strong {
+      color: #374151;
+      letter-spacing: 0.05em;
+    }
+
+    .login-footer-help a {
+      color: var(--deep-green);
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    .signup-switch-prompt {
+      margin-top: 16px;
+      font-size: 13px;
+      text-align: center;
+      color: #4b5563;
+    }
+
+    .signup-switch-prompt a {
+      color: var(--leaf);
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .signup-switch-prompt a:hover {
+      text-decoration: underline;
+    }
+
+    /* Demo Quick Credentials */
+    .demo-credentials-card {
+      margin-top: 24px;
+      padding: 12px 14px;
+      background: #f8faf9;
+      border: 1px dashed #cbd5e1;
+      border-radius: 10px;
+    }
+
+    .demo-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: #475569;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .demo-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .demo-badge-btn {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 8px;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      cursor: pointer;
+      color: #334155;
+      transition: all 0.1s ease;
+    }
+
+    .demo-badge-btn:hover {
+      background: #e2e8f0;
+      color: var(--deep-green);
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .login-container {
+        flex-direction: column;
+      }
+      .brand-hero-panel {
+        padding: 32px 24px;
+        flex: 0 0 auto;
+      }
+      .hero-title {
+        font-size: 28px;
+      }
+      .brand-hero-footer {
+        display: none;
+      }
+      .hero-features-list {
+        display: none;
+      }
+      .hero-tagline {
+        margin-bottom: 0;
+        font-size: 15px;
+      }
+      .login-form-panel {
+        padding: 24px 16px 40px;
+      }
+      .login-card {
+        padding: 28px 20px;
+        box-shadow: none;
+        border: 1px solid #e2e8f0;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="login-container">
+  <!-- Left Panel: Branded Supermarket Visual -->
+  <div class="brand-hero-panel">
+    <div class="brand-top-nav">
+      <a href="/" class="brand-logo-badge" aria-label="FreshMart Home">
+        <div class="brand-icon-box">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <path d="M16 10a4 4 0 0 1-8 0"></path>
+          </svg>
+        </div>
+        <div>
+          <div class="brand-logo-text">FreshMart</div>
+          <div style="font-size: 11px; opacity: 0.85; letter-spacing: 0.04em;">SUPERMARKET</div>
+        </div>
+      </a>
+    </div>
+
+    <div class="brand-content-body">
+      <span class="hero-pretitle">Everyday Low Prices Guaranteed</span>
+      <h1 class="hero-title">Fresh food.<br>Everyday low prices.</h1>
+      <p class="hero-tagline">
+        Shop over 5,000+ daily grocery essentials, farm-fresh produce, and household staples with guaranteed savings on every product.
       </p>
 
+      <ul class="hero-features-list">
+        <li class="hero-feature-item">
+          <span class="feature-check">&#10003;</span>
+          <span>Guaranteed lower-than-MRP prices across all supermarket aisles</span>
+        </li>
+        <li class="hero-feature-item">
+          <span class="feature-check">&#10003;</span>
+          <span>Sourced directly from certified farmers &amp; verified brands daily</span>
+        </li>
+        <li class="hero-feature-item">
+          <span class="feature-check">&#10003;</span>
+          <span>Convenient delivery slots + express 2-hour doorstep delivery</span>
+        </li>
+        <li class="hero-feature-item">
+          <span class="feature-check">&#10003;</span>
+          <span>100% secure checkout, UPI, cards &amp; contactless Cash on Delivery</span>
+        </li>
+      </ul>
+    </div>
+
+    <div class="brand-hero-footer">
+      <div>
+        <div class="stat-box-num">5,000+</div>
+        <div class="stat-box-label">Verified Products</div>
+      </div>
+      <div>
+        <div class="stat-box-num">₹3,500</div>
+        <div class="stat-box-label">Avg. Monthly Family Savings</div>
+      </div>
+      <div>
+        <div class="stat-box-num">4.8 &#9733;</div>
+        <div class="stat-box-label">100,000+ Happy Shoppers</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Panel: Login Card -->
+  <div class="login-form-panel">
+    <div class="login-card">
+      <div class="card-top-row">
+        <span style="font-size: 12px; font-weight: 700; color: var(--leaf); letter-spacing: 0.05em; text-transform: uppercase;">
+          Secure Access Portal
+        </span>
+        <a href="/" class="back-store-link" id="linkBackToStore">
+          &larr; Back to store
+        </a>
+      </div>
+
+      <div class="login-card-header">
+        <h2 class="login-card-title">Welcome back</h2>
+        <p class="login-card-subtitle">Sign in to continue to your dashboard</p>
+      </div>
+
       {% if lockout_message %}
-      <div class="mb-4" style="background-color: var(--color-warning-light, #fff3cd); color: var(--color-warning-dark, #856404); padding: var(--space-3); border-radius: var(--radius-md); border: 1px solid var(--color-warning, #ffc107); font-size: var(--fs-sm);">
-        {{ lockout_message }}
+      <div class="alert-banner alert-warning" id="alertLockout" role="alert">
+        <span>&#9888;</span>
+        <div>{{ lockout_message }}</div>
+      </div>
+      {% elif captcha_error %}
+      <div class="alert-banner alert-danger" id="alertCaptchaError" role="alert">
+        <span>&#9888;</span>
+        <div>{{ captcha_error }}</div>
       </div>
       {% elif form.errors %}
-      <div class="mb-4" style="background-color: var(--color-danger-light); color: var(--color-danger-dark); padding: var(--space-3); border-radius: var(--radius-md); border: 1px solid var(--color-danger); font-size: var(--fs-sm);">
-        Incorrect username or password. Please try again.
+      <div class="alert-banner alert-danger" id="alertFormErrors" role="alert">
+        <span>&#9888;</span>
+        <div>Incorrect username or password. Please verify your credentials and try again.</div>
       </div>
       {% endif %}
 
-      <form method="post" action="{% url 'accounts:login' %}">
+      <form method="post" action="{% url 'accounts:login' %}" id="loginForm" autocomplete="off">
         {% csrf_token %}
 
         {% if next %}
         <input type="hidden" name="next" value="{{ next }}">
         {% endif %}
 
-        <div class="form-group mb-4">
-          <label for="id_username" class="form-label">Username</label>
+        <!-- Username or Phone -->
+        <div class="form-group">
+          <label for="id_username" class="form-label">Username / Phone</label>
+          <div class="input-wrapper">
+            <input
+              type="text"
+              name="username"
+              id="id_username"
+              class="form-input"
+              placeholder="Username or 10-digit mobile number"
+              autocomplete="off"
+              value="{{ form.username.value|default:'' }}"
+              required
+              autofocus>
+          </div>
+        </div>
+
+        <!-- Password -->
+        <div class="form-group">
+          <label for="id_password" class="form-label">Password</label>
+          <div class="input-wrapper">
+            <input
+              type="password"
+              name="password"
+              id="id_password"
+              class="form-input input-with-toggle"
+              placeholder="Enter your password"
+              autocomplete="new-password"
+              required>
+            <button type="button" class="btn-pwd-toggle" id="togglePasswordBtn" aria-label="Toggle password visibility" title="Show/Hide password">
+              <span id="pwdEyeIcon">&#128065;</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Security Check Captcha -->
+        <div class="form-group">
+          <label for="id_captcha" class="form-label">Security Check</label>
+          <div class="captcha-row">
+            <div class="captcha-frame" id="captchaFrame" title="Security Captcha">
+              <img id="captchaImage" src="{% url 'accounts:captcha' %}" alt="Security Captcha Code" width="150" height="50">
+            </div>
+            <button type="button" class="btn-captcha-refresh" id="btnRefreshCaptcha" title="Click to refresh captcha">
+              <span>&#8635;</span> Try another captcha
+            </button>
+          </div>
           <input
             type="text"
-            name="username"
-            id="id_username"
+            name="captcha"
+            id="id_captcha"
             class="form-input"
-            autocomplete="username"
-            autofocus
+            placeholder="Type the 5 characters shown above"
+            autocomplete="off"
+            maxlength="6"
+            style="letter-spacing: 0.1em; font-weight: 600; text-transform: uppercase;"
             required>
         </div>
 
-        <div class="form-group mb-6">
-          <label for="id_password" class="form-label">Password</label>
-          <input
-            type="password"
-            name="password"
-            id="id_password"
-            class="form-input"
-            autocomplete="current-password"
-            required>
+        <!-- Remember Me & Forgot Password -->
+        <div class="form-row-between">
+          <label class="checkbox-label" for="id_remember_me">
+            <input type="checkbox" name="remember_me" id="id_remember_me" value="1">
+            <span>Remember me</span>
+          </label>
+          <a href="javascript:void(0)" onclick="alert('For password resets, please contact FreshMart Support at 1800-266-2255 or support@freshmart.com');" class="forgot-password-link" id="linkForgotPassword">
+            Forgot password?
+          </a>
         </div>
 
-        <button type="submit" class="btn btn-primary" style="width: 100%; font-size: var(--fs-lg);"{% if lockout_message %} disabled{% endif %}>
-          Sign In
+        <!-- Sign In Button -->
+        <button
+          type="submit"
+          class="btn-submit-login"
+          id="btnSignIn"
+          {% if lockout_message %}disabled{% endif %}>
+          <span>Sign In</span>
+          <span style="font-size: 16px;">&rarr;</span>
         </button>
+
+        <!-- Manual typing note -->
+        <div class="form-manual-note">
+          Please type your credentials manually. Autofill is not allowed.
+        </div>
+
+        <!-- Support footer text -->
+        <div class="login-footer-help">
+          <strong>NEED HELP?</strong> Contact store support for login assistance.<br>
+          Call helpline: <a href="tel:18002662255">1800-266-2255</a> &bull; Email: <a href="mailto:support@freshmart.com">support@freshmart.com</a>
+        </div>
+
+        <!-- Link to create account -->
+        <div class="signup-switch-prompt">
+          New customer? <a href="{% url 'customer_auth:login' %}" id="linkCreateAccount">Create account</a>
+        </div>
       </form>
+
+      <!-- Quick Demo Account Fillers for paired testing -->
+      <div class="demo-credentials-card">
+        <div class="demo-title">
+          <span>Demo Role Accounts</span>
+          <span>Click to fill</span>
+        </div>
+        <div class="demo-badges">
+          <button type="button" class="demo-badge-btn" onclick="fillDemo('customer_sneha', 'Pass1234!')">Customer</button>
+          <button type="button" class="demo-badge-btn" onclick="fillDemo('agent_kiran', 'Pass1234!')">Delivery Agent</button>
+          <button type="button" class="demo-badge-btn" onclick="fillDemo('manager_ravi', 'Pass1234!')">Store Manager</button>
+          <button type="button" class="demo-badge-btn" onclick="fillDemo('admin', 'Admin1234!')">Admin</button>
+        </div>
+      </div>
     </div>
   </div>
-
-  <p class="text-xs text-muted mt-4" style="text-align: center;">
-    Staff admin? You can also use the
-    <a href="/backoffice/login/" style="color: var(--color-brand-primary);">backoffice login</a>.
-  </p>
-
 </div>
-{% endblock %}
+
+<script>
+  // 1. Password Visibility Toggle
+  const pwdInput = document.getElementById('id_password');
+  const toggleBtn = document.getElementById('togglePasswordBtn');
+  const eyeIcon = document.getElementById('pwdEyeIcon');
+
+  if (toggleBtn && pwdInput) {
+    toggleBtn.addEventListener('click', function() {
+      if (pwdInput.type === 'password') {
+        pwdInput.type = 'text';
+        eyeIcon.innerHTML = '&#128064;'; // Open eye
+        toggleBtn.setAttribute('title', 'Hide password');
+      } else {
+        pwdInput.type = 'password';
+        eyeIcon.innerHTML = '&#128065;'; // Standard eye
+        toggleBtn.setAttribute('title', 'Show password');
+      }
+    });
+  }
+
+  // 2. Refresh Captcha Code
+  const btnRefreshCaptcha = document.getElementById('btnRefreshCaptcha');
+  const captchaImg = document.getElementById('captchaImage');
+
+  if (btnRefreshCaptcha && captchaImg) {
+    btnRefreshCaptcha.addEventListener('click', function() {
+      captchaImg.src = "{% url 'accounts:captcha' %}?t=" + new Date().getTime();
+      const captchaInput = document.getElementById('id_captcha');
+      if (captchaInput) {
+        captchaInput.value = '';
+        captchaInput.focus();
+      }
+    });
+  }
+
+  // 3. Demo Quick Fill Helper
+  function fillDemo(username, password) {
+    const userField = document.getElementById('id_username');
+    const pwdField = document.getElementById('id_password');
+    if (userField) userField.value = username;
+    if (pwdField) pwdField.value = password;
+    const captchaField = document.getElementById('id_captcha');
+    if (captchaField) captchaField.focus();
+  }
+</script>
+
+</body>
+</html>

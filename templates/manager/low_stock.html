@@ -1,0 +1,78 @@
+{% extends "manager/base_manager.html" %}
+{% load static %}
+
+{% block title %}Low Stock Alerts — Store Inventory{% endblock %}
+{% block page_title %}Low Stock &amp; Depletion Alerts{% endblock %}
+
+{% block content %}
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+  <h1 class="h1">Low Stock Alerts</h1>
+  <div class="sm">Real-time inventory depletion monitoring with automated suggested reorder counts.</div>
+</div>
+
+<!-- Filters -->
+<div class="card" style="padding:10px 14px;">
+  <form method="get" action="{% url 'manager:low_stock' %}" class="fl">
+    <select class="in" name="urgency" onchange="this.form.submit()" id="select-low-urgency">
+      <option value="">All Urgency Levels</option>
+      <option value="out" {% if selected_urgency == "out" %}selected{% endif %}>Out of Stock (Zero Units)</option>
+      <option value="low" {% if selected_urgency == "low" %}selected{% endif %}>Below Threshold (Critical)</option>
+      <option value="near" {% if selected_urgency == "near" %}selected{% endif %}>Approaching Threshold</option>
+    </select>
+
+    <select class="in" name="category" onchange="this.form.submit()" id="select-low-cat">
+      <option value="">All Categories</option>
+      {% for c in categories %}
+      <option value="{{ c.pk }}" {% if selected_cat == c.pk|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
+      {% endfor %}
+    </select>
+
+    <div style="display:flex;gap:6px;">
+      <button type="submit" class="btn s p" id="btn-filter-low">Filter</button>
+      {% if selected_urgency or selected_cat %}
+      <a href="{% url 'manager:low_stock' %}" class="btn s d" id="btn-clear-low-filter">Clear</a>
+      {% endif %}
+    </div>
+  </form>
+</div>
+
+<!-- Low Stock Table -->
+<div class="card" id="card-low-stock-table">
+  {% if low_items %}
+    {% for p in low_items %}
+    <div class="row">
+      <div class="av">{{ p.name|slice:":1"|upper }}</div>
+      <div class="grow">
+        <b>{{ p.name }}</b> <span class="sm">({{ p.sku|default:"N/A" }} · {{ p.category.name }})</span>
+        <div class="sm">
+          Stock: <strong>{{ p.stock_quantity }}</strong> / threshold {{ p.low_stock_threshold }} · 
+          Suggested Reorder: <strong>{{ p.suggested_reorder }} {{ p.unit }}</strong>
+        </div>
+      </div>
+
+      <span class="bg {% if p.stock_quantity == 0 %}er{% elif p.is_low_stock %}wn{% else %}nt{% endif %}">
+        {% if p.stock_quantity == 0 %}Out of Stock{% elif p.is_low_stock %}Critical Low{% else %}Approaching{% endif %}
+      </span>
+
+      <!-- Action Buttons -->
+      <div style="display:flex;gap:6px;">
+        <a href="{% url 'manager:inventory' %}?q={{ p.sku|default:p.name }}" class="btn s p" id="btn-restock-{{ p.pk }}">
+          Update Stock
+        </a>
+
+        <form method="post" action="{% url 'manager:low_stock_review' p.pk %}">
+          {% csrf_token %}
+          <button type="submit" class="btn s {% if p.is_reviewed %}ok{% endif %}" {% if p.is_reviewed %}disabled{% endif %} id="btn-review-{{ p.pk }}">
+            {% if p.is_reviewed %}✓ Reviewed{% else %}Mark Reviewed{% endif %}
+          </button>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+  {% else %}
+    <div class="sm" style="padding:32px 0;text-align:center;color:var(--mgr-success);">
+      🎉 All clear! No products currently require urgent restocking.
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,212 @@
+{% extends "manager/base_manager.html" %}
+{% load static %}
+
+{% block title %}Inventory — Store Manager Portal{% endblock %}
+{% block page_title %}Store Inventory{% endblock %}
+
+{% block content %}
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+  <h1 class="h1">Inventory Management</h1>
+  <div style="display:flex;gap:8px;">
+    {% if request.user.role == 'MANAGER' or request.user.is_superuser or request.user.role == 'ADMIN' %}
+    <button type="button" class="btn p" @click="adjModal = true" id="btn-open-stock-adjust">
+      📦 Update / Adjust Stock
+    </button>
+    {% else %}
+    <button type="button" class="btn p" @click="adjModal = true" id="btn-open-stock-request">
+      ⚠️ Submit Stock Request
+    </button>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Search & Filters -->
+<div class="card" style="padding:12px 14px;">
+  <form method="get" action="{% url 'manager:inventory' %}" class="fl">
+    <input class="in" type="search" name="q" placeholder="Search by Product Name or SKU..." value="{{ q }}" id="input-inv-search">
+    
+    <select class="in" name="category" onchange="this.form.submit()" id="select-inv-cat">
+      <option value="">All Categories</option>
+      {% for c in categories %}
+      <option value="{{ c.pk }}" {% if selected_cat == c.pk|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
+      {% endfor %}
+    </select>
+
+    <select class="in" name="status" onchange="this.form.submit()" id="select-inv-status">
+      <option value="">All Stock Statuses</option>
+      <option value="ok" {% if selected_status == "ok" %}selected{% endif %}>In Stock</option>
+      <option value="low" {% if selected_status == "low" %}selected{% endif %}>Low Stock</option>
+      <option value="out" {% if selected_status == "out" %}selected{% endif %}>Out of Stock</option>
+    </select>
+
+    <select class="in" name="sort" onchange="this.form.submit()" id="select-inv-sort">
+      <option value="name" {% if sort == "name" %}selected{% endif %}>Sort: Name (A-Z)</option>
+      <option value="stock" {% if sort == "stock" %}selected{% endif %}>Sort: Stock (Low to High)</option>
+    </select>
+
+    <div style="display:flex;gap:6px;">
+      <button type="submit" class="btn s p" id="btn-submit-inv-filter">Filter</button>
+      {% if q or selected_cat or selected_status or sort != 'name' %}
+      <a href="{% url 'manager:inventory' %}" class="btn s d" id="btn-reset-inv-filter">Reset</a>
+      {% endif %}
+    </div>
+  </form>
+</div>
+
+<!-- Inventory Items Table -->
+<div class="card" id="card-inventory-table">
+  {% if products %}
+    {% for p in products %}
+    <div class="row">
+      <div class="av">{{ p.name|slice:":1"|upper }}</div>
+      <div class="grow">
+        <b>{{ p.name }}</b>
+        <div class="sm">
+          SKU: {{ p.sku|default:"N/A" }} · {{ p.category.name }} · ₹{{ p.price }}/{{ p.unit }}
+        </div>
+      </div>
+
+      <div style="min-width:110px;">
+        <b style="font-size:16px;">{{ p.stock_quantity }}</b> {{ p.unit }}
+        <div class="sm">Reorder threshold: {{ p.low_stock_threshold }}</div>
+      </div>
+
+      <span class="bg {% if p.stock_quantity == 0 %}er{% elif p.is_low_stock %}wn{% else %}ok{% endif %}">
+        {% if p.stock_quantity == 0 %}Out of Stock{% elif p.is_low_stock %}Low Stock{% else %}In Stock{% endif %}
+      </span>
+
+      <!-- Action Buttons -->
+      <div style="display:flex;gap:4px;">
+        <button type="button" class="btn s p" @click="openAdjust({{ p.pk }}, '{{ p.name|escapejs }}', {{ p.stock_quantity }}, '{{ p.unit }}')" id="btn-adjust-{{ p.pk }}">
+          {% if request.user.role == 'MANAGER' or request.user.is_superuser or request.user.role == 'ADMIN' %}Adjust{% else %}Report{% endif %}
+        </button>
+        <button type="button" class="btn s" @click="openDetail('{{ p.name|escapejs }}', '{{ p.sku|default:"" }}', '{{ p.category.name|escapejs }}', '₹{{ p.price }}', '{{ p.stock_quantity }} {{ p.unit }}', '{{ p.low_stock_threshold }}', '{{ p.is_available|yesno:"Active,Inactive" }}', '{{ p.updated_at|date:"M d, H:i" }}')" id="btn-info-{{ p.pk }}">
+          View
+        </button>
+      </div>
+    </div>
+    {% endfor %}
+  {% else %}
+    <div class="sm" style="padding:32px 0;text-align:center;">
+      No inventory products match your search or filters.
+    </div>
+  {% endif %}
+</div>
+
+<!-- Stock Adjustment / Request Modal -->
+<div x-data="{
+  adjModal: false,
+  detailModal: false,
+  selId: '',
+  selName: '',
+  selStock: 0,
+  selUnit: '',
+  detailLines: [],
+  openAdjust(id, name, stock, unit) {
+    this.selId = id;
+    this.selName = name;
+    this.selStock = stock;
+    this.selUnit = unit;
+    this.adjModal = true;
+  },
+  openDetail(name, sku, cat, price, stock, thr, status, upd) {
+    this.detailLines = [
+      {k: 'Product Name', v: name},
+      {k: 'SKU', v: sku},
+      {k: 'Category', v: cat},
+      {k: 'Selling Price', v: price},
+      {k: 'Current Stock', v: stock},
+      {k: 'Reorder Threshold', v: thr},
+      {k: 'Catalog Status', v: status},
+      {k: 'Last Updated', v: upd}
+    ];
+    this.detailModal = true;
+  }
+}">
+  <!-- Detail Info Modal -->
+  <div class="ov" x-show="detailModal" x-cloak>
+    <div class="md" @click.away="detailModal = false">
+      <h2 class="h2">Product Information</h2>
+      <template x-for="l in detailLines" :key="l.k">
+        <div class="row">
+          <div class="sm" style="width:140px;" x-text="l.k"></div>
+          <div class="grow" style="font-weight:600;" x-text="l.v"></div>
+        </div>
+      </template>
+      <div style="display:flex;justify-content:flex-end;margin-top:8px;">
+        <button type="button" class="btn" @click="detailModal = false">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Adjustment / Request Form Modal -->
+  <div class="ov" x-show="adjModal" x-cloak>
+    <div class="md" @click.away="adjModal = false">
+      <h2 class="h2">
+        {% if request.user.role == 'MANAGER' or request.user.is_superuser or request.user.role == 'ADMIN' %}
+          Stock Adjustment
+        {% else %}
+          Report Stock Discrepancy / Request Correction
+        {% endif %}
+      </h2>
+
+      <form method="post" action="{% url 'manager:inventory_adjust' %}" style="display:flex;flex-direction:column;gap:10px;">
+        {% csrf_token %}
+        
+        <label class="lab">
+          Select Product
+          <select class="in" name="item_id" required x-model="selId" id="select-adjust-product">
+            <option value="">Select a product...</option>
+            {% for p in all_products %}
+            <option value="{{ p.pk }}">{{ p.name }} ({{ p.sku|default:"No SKU" }}) — Stock: {{ p.stock_quantity }} {{ p.unit }}</option>
+            {% endfor %}
+          </select>
+        </label>
+
+        <label class="lab">
+          Adjustment Type
+          <select class="in" name="movement_type" required id="select-adjust-type">
+            <option value="Stock Received">Stock Received (+ addition)</option>
+            <option value="Manual Increase">Manual Increase (+ addition)</option>
+            <option value="Manual Decrease">Manual Decrease (- reduction)</option>
+            <option value="Damaged Goods">Damaged Goods (- reduction)</option>
+            <option value="Expired Goods">Expired Goods (- reduction)</option>
+            <option value="Stock Correction">Stock Correction (Set Exact Count)</option>
+          </select>
+        </label>
+
+        <label class="lab">
+          Quantity (Units)
+          <input class="in" type="number" name="quantity" min="0" required placeholder="e.g. 10" id="input-adjust-qty">
+        </label>
+
+        <label class="lab">
+          Reason
+          <input class="in" type="text" name="reason" required placeholder="e.g. Supplier delivery / audit correction" id="input-adjust-reason">
+        </label>
+
+        <label class="lab">
+          Reference Number (optional)
+          <input class="in" type="text" name="ref" placeholder="e.g. GRN-1049, PO-8021" id="input-adjust-ref">
+        </label>
+
+        <label class="lab">
+          Notes
+          <textarea class="in" name="notes" placeholder="Optional audit explanation..."></textarea>
+        </label>
+
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:6px;">
+          <button type="button" class="btn" @click="adjModal = false">Cancel</button>
+          <button type="submit" class="btn p" id="btn-submit-stock-adjustment">
+            {% if request.user.role == 'MANAGER' or request.user.is_superuser or request.user.role == 'ADMIN' %}
+              Confirm &amp; Update Stock
+            {% else %}
+              Submit for Manager Review
+            {% endif %}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

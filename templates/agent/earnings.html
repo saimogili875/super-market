@@ -1,0 +1,58 @@
+{% extends "agent/base_agent.html" %}
+{% load static %}
+
+{% block title %}Earnings — SuperMarket Delivery{% endblock %}
+
+{% block content %}
+<h1>Earnings & Settlements</h1>
+
+<!-- Future Feature Clear Notice per specification -->
+<p class="demo">
+  <strong>Delivery Payout Notice:</strong> Real-time order settlement tracking is live below. Direct courier bank payouts and commission transfers are scheduled for the next platform phase.
+</p>
+
+<!-- Time Range Filter Chips -->
+<div class="chips">
+  <a href="{% url 'orders_agent:earnings' %}?range=today" class="chip {% if range == 'today' %}on{% endif %}" id="chip-earn-today">
+    Today
+  </a>
+  <a href="{% url 'orders_agent:earnings' %}?range=week" class="chip {% if range == 'week' %}on{% endif %}" id="chip-earn-week">
+    This week
+  </a>
+</div>
+
+<!-- Summary Card -->
+<div class="card" id="earnings-summary-card">
+  <p class="m">{{ range_title }} Performance</p>
+  <b style="font-size: 32px; color: var(--agent-brand);" id="earnings-total">
+    ₹{{ total_amount|floatformat:2 }}
+  </b>
+  <p class="m">
+    <strong id="earnings-count">{{ count }}</strong> completed deliveries · Settlement Status: <strong>Settled & Cleared</strong>
+  </p>
+</div>
+
+<!-- Breakdown Rows -->
+{% if rows %}
+  <div style="display: flex; flex-direction: column; gap: 8px;">
+    {% for r in rows %}
+    <div class="card" style="padding: 14px 16px;">
+      <div class="row">
+        <b>{{ r.id }}</b>
+        <b style="color: var(--agent-brand);">₹{{ r.amount }}</b>
+      </div>
+      <div class="row" style="font-size: 13px; margin-top: 2px;">
+        <span class="m">{{ r.when }}</span>
+        <span class="bd" style="background: #E4F4EC; color: #176B45; font-size: 11px;">{{ r.status }}</span>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="card" style="text-align: center; padding: 32px 16px;">
+    <div style="font-size: 36px; margin-bottom: 8px;">💳</div>
+    <b style="font-size: 16px;">No deliveries completed yet</b>
+    <p class="m">Completed deliveries for {{ range_title|lower }} will automatically appear here.</p>
+  </div>
+{% endif %}
+{% endblock %}

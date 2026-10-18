@@ -1,0 +1,193 @@
+{% extends "manager/base_manager.html" %}
+{% load static %}
+
+{% block title %}Tasks — Store Operations{% endblock %}
+{% block page_title %}Operational Tasks{% endblock %}
+
+{% block content %}
+<div x-data="{
+  createTaskModal: false,
+  statusModal: false,
+  selectedTaskId: '',
+  selectedTaskTitle: '',
+  openStatusModal(id, title) {
+    this.selectedTaskId = id;
+    this.selectedTaskTitle = title;
+    this.statusModal = true;
+  }
+}">
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+    <h1 class="h1">Store Staff Tasks</h1>
+    {% if request.user.role == 'MANAGER' or request.user.is_superuser or request.user.role == 'ADMIN' %}
+    <button type="button" class="btn p" @click="createTaskModal = true" id="btn-create-task-trigger">
+      + Assign New Task
+    </button>
+    {% endif %}
+  </div>
+
+  <!-- Status Filter Chips -->
+  <div class="chips" id="task-filter-chips">
+    <a href="{% url 'manager:tasks' %}" class="chip {% if not selected_status %}on{% endif %}" id="chip-task-all">
+      All Tasks
+    </a>
+    <a href="{% url 'manager:tasks' %}?status=PENDING" class="chip {% if selected_status == 'PENDING' %}on{% endif %}" id="chip-task-pending">
+      Pending
+    </a>
+    <a href="{% url 'manager:tasks' %}?status=IN_PROGRESS" class="chip {% if selected_status == 'IN_PROGRESS' %}on{% endif %}" id="chip-task-progress">
+      In Progress
+    </a>
+    <a href="{% url 'manager:tasks' %}?status=COMPLETED" class="chip {% if selected_status == 'COMPLETED' %}on{% endif %}" id="chip-task-completed">
+      Completed
+    </a>
+    <a href="{% url 'manager:tasks' %}?status=CANCELLED" class="chip {% if selected_status == 'CANCELLED' %}on{% endif %}" id="chip-task-cancelled">
+      Cancelled
+    </a>
+  </div>
+
+  <!-- Task Roster -->
+  <div class="card" id="card-tasks-list">
+    {% if tasks %}
+      {% for t in tasks %}
+      <div class="row">
+        <div class="grow">
+          <b>{{ t.title }}</b>
+          <div class="sm">{{ t.description|default:"No additional notes" }}</div>
+          <div class="sm" style="margin-top:2px;">
+            Assigned to: <strong>{{ t.assigned_to.get_full_name|default:t.assigned_to.username }}</strong> · 
+            Due: {{ t.due_date|date:"M d, H:i"|default:"Immediate" }} · 
+            Category: {{ t.get_category_display }}
+            {% if t.created_by %}· By: {{ t.created_by.first_name|default:t.created_by.username }}{% endif %}
+          </div>
+          {% if t.completion_notes %}
+          <div class="sm" style="color:var(--mgr-success);margin-top:2px;">
+            ✓ Notes: {{ t.completion_notes }} ({{ t.completed_at|date:"M d, H:i" }})
+          </div>
+          {% endif %}
+        </div>
+
+        <span class="bg {% if t.priority == 'URGENT' %}pr-urg{% elif t.priority == 'HIGH' %}pr-high{% elif t.priority == 'LOW' %}pr-low{% else %}pr-med{% endif %}">
+          {{ t.get_priority_display }}
+        </span>
+
+        <span class="bg {% if t.status == 'COMPLETED' %}ok{% elif t.status == 'IN_PROGRESS' %}bl{% elif t.status == 'CANCELLED' %}er{% else %}nt{% endif %}">
+          {{ t.get_status_display }}
+        </span>
+
+        <div style="display:flex;gap:4px;">
+          {% if t.status != 'COMPLETED' and t.status != 'CANCELLED' %}
+            {% if t.status == 'PENDING' %}
+            <form method="post" action="{% url 'manager:task_update_status' t.pk %}">
+              {% csrf_token %}
+              <input type="hidden" name="status" value="IN_PROGRESS">
+              <button type="submit" class="btn s p" id="btn-start-task-{{ t.pk }}">Start</button>
+            </form>
+            {% endif %}
+
+            <button type="button" class="btn s ok" @click="openStatusModal({{ t.pk }}, '{{ t.title|escapejs }}')" id="btn-done-task-{{ t.pk }}">
+              Complete
+            </button>
+
+            {% if request.user.role == 'MANAGER' or request.user.is_superuser or request.user.role == 'ADMIN' %}
+            <form method="post" action="{% url 'manager:task_cancel' t.pk %}">
+              {% csrf_token %}
+              <button type="submit" class="btn s d" id="btn-cancel-task-{{ t.pk }}">Cancel</button>
+            </form>
+            {% endif %}
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="sm" style="padding:32px 0;text-align:center;">
+        No operational tasks found for this view.
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Create Task Modal -->
+  <div class="ov" x-show="createTaskModal" x-cloak>
+    <div class="md" @click.away="createTaskModal = false">
+      <h2 class="h2">Assign Operational Task</h2>
+      
+      <form method="post" action="{% url 'manager:task_create' %}" style="display:flex;flex-direction:column;gap:10px;">
+        {% csrf_token %}
+        <label class="lab">
+          Task Title
+          <input class="in" type="text" name="title" required placeholder="e.g. Verify Organic Milk stock & replenish shelf" id="input-task-title">
+        </label>
+
+        <label class="lab">
+          Assign To Staff Member
+          <select class="in" name="assigned_to" required id="select-task-staff">
+            {% for s in staff_options %}
+            <option value="{{ s.pk }}">{{ s.get_full_name|default:s.username }} ({{ s.get_role_display }})</option>
+            {% endfor %}
+          </select>
+        </label>
+
+        <div class="fl">
+          <label class="lab">
+            Priority Level
+            <select class="in" name="priority" id="select-task-priority">
+              <option value="MEDIUM">Medium Priority</option>
+              <option value="LOW">Low Priority</option>
+              <option value="HIGH">High Priority</option>
+              <option value="URGENT">Urgent Priority</option>
+            </select>
+          </label>
+
+          <label class="lab">
+            Category
+            <select class="in" name="category" id="select-task-category">
+              <option value="ORDER_PREP">Order Preparation</option>
+              <option value="INVENTORY">Stock & Shelf Replenishment</option>
+              <option value="VERIFICATION">Stock Verification</option>
+              <option value="CUSTOMER">Customer Service</option>
+              <option value="MAINTENANCE">Store Maintenance</option>
+              <option value="OTHER">General Task</option>
+            </select>
+          </label>
+        </div>
+
+        <label class="lab">
+          Due By (Date & Time)
+          <input class="in" type="datetime-local" name="due_date" id="input-task-due">
+        </label>
+
+        <label class="lab">
+          Instructions & Notes
+          <textarea class="in" name="description" placeholder="Specify any shelf locations, item count, or checklist details..."></textarea>
+        </label>
+
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
+          <button type="button" class="btn" @click="createTaskModal = false">Cancel</button>
+          <button type="submit" class="btn p" id="btn-save-new-task">Assign Task</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Complete Task Modal -->
+  <div class="ov" x-show="statusModal" x-cloak>
+    <div class="md" @click.away="statusModal = false">
+      <h2 class="h2">Mark Task Complete</h2>
+      <div class="sm" x-text="selectedTaskTitle"></div>
+
+      <form method="post" :action="'/manager/tasks/' + selectedTaskId + '/update/'" style="display:flex;flex-direction:column;gap:10px;">
+        {% csrf_token %}
+        <input type="hidden" name="status" value="COMPLETED">
+
+        <label class="lab">
+          Completion Notes (optional)
+          <textarea class="in" name="completion_notes" placeholder="e.g. Shelf replenished with 15 units from back storage."></textarea>
+        </label>
+
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
+          <button type="button" class="btn" @click="statusModal = false">Cancel</button>
+          <button type="submit" class="btn p" id="btn-confirm-complete-task">Mark as Completed</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,59 @@
+{% extends "agent/base_agent.html" %}
+{% load static %}
+
+{% block title %}Agent Profile — SuperMarket Delivery{% endblock %}
+
+{% block content %}
+<h1>Partner Profile</h1>
+
+<!-- Profile Info Card -->
+<div class="card" id="profile-card" style="align-items: center; text-align: center; padding: 24px 16px;">
+  <div style="width: 64px; height: 64px; border-radius: 50%; background: #E4F4EC; color: #176B45; font-size: 22px; font-weight: 700; display: flex; align-items: center; justify-content: center; margin-bottom: 8px;">
+    {{ user.first_name|default:user.username|slice:":1"|upper }}{{ user.last_name|default:""|slice:":1"|upper }}
+  </div>
+  <b style="font-size: 18px;" id="profile-name">{{ user.get_full_name|default:user.username }}</b>
+  <p class="m" style="margin-top: 2px;">
+    {{ user.phone|default:"+91 98765 43210" }} · {{ user.email|default:"partner@supermarket.in" }}
+  </p>
+  <p class="m" style="margin-top: 4px;">
+    <strong>Vehicle:</strong> {{ profile.vehicle_type|default:"Motorbike" }} {% if profile.vehicle_number %}· {{ profile.vehicle_number }}{% else %}· Reg. AP-09-XX-1234{% endif %}
+  </p>
+  <div style="margin-top: 8px;">
+    <span class="bd" style="{% if profile.is_available %}background:#E4F4EC;color:#176B45{% else %}background:#EEF1EF;color:#4A554F{% endif %};" id="profile-availability-badge">
+      {% if profile.is_available %}Online & Available{% else %}Offline{% endif %}
+    </span>
+  </div>
+</div>
+
+<!-- Support Card -->
+<div class="card" id="support-card">
+  <h2>Support & Guidelines</h2>
+  <details style="padding: 6px 0; border-bottom: 1px solid #F1F4F2;">
+    <summary style="font-weight: 600; cursor: pointer; padding: 6px 0; color: var(--agent-text);">
+      What if the customer is unavailable?
+    </summary>
+    <p class="m" style="padding-top: 6px; font-size: 13px;">
+      Attempt calling the customer twice. If still unreachable, tap "Report an issue" from the order details screen and select "Customer unavailable". Never mark an order as delivered without handoff or customer OTP verification.
+    </p>
+  </details>
+  <details style="padding: 6px 0; border-bottom: 1px solid #F1F4F2;">
+    <summary style="font-weight: 600; cursor: pointer; padding: 6px 0; color: var(--agent-text);">
+      Pickup guidelines at store
+    </summary>
+    <p class="m" style="padding-top: 6px; font-size: 13px;">
+      Upon arriving at SuperMarket Store 01, confirm your arrival in the app. Verify item count with the store packing associate before confirming pickup and initiating the delivery route.
+    </p>
+  </details>
+  <button type="button" class="btn s" onclick="showToast('Connecting to SuperMarket Delivery Partner Support helpline...')" style="margin-top: 8px; width: 100%;" id="btn-contact-support">
+    💬 Contact Partner Support
+  </button>
+</div>
+
+<!-- Logout Form -->
+<form method="post" action="{% url 'accounts:logout' %}" style="margin: 0; width: 100%;">
+  {% csrf_token %}
+  <button type="submit" class="btn d" style="width: 100%; font-size: 15px;" id="btn-agent-logout">
+    Sign Out
+  </button>
+</form>
+{% endblock %}

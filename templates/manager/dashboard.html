@@ -1,0 +1,201 @@
+{% extends "manager/base_manager.html" %}
+{% load static %}
+
+{% block title %}Dashboard — Store Manager Portal{% endblock %}
+{% block page_title %}Store Manager Dashboard{% endblock %}
+
+{% block content %}
+<!-- Notice Banner -->
+<div class="sm" style="background:#fdecc8;color:#7a4300;padding:8px 12px;border-radius:8px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+  <span>🛒 <strong>SuperMarket Store Operations:</strong> Connected to live catalog, inventory, and order fulfillment.</span>
+  <span style="font-weight:700;">Store: Hyderabad – LB Nagar</span>
+</div>
+
+<!-- 6 KPIs Grid -->
+<div class="g" id="dashboard-kpis">
+  <a href="{% url 'manager:orders' %}?status=PLACED" class="kpi" id="kpi-new-orders">
+    <b>{{ kpis.new_orders }}</b>
+    <span>New Orders</span>
+  </a>
+  <a href="{% url 'manager:orders' %}?status=APPROVED" class="kpi" id="kpi-preparing">
+    <b>{{ kpis.preparing }}</b>
+    <span>Being Prepared</span>
+  </a>
+  <a href="{% url 'manager:orders' %}?status=READY" class="kpi" id="kpi-ready">
+    <b>{{ kpis.ready }}</b>
+    <span>Ready for Pickup</span>
+  </a>
+  <a href="{% url 'manager:low_stock' %}?urgency=low" class="kpi" id="kpi-low-stock">
+    <b style="color:var(--mgr-warning);">{{ kpis.low_stock }}</b>
+    <span>Low-Stock Products</span>
+  </a>
+  <a href="{% url 'manager:low_stock' %}?urgency=out" class="kpi" id="kpi-out-of-stock">
+    <b style="color:var(--mgr-danger);">{{ kpis.out_of_stock }}</b>
+    <span>Out of Stock</span>
+  </a>
+  <a href="{% url 'manager:products' %}" class="kpi" id="kpi-active-products">
+    <b>{{ kpis.active_products }}</b>
+    <span>Active Products</span>
+  </a>
+</div>
+
+<!-- Quick Action Buttons / Chips -->
+<div class="chips" id="quick-action-chips">
+  <a href="{% url 'manager:orders' %}?status=PLACED" class="btn p" id="btn-view-new-orders">
+    ⚡ View New Orders ({{ kpis.new_orders }})
+  </a>
+  <a href="{% url 'manager:products' %}#add" class="btn" id="btn-quick-add-product">
+    + Add Product
+  </a>
+  <a href="{% url 'manager:inventory' %}#adjust" class="btn" id="btn-quick-update-stock">
+    📦 Update Stock
+  </a>
+  <a href="{% url 'manager:low_stock' %}" class="btn" id="btn-quick-view-low">
+    ⚠️ View Low Stock ({{ kpis.low_stock }})
+  </a>
+  <a href="{% url 'manager:tasks' %}#create" class="btn" id="btn-quick-assign-task">
+    📋 Assign Staff Task
+  </a>
+  <a href="{% url 'manager:staff' %}" class="btn" id="btn-quick-manage-staff">
+    👥 Manage Staff ({{ kpis.active_staff }})
+  </a>
+</div>
+
+<!-- 2x2 Grid of Core Operational Cards -->
+<div class="g2">
+  <!-- 1. Order Queue -->
+  <div class="card" id="card-order-queue">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+      <h2 class="h2" style="margin:0;">Order Queue</h2>
+      <a href="{% url 'manager:orders' %}" class="sm" style="font-weight:600;color:var(--mgr-primary);text-decoration:none;">View all &rarr;</a>
+    </div>
+    {% if recent_orders %}
+      {% for o in recent_orders %}
+      <div class="row">
+        <div class="grow">
+          <b>#{{ o.pk }}</b> · <span class="sm">{{ o.contact_name|default:"Customer" }}</span>
+          <div class="sm">{{ o.created_at|date:"M d, H:i" }} · {{ o.items.count }} items · ₹{{ o.total_amount }}</div>
+        </div>
+        <span class="bg {% if o.status == 'PLACED' %}bl{% elif o.status == 'APPROVED' or o.status == 'KITCHEN' %}wn{% elif o.status == 'READY' or o.status == 'PAID' %}ok{% else %}er{% endif %}">
+          {{ o.get_status_display }}
+        </span>
+        <a href="{% url 'manager:order_detail' o.pk %}" class="btn s" id="btn-order-{{ o.pk }}">View Order</a>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="sm" style="padding:24px 0;text-align:center;">No pending orders in the queue.</div>
+    {% endif %}
+  </div>
+
+  <!-- 2. Low-Stock Summary -->
+  <div class="card" id="card-low-stock">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+      <h2 class="h2" style="margin:0;">Low-Stock Alerts</h2>
+      <a href="{% url 'manager:low_stock' %}" class="sm" style="font-weight:600;color:var(--mgr-primary);text-decoration:none;">View all &rarr;</a>
+    </div>
+    {% if low_stock_items %}
+      {% for p in low_stock_items %}
+      <div class="row">
+        <div class="grow">
+          <b>{{ p.name }}</b>
+          <div class="sm">{{ p.stock_quantity }} {{ p.unit }} left · reorder at {{ p.low_stock_threshold }}</div>
+        </div>
+        <span class="bg {% if p.stock_quantity == 0 %}er{% else %}wn{% endif %}">
+          {% if p.stock_quantity == 0 %}Out of Stock{% else %}Low Stock{% endif %}
+        </span>
+        <a href="{% url 'manager:inventory' %}?q={{ p.sku|default:p.name }}" class="btn s">Restock</a>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="sm" style="padding:24px 0;text-align:center;color:var(--mgr-success);">All catalog items sufficiently stocked.</div>
+    {% endif %}
+  </div>
+
+  <!-- 3. Inventory Overview -->
+  <div class="card" id="card-inventory-overview">
+    <h2 class="h2">Inventory Health</h2>
+    <div class="bar" style="margin:12px 0 8px;">
+      <div style="width:{{ inventory_pct.in_stock }}%;background:var(--mgr-primary);" title="In Stock: {{ inventory_counts.in_stock }}"></div>
+      <div style="width:{{ inventory_pct.low_stock }}%;background:#d97706;" title="Low Stock: {{ inventory_counts.low_stock }}"></div>
+      <div style="width:{{ inventory_pct.out_of_stock }}%;background:#b42318;" title="Out of Stock: {{ inventory_counts.out_of_stock }}"></div>
+    </div>
+    <div class="sm" style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;">
+      <span>🟢 In stock: <strong>{{ inventory_counts.in_stock }}</strong></span>
+      <span>🟡 Low stock: <strong>{{ inventory_counts.low_stock }}</strong></span>
+      <span>🔴 Out of stock: <strong>{{ inventory_counts.out_of_stock }}</strong></span>
+    </div>
+    <div style="margin-top:14px;display:flex;gap:8px;">
+      <a href="{% url 'manager:inventory' %}" class="btn s grow" style="text-align:center;">Manage Catalog</a>
+      <a href="{% url 'manager:reports' %}" class="btn s" style="text-align:center;">Valuation Report</a>
+    </div>
+  </div>
+
+  <!-- 4. Operational Activity Log -->
+  <div class="card" id="card-recent-activity">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+      <h2 class="h2" style="margin:0;">Recent Activity</h2>
+      <a href="{% url 'manager:movements' %}" class="sm" style="font-weight:600;color:var(--mgr-primary);text-decoration:none;">Movements &rarr;</a>
+    </div>
+    {% if recent_activity %}
+      {% for a in recent_activity %}
+      <div class="row">
+        <div class="grow">
+          <div>{{ a.text }}</div>
+          <div class="sm">{{ a.timestamp|date:"M d, H:i" }} · by {{ a.user|default:"System" }}</div>
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="sm" style="padding:24px 0;text-align:center;">No recent store activity recorded.</div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Staff On Duty & Tasks Row -->
+<div class="g2" style="margin-top:4px;">
+  <!-- Staff on Duty -->
+  <div class="card" id="card-staff-roster">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+      <h2 class="h2" style="margin:0;">Staff on Duty Today</h2>
+      <a href="{% url 'manager:attendance' %}" class="sm" style="font-weight:600;color:var(--mgr-primary);text-decoration:none;">Roster &rarr;</a>
+    </div>
+    {% if staff_on_duty %}
+      {% for att in staff_on_duty %}
+      <div class="row">
+        <div class="av">{{ att.staff.first_name|default:att.staff.username|slice:":1"|upper }}</div>
+        <div class="grow">
+          <b>{{ att.staff.get_full_name|default:att.staff.username }}</b>
+          <div class="sm">{{ att.shift.name|default:"General Shift" }} · In: {{ att.check_in|date:"H:i" }}</div>
+        </div>
+        <span class="bg ok">On Duty</span>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="sm" style="padding:18px 0;text-align:center;">No staff members checked in today yet.</div>
+    {% endif %}
+  </div>
+
+  <!-- Pending Operational Tasks -->
+  <div class="card" id="card-pending-tasks">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+      <h2 class="h2" style="margin:0;">Pending Store Tasks</h2>
+      <a href="{% url 'manager:tasks' %}" class="sm" style="font-weight:600;color:var(--mgr-primary);text-decoration:none;">All tasks &rarr;</a>
+    </div>
+    {% if pending_tasks %}
+      {% for t in pending_tasks %}
+      <div class="row">
+        <div class="grow">
+          <b>{{ t.title }}</b>
+          <div class="sm">Assigned: {{ t.assigned_to.first_name|default:t.assigned_to.username }} · Due: {{ t.due_date|date:"M d, H:i"|default:"Today" }}</div>
+        </div>
+        <span class="bg {% if t.priority == 'URGENT' %}pr-urg{% elif t.priority == 'HIGH' %}pr-high{% elif t.priority == 'LOW' %}pr-low{% else %}pr-med{% endif %}">
+          {{ t.get_priority_display }}
+        </span>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="sm" style="padding:18px 0;text-align:center;color:var(--mgr-success);">All operational tasks are up to date!</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,129 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
+  <title>{% block title %}SuperMarket Delivery Partner{% endblock %}</title>
+  
+  <link rel="stylesheet" href="{% static 'css/delivery_agent.css' %}">
+  
+  <!-- HTMX & Alpine (allowed by CSP) -->
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  <script defer src="https://unpkg.com/alpinejs@3.13.3/dist/cdn.min.js"></script>
+  
+  {% block extra_head %}{% endblock %}
+</head>
+<body class="agent-body" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+  <div class="app">
+    {% block nav %}
+    {% if request.user.is_authenticated and request.user.role == "AGENT" %}
+    <nav aria-label="Main" class="nav">
+      <a href="{% url 'orders_agent:dashboard' %}" class="nb {% if active_tab == 'home' %}on{% endif %}" id="nav-home">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M3 11l9-8 9 8v10H3z"/>
+        </svg>
+        Home
+      </a>
+      <a href="{% url 'orders_agent:orders' %}" class="nb {% if active_tab == 'orders' %}on{% endif %}" id="nav-orders">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M6 2l-2 5v14h16V7l-2-5zM4 7h16"/>
+        </svg>
+        Orders
+      </a>
+      <a href="{% url 'orders_agent:earnings' %}" class="nb {% if active_tab == 'earn' %}on{% endif %}" id="nav-earnings">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <rect x="2" y="6" width="20" height="13" rx="2"/>
+          <circle cx="12" cy="12.5" r="2.5"/>
+        </svg>
+        Earnings
+      </a>
+      <a href="{% url 'orders_agent:profile' %}" class="nb {% if active_tab == 'prof' %}on{% endif %}" id="nav-profile">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <circle cx="12" cy="8" r="4"/>
+          <path d="M4 21c0-4 4-6 8-6s8 2 8 6"/>
+        </svg>
+        Profile
+      </a>
+    </nav>
+    {% endif %}
+    {% endblock %}
+
+    <main class="main" id="agent-main">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+
+  <!-- Modal Container -->
+  {% block modal %}{% endblock %}
+
+  <!-- Toast Feedback Region -->
+  <div id="toast-container">
+    {% if messages %}
+      {% for msg in messages %}
+      <div class="toast" role="alert" id="system-toast-{{ forloop.counter }}">
+        <span>{{ msg }}</span>
+      </div>
+      {% endfor %}
+    {% endif %}
+  </div>
+
+  <script>
+    // Universal copy-to-clipboard helper with toast feedback
+    function copyText(text, successMsg) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function() {
+          showToast(successMsg || "Copied to clipboard");
+        }).catch(function() {
+          fallbackCopyText(text, successMsg);
+        });
+      } else {
+        fallbackCopyText(text, successMsg);
+      }
+    }
+
+    function fallbackCopyText(text, successMsg) {
+      var ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      try {
+        document.execCommand("copy");
+        showToast(successMsg || "Copied to clipboard");
+      } catch (err) {
+        showToast("Copy failed");
+      }
+      document.body.removeChild(ta);
+    }
+
+    function showToast(msg) {
+      var container = document.getElementById("toast-container");
+      var t = document.createElement("div");
+      t.className = "toast";
+      t.textContent = msg;
+      container.appendChild(t);
+      setTimeout(function() {
+        t.style.opacity = "0";
+        t.style.transition = "opacity 0.3s ease";
+        setTimeout(function() { t.remove(); }, 300);
+      }, 2600);
+    }
+
+    // Auto-dismiss Django server messages
+    document.addEventListener("DOMContentLoaded", function() {
+      var toms = document.querySelectorAll("#toast-container .toast");
+      toms.forEach(function(t) {
+        setTimeout(function() {
+          t.style.opacity = "0";
+          t.style.transition = "opacity 0.3s ease";
+          setTimeout(function() { t.remove(); }, 300);
+        }, 3200);
+      });
+    });
+  </script>
+  {% block extra_scripts %}{% endblock %}
+</body>
+</html>

@@ -1,9 +1,18 @@
-"""Admin notifications model."""
+from django.conf import settings
 from django.db import models
 
 
 class AdminNotification(models.Model):
-    """Operational alerts (low stock, near-expiry, new order, PO receipt)."""
+    """Operational alerts (low stock, near-expiry, new order, PO receipt, agent alerts)."""
+
+    recipient = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name="notifications",
+        help_text="Target user if scoped (e.g. delivery agent), or null for all administrative staff.",
+    )
 
     notification_type = models.CharField(
         max_length=30,

@@ -11,12 +11,12 @@ def healthz(request):
 
 
 def home(request):
-    """Public supermarket customer homepage.
+    """Public supermarket customer homepage (DMart-India-style layout).
 
-    Loads real categories, best sellers, featured products, customer location,
-    and active cart state for the mobile & desktop customer UI/UX.
+    Loads categories, best deals, department rails, customer location,
+    and active cart state for the FreshMart shopping experience.
     """
-    from apps.menu.models import Category
+    from apps.menu.models import Category, MenuItem
     from apps.orders.views_customer import _get_delivery_cart
     from apps.customer_auth.views import get_logged_in_customer
 
@@ -26,44 +26,76 @@ def home(request):
 
     categories = list(Category.objects.filter(is_active=True).order_by("sort_order", "name"))
     
-    # Live catalog items
+    # 1. Today's Best Deals (highest % discounts first)
+    best_deals = list(
+        MenuItem.objects.filter(is_available=True, offer_percent__gt=0)
+        .select_related("category")
+        .order_by("-offer_percent", "name")[:8]
+    )
+    if not best_deals:
+        best_deals = list(
+            MenuItem.objects.filter(is_available=True)
+            .select_related("category")
+            .order_by("name")[:8]
+        )
+
+    # 2. Department rails
+    staples_items = list(
+        MenuItem.objects.filter(
+            is_available=True,
+            category__name__iregex=r"(rice|pulse|grain|flour|staple|cook|oil|spic|atta|dal)",
+        )
+        .select_related("category")
+        .order_by("-offer_percent", "name")[:6]
+    )
+
+    fruits_veg_items = list(
+        MenuItem.objects.filter(
+            is_available=True,
+            category__name__iregex=r"(fruit|veg)",
+        )
+        .select_related("category")
+        .order_by("-offer_percent", "name")[:6]
+    )
+
+    dairy_bakery_items = list(
+        MenuItem.objects.filter(
+            is_available=True,
+            category__name__iregex=r"(dairy|egg|milk|bakery|bread)",
+        )
+        .select_related("category")
+        .order_by("-offer_percent", "name")[:6]
+    )
+
+    household_items = list(
+        MenuItem.objects.filter(
+            is_available=True,
+            category__name__iregex=r"(house|clean|detergent|personal|care)",
+        )
+        .select_related("category")
+        .order_by("-offer_percent", "name")[:6]
+    )
+
+    # Best sellers fallback / highlight items
     best_sellers = list(
         MenuItem.objects.filter(is_available=True)
         .select_related("category")
         .order_by("-stock_quantity", "name")[:8]
     )
-    
-    highlights = list(
-        MenuItem.objects.filter(is_available=True)
-        .select_related("category")
-        .order_by("category__sort_order", "name")[:8]
-    )
 
     cart_items, cart_total, cart_count = _get_delivery_cart(request.session)
     cart_map = {str(entry["item"].pk): entry["quantity"] for entry in cart_items}
 
-    customer_location = request.session.get("customer_location", "Hyderabad")
-
-    sample_dishes = [
-        {"name": "Organic Farm Fresh Apples (1kg)",
-         "description": "Crisp, sweet, locally sourced Himalayan apples", "price": "180"},
-        {"name": "A2 Organic Cow Milk (1L)",
-         "description": "Pasteurized, farm-fresh whole milk with natural cream", "price": "75"},
-        {"name": "Cold-Pressed Virgin Olive Oil (500ml)",
-         "description": "First cold extraction, rich in antioxidants", "price": "420"},
-        {"name": "Organic Brown Eggs (Pack of 12)",
-         "description": "Free-range, grain-fed, antibiotic-free farm eggs", "price": "140"},
-        {"name": "Royal Aged Basmati Rice (5kg)",
-         "description": "Extra-long grain, aromatic premium pantry staple", "price": "490"},
-        {"name": "Artisan Sourdough Loaf (400g)",
-         "description": "Naturally fermented, crusty bakery daily fresh", "price": "120"},
-    ]
+    customer_location = request.session.get("customer_location", "500074, Hyderabad")
 
     context = {
         "categories": categories,
+        "best_deals": best_deals,
+        "staples_items": staples_items,
+        "fruits_veg_items": fruits_veg_items,
+        "dairy_bakery_items": dairy_bakery_items,
+        "household_items": household_items,
         "best_sellers": best_sellers,
-        "highlights": highlights,
-        "sample_dishes": sample_dishes,
         "cart_items": cart_items,
         "cart_total": cart_total,
         "cart_count": cart_count,
@@ -71,6 +103,8 @@ def home(request):
         "customer_location": customer_location,
         "delivery_customer": customer,
         "active_nav": "home",
+        "brand_name": "FreshMart",
+        "brand_tagline": "Fresh food. Everyday low prices.",
     }
     return render(request, "pages/home.html", context)
 

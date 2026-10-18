@@ -1,0 +1,50 @@
+{% extends "manager/base_manager.html" %}
+{% load static %}
+
+{% block title %}Notifications — Store Operations{% endblock %}
+{% block page_title %}Store Operational Alerts{% endblock %}
+
+{% block content %}
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+  <h1 class="h1">Operational Notifications</h1>
+  
+  <form method="post" action="{% url 'manager:notifications' %}">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="mark_all_read">
+    <button type="submit" class="btn s" id="btn-mark-all-read">Mark all as read</button>
+  </form>
+</div>
+
+<!-- Notifications List -->
+<div class="card" id="card-notifications-list">
+  {% if notifications %}
+    {% for n in notifications %}
+    <div class="row">
+      <div class="grow">
+        <b>{{ n.title }}</b>
+        <div style="font-size:13px;margin-top:2px;">{{ n.message }}</div>
+        <div class="sm" style="margin-top:2px;">
+          {{ n.created_at|date:"M d, H:i" }} · Type: {{ n.notification_type|default:"General" }} · 
+          Status: <strong style="color:{% if n.is_read %}var(--mgr-muted){% else %}var(--mgr-primary){% endif %};">{% if n.is_read %}Read{% else %}Unread{% endif %}</strong>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:6px;">
+        <form method="post" action="{% url 'manager:notifications' %}">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="toggle_read">
+          <input type="hidden" name="notif_id" value="{{ n.pk }}">
+          <button type="submit" class="btn s" id="btn-toggle-notif-{{ n.pk }}">
+            {% if n.is_read %}Mark Unread{% else %}Mark Read{% endif %}
+          </button>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+  {% else %}
+    <div class="sm" style="padding:32px 0;text-align:center;">
+      No operational alerts or notifications at this time.
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

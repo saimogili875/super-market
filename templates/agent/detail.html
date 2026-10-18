@@ -1,0 +1,366 @@
+{% extends "agent/base_agent.html" %}
+{% load static %}
+
+{% block title %}Order #{{ order.pk }} — SuperMarket Delivery{% endblock %}
+
+{% block content %}
+<div class="row">
+  <a href="{% url 'orders_agent:orders' %}" class="btn s" style="min-height: 38px; padding: 0 14px; font-size: 13px;" id="btn-back-to-orders">
+    ← Back
+  </a>
+  <span class="bd" style="{{ card.badge_style }}" id="order-status-badge">{{ card.label }}</span>
+</div>
+
+<h1>Order #{{ order.pk }}</h1>
+
+<!-- Order Info Card -->
+<div class="card" id="order-info-card">
+  <p class="m" style="font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: 0.05em; color: var(--agent-brand);">Pickup Location</p>
+  <b style="font-size: 15px;">{{ card.store }}</b>
+  
+  <p class="m" style="margin-top: 6px; font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: 0.05em; color: var(--agent-blue-text);">Customer Drop</p>
+  <p class="m" style="color: var(--agent-text); font-weight: 600;">{{ card.customer_name }}</p>
+  <b style="font-size: 15px;">{{ card.address }}</b>
+
+  <div style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--agent-border);">
+    <p class="m">
+      {{ card.items_count }} items · {{ card.km }} km · about {{ card.mins }} mins · Total ₹{{ order.total_amount }}
+    </p>
+    {% if order.instructions %}
+    <p class="m" style="margin-top: 4px;">
+      <strong>Instructions:</strong> {{ order.instructions }}
+    </p>
+    {% endif %}
+    {% if order.delivery_issue_reason %}
+    <p class="er" style="margin-top: 4px;">
+      <strong>Reported:</strong> {{ order.delivery_issue_reason }} {% if order.delivery_issue_notes %}— {{ order.delivery_issue_notes }}{% endif %}
+    </p>
+    {% endif %}
+    <p class="m" style="font-size: 12px; margin-top: 4px;">
+      Assigned: {{ order.created_at|date:"M d, Y · I:i A" }}
+    </p>
+  </div>
+</div>
+
+<!-- Communication & Navigation Bar -->
+<div class="row" style="flex-wrap: nowrap; gap: 8px;">
+  {% if card.phone %}
+  <a href="tel:{{ card.phone }}" class="btn s" style="flex: 1; font-size: 13px; text-decoration: none;" id="btn-call-customer">
+    📞 Call
+  </a>
+  {% else %}
+  <button type="button" class="btn s" style="flex: 1; font-size: 13px; opacity: 0.5;" disabled title="No phone provided">
+    📞 Call
+  </button>
+  {% endif %}
+
+  <a
+    href="{% if order.maps_url %}{{ order.maps_url }}{% else %}https://www.google.com/maps/search/?api=1&query={{ card.address|urlencode }}{% endif %}"
+    target="_blank"
+    rel="noopener noreferrer"
+    class="btn s"
+    style="flex: 1; font-size: 13px; text-decoration: none;"
+    id="btn-open-navigation"
+  >
+    🧭 Navigate
+  </a>
+
+  <button
+    type="button"
+    class="btn s"
+    style="flex: 1; font-size: 13px;"
+    onclick="copyText('{{ card.address|escapejs }}', 'Delivery address copied')"
+    id="btn-copy-address"
+  >
+    📋 Copy
+  </button>
+</div>
+
+<!-- Progress Timeline Stepper -->
+<div class="card" id="timeline-card">
+  <h2>Progress</h2>
+  <div style="margin-top: 6px;">
+    {% for t in timeline %}
+    <div class="tl">
+      <span class="dot {% if t.on %}on{% endif %}"></span>
+      <span style="{% if t.on %}font-weight: 700; color: var(--agent-text);{% else %}color: var(--agent-muted);{% endif %}">
+        {{ t.name }}
+      </span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Order Items List -->
+<div class="card" id="items-card">
+  <h2>Order Items ({{ card.items_count }})</h2>
+  <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 4px;">
+    {% for item in order.items.all %}
+    <div class="row" style="font-size: 14px; padding-bottom: 6px; border-bottom: 1px solid #F1F4F2;">
+      <span><strong>{{ item.quantity }}×</strong> {{ item.name_snap }}</span>
+      <span style="font-weight: 600;">₹{{ item.line_total }}</span>
+    </div>
+    {% endfor %}
+    <div class="row" style="font-size: 15px; font-weight: 700; padding-top: 4px;">
+      <span>Total Amount</span>
+      <span style="color: var(--agent-brand);">₹{{ order.total_amount }}</span>
+    </div>
+  </div>
+</div>
+
+<!-- Primary Action Controls -->
+{% if can_act %}
+  {% if next_action_val == "pod" %}
+    <button type="button" class="btn" style="width: 100%; font-size: 16px;" onclick="openPodModal()" id="btn-complete-delivery-step">
+      {{ act_label }}
+    </button>
+  {% elif next_action_val == "accept" %}
+    <form method="post" action="{% url 'orders_agent:order_action' order.pk %}" style="margin: 0;">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="accept">
+      <button type="submit" class="btn" style="width: 100%; font-size: 16px;" id="btn-accept-delivery">
+        {{ act_label }}
+      </button>
+    </form>
+  {% else %}
+    <button type="button" class="btn" style="width: 100%; font-size: 16px;" onclick="openStepModal('{{ next_action_val }}', '{{ act_label|escapejs }}')" id="btn-next-action-step">
+      {{ act_label }}
+    </button>
+  {% endif %}
+{% endif %}
+
+<!-- Secondary Controls: Issue, Reject, or Summary -->
+<div class="row" style="gap: 8px;">
+  {% if can_issue %}
+  <button type="button" class="btn d" style="flex: 1;" onclick="openIssueModal()" id="btn-open-issue">
+    Report an issue
+  </button>
+  {% endif %}
+
+  {% if can_reject %}
+  <button type="button" class="btn d" style="flex: 1;" onclick="openRejectModal()" id="btn-open-reject">
+    Reject delivery
+  </button>
+  {% endif %}
+
+  {% if is_done %}
+  <a href="{% url 'orders_agent:delivery_complete' order.pk %}" class="btn s" style="flex: 1; text-align: center; text-decoration: none;" id="btn-view-summary">
+    View delivery summary
+  </a>
+  <a href="{% url 'orders_agent:order_receipt' order.pk %}" target="_blank" class="btn s" style="flex: 1; text-align: center; text-decoration: none;" id="btn-view-receipt">
+    View receipt
+  </a>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block modal %}
+<!-- 1. Step Confirmation Modal -->
+<div id="step-modal" class="ov" style="display: none;">
+  <div class="sh" role="dialog" aria-modal="true" aria-labelledby="modal-step-title">
+    <h2 id="modal-step-title">Confirm Action</h2>
+    <p class="m" id="modal-step-desc">Confirm updating Order #{{ order.pk }}?</p>
+    
+    <form method="post" action="{% url 'orders_agent:order_action' order.pk %}">
+      {% csrf_token %}
+      <input type="hidden" name="action" id="step-action-input" value="">
+      
+      <div class="row" style="flex-wrap: nowrap; gap: 8px; margin-top: 12px;">
+        <button type="button" class="btn s" style="flex: 1;" onclick="closeModal('step-modal')" id="btn-cancel-step">
+          Cancel
+        </button>
+        <button type="submit" class="btn" style="flex: 1;" id="btn-confirm-step">
+          Confirm
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 2. Reject Modal -->
+<div id="reject-modal" class="ov" style="display: none;">
+  <div class="sh" role="dialog" aria-modal="true" aria-labelledby="modal-reject-title">
+    <h2 id="modal-reject-title">Reject delivery</h2>
+    <p class="m">Select a reason. The order will be unassigned and returned to the store pool for reassignment.</p>
+    
+    <form method="post" action="{% url 'orders_agent:order_action' order.pk %}">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="reject">
+      <input type="hidden" name="reason" id="reject-reason-val" value="Unavailable">
+
+      <div class="chips" style="flex-wrap: wrap; margin-bottom: 16px;">
+        <button type="button" class="chip on" onclick="selectReason(this, 'reject-reason-val', 'Unavailable')">Unavailable</button>
+        <button type="button" class="chip" onclick="selectReason(this, 'reject-reason-val', 'Vehicle issue')">Vehicle issue</button>
+        <button type="button" class="chip" onclick="selectReason(this, 'reject-reason-val', 'Too far')">Too far</button>
+        <button type="button" class="chip" onclick="selectReason(this, 'reject-reason-val', 'Other')">Other</button>
+      </div>
+
+      <div class="row" style="flex-wrap: nowrap; gap: 8px;">
+        <button type="button" class="btn s" style="flex: 1;" onclick="closeModal('reject-modal')" id="btn-cancel-reject-detail">
+          Cancel
+        </button>
+        <button type="submit" class="btn d" style="flex: 1;" id="btn-submit-reject-detail">
+          Reject
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 3. Report Issue Modal -->
+<div id="issue-modal" class="ov" style="display: none;">
+  <div class="sh" role="dialog" aria-modal="true" aria-labelledby="modal-issue-title">
+    <h2 id="modal-issue-title">Report an issue</h2>
+    <p class="m">Choose an issue reason. The order will remain open while store support is alerted.</p>
+    
+    <form method="post" action="{% url 'orders_agent:order_action' order.pk %}">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="issue">
+      <input type="hidden" name="reason" id="issue-reason-val" value="Customer unavailable">
+
+      <div class="chips" style="flex-wrap: wrap; margin-bottom: 12px;">
+        <button type="button" class="chip on" onclick="selectReason(this, 'issue-reason-val', 'Customer unavailable')">Customer unavailable</button>
+        <button type="button" class="chip" onclick="selectReason(this, 'issue-reason-val', 'Incorrect address')">Incorrect address</button>
+        <button type="button" class="chip" onclick="selectReason(this, 'issue-reason-val', 'Customer unreachable')">Customer unreachable</button>
+        <button type="button" class="chip" onclick="selectReason(this, 'issue-reason-val', 'Package damaged')">Package damaged</button>
+        <button type="button" class="chip" onclick="selectReason(this, 'issue-reason-val', 'Vehicle problem')">Vehicle problem</button>
+        <button type="button" class="chip" onclick="selectReason(this, 'issue-reason-val', 'Other')">Other</button>
+      </div>
+
+      <input type="text" name="notes" class="in" placeholder="Optional notes for support / customer" style="margin-bottom: 16px;" id="issue-notes-input">
+
+      <div class="row" style="flex-wrap: nowrap; gap: 8px;">
+        <button type="button" class="btn s" style="flex: 1;" onclick="closeModal('issue-modal')" id="btn-cancel-issue">
+          Cancel
+        </button>
+        <button type="submit" class="btn d" style="flex: 1;" id="btn-submit-issue">
+          Submit issue
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 4. Complete Delivery / Proof of Delivery (POD) Modal -->
+<div id="pod-modal" class="ov" style="display: none;">
+  <div class="sh" role="dialog" aria-modal="true" aria-labelledby="modal-pod-title">
+    <h2 id="modal-pod-title">Complete delivery</h2>
+    <p class="m">Choose verification method to finalize order completion.</p>
+    
+    <form method="post" action="{% url 'orders_agent:order_action' order.pk %}" enctype="multipart/form-data" id="pod-form">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="complete">
+      <input type="hidden" name="pod_type" id="pod-type-val" value="otp">
+
+      <div class="chips" style="margin-bottom: 14px;">
+        <button type="button" class="chip on" id="chip-pod-otp" onclick="switchPodMode('otp')">Customer OTP</button>
+        <button type="button" class="chip" id="chip-pod-hand" onclick="switchPodMode('handover')">Handed over</button>
+      </div>
+
+      <!-- OTP Input Mode -->
+      <div id="pod-otp-container" style="margin-bottom: 14px;">
+        <label for="input-otp" class="m" style="display: block; margin-bottom: 4px; font-weight: 600;">
+          Customer 4-digit OTP:
+        </label>
+        <input
+          type="text"
+          name="otp"
+          id="input-otp"
+          class="in"
+          inputmode="numeric"
+          maxlength="6"
+          placeholder="Enter OTP (e.g. {{ order.delivery_otp }})"
+          value="{{ order.delivery_otp }}"
+        >
+        <p class="m" style="font-size: 12px; margin-top: 4px; color: var(--agent-brand);">
+          Verified Customer PIN for Order #{{ order.pk }}: <strong>{{ order.delivery_otp }}</strong>
+        </p>
+      </div>
+
+      <!-- Handover Confirmation Mode -->
+      <div id="pod-handover-container" style="display: none; margin-bottom: 14px;">
+        <label class="m" style="display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14px; cursor: pointer;">
+          <input type="checkbox" name="handover_confirmed" id="checkbox-handover" value="true" style="width: 20px; height: 20px;">
+          I handed the package directly to the customer
+        </label>
+      </div>
+
+      <!-- Optional POD Image Upload -->
+      <div style="margin-bottom: 14px;">
+        <label class="m" style="display: block; margin-bottom: 4px; font-size: 13px;">
+          Optional photo proof (doorstep / signature):
+        </label>
+        <input type="file" name="pod_image" id="input-pod-image" accept="image/*" class="in" style="padding: 10px;">
+      </div>
+
+      <!-- Optional Delivery Notes -->
+      <div style="margin-bottom: 16px;">
+        <input type="text" name="notes" id="input-pod-notes" class="in" placeholder="Optional delivery note (e.g. handed at desk)">
+      </div>
+
+      <div class="row" style="flex-wrap: nowrap; gap: 8px;">
+        <button type="button" class="btn s" style="flex: 1;" onclick="closeModal('pod-modal')" id="btn-cancel-pod">
+          Cancel
+        </button>
+        <button type="submit" class="btn" style="flex: 1;" id="btn-verify-deliver">
+          Verify and deliver
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  function openStepModal(actionVal, actionLabel) {
+    document.getElementById("step-action-input").value = actionVal;
+    document.getElementById("modal-step-title").textContent = "Confirm: " + actionLabel;
+    document.getElementById("step-modal").style.display = "flex";
+  }
+
+  function openRejectModal() {
+    document.getElementById("reject-modal").style.display = "flex";
+  }
+
+  function openIssueModal() {
+    document.getElementById("issue-modal").style.display = "flex";
+  }
+
+  function openPodModal() {
+    document.getElementById("pod-modal").style.display = "flex";
+  }
+
+  function closeModal(modalId) {
+    document.getElementById(modalId).style.display = "none";
+  }
+
+  function selectReason(btn, inputId, val) {
+    var chips = btn.parentElement.querySelectorAll(".chip");
+    chips.forEach(function(c) { c.classList.remove("on"); });
+    btn.classList.add("on");
+    document.getElementById(inputId).value = val;
+  }
+
+  function switchPodMode(mode) {
+    var otpChip = document.getElementById("chip-pod-otp");
+    var handChip = document.getElementById("chip-pod-hand");
+    var otpContainer = document.getElementById("pod-otp-container");
+    var handContainer = document.getElementById("pod-handover-container");
+    var podTypeInput = document.getElementById("pod-type-val");
+
+    podTypeInput.value = mode;
+    if (mode === "otp") {
+      otpChip.classList.add("on");
+      handChip.classList.remove("on");
+      otpContainer.style.display = "block";
+      handContainer.style.display = "none";
+    } else {
+      handChip.classList.add("on");
+      otpChip.classList.remove("on");
+      handContainer.style.display = "block";
+      otpContainer.style.display = "none";
+    }
+  }
+</script>
+{% endblock %}

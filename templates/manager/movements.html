@@ -1,0 +1,100 @@
+{% extends "manager/base_manager.html" %}
+{% load static %}
+
+{% block title %}Stock Movements — Store Inventory{% endblock %}
+{% block page_title %}Stock Movements History{% endblock %}
+
+{% block content %}
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+  <h1 class="h1">Stock Movement Audit Trail</h1>
+  <div class="sm">Real-time ledger of deliveries, sales, damages, and audit corrections.</div>
+</div>
+
+<!-- Filters -->
+<div class="card" style="padding:10px 14px;">
+  <form method="get" action="{% url 'manager:movements' %}" class="fl">
+    <select class="in" name="product" onchange="this.form.submit()" id="select-move-product">
+      <option value="">All Products</option>
+      {% for p in all_products %}
+      <option value="{{ p.pk }}" {% if selected_prod == p.pk|stringformat:"s" %}selected{% endif %}>{{ p.name }} ({{ p.sku|default:"No SKU" }})</option>
+      {% endfor %}
+    </select>
+
+    <select class="in" name="type" onchange="this.form.submit()" id="select-move-type">
+      <option value="">All Movement Types</option>
+      <option value="in" {% if selected_type == "in" %}selected{% endif %}>Stock Additions / Received (+)</option>
+      <option value="out" {% if selected_type == "out" %}selected{% endif %}>Stock Reductions / Waste (-)</option>
+    </select>
+
+    <div style="display:flex;gap:6px;">
+      <button type="submit" class="btn s p" id="btn-filter-movements">Filter</button>
+      {% if selected_prod or selected_type %}
+      <a href="{% url 'manager:movements' %}" class="btn s d" id="btn-clear-move-filter">Clear</a>
+      {% endif %}
+    </div>
+  </form>
+</div>
+
+<!-- Movements Table -->
+<div class="card" id="card-movements-list" x-data="{
+  detailModal: false,
+  detailLines: [],
+  openDetail(prod, sku, type, delta, prev, next, notes, user, time) {
+    this.detailLines = [
+      {k: 'Product', v: prod + ' (' + sku + ')'},
+      {k: 'Movement Type', v: type},
+      {k: 'Net Change', v: delta},
+      {k: 'Stock Quantity', v: prev + ' → ' + next},
+      {k: 'Reason / Reference', v: notes},
+      {k: 'Logged By', v: user},
+      {k: 'Timestamp', v: time}
+    ];
+    this.detailModal = true;
+  }
+}">
+  {% if movements %}
+    {% for m in movements %}
+    <div class="row">
+      <div class="grow">
+        <b>{{ m.item.name }}</b> <span class="sm">({{ m.item.sku|default:"N/A" }})</span>
+        <div class="sm">
+          {{ m.created_at|date:"M d, H:i" }} · {{ m.get_movement_type_display|default:m.movement_type }} · By: {{ m.created_by.get_full_name|default:m.created_by.username|default:"System" }}
+        </div>
+      </div>
+
+      <span class="bg {% if m.quantity > 0 %}ok{% else %}er{% endif %}">
+        {% if m.quantity > 0 %}+{{ m.quantity }}{% else %}{{ m.quantity }}{% endif %}
+      </span>
+
+      <div class="sm" style="min-width:110px;">
+        Resulting: <strong>{{ m.resulting_quantity }}</strong> {{ m.item.unit }}
+      </div>
+
+      <button type="button" class="btn s" @click="openDetail('{{ m.item.name|escapejs }}', '{{ m.item.sku|default:"" }}', '{{ m.movement_type|escapejs }}', '{% if m.quantity > 0 %}+{% endif %}{{ m.quantity }}', '{{ m.resulting_quantity|add:m.quantity }}', '{{ m.resulting_quantity }}', '{{ m.notes|default:"None"|escapejs }}', '{{ m.created_by.username|default:"System"|escapejs }}', '{{ m.created_at|date:"Y-m-d H:i:s" }}')" id="btn-view-move-{{ m.pk }}">
+        Details
+      </button>
+    </div>
+    {% endfor %}
+  {% else %}
+    <div class="sm" style="padding:32px 0;text-align:center;">
+      No stock movements recorded matching your criteria.
+    </div>
+  {% endif %}
+
+  <!-- Details Modal -->
+  <div class="ov" x-show="detailModal" x-cloak>
+    <div class="md" @click.away="detailModal = false">
+      <h2 class="h2">Stock Movement Details</h2>
+      <template x-for="l in detailLines" :key="l.k">
+        <div class="row">
+          <div class="sm" style="width:140px;" x-text="l.k"></div>
+          <div class="grow" style="font-weight:600;" x-text="l.v"></div>
+        </div>
+      </template>
+      <div style="display:flex;justify-content:flex-end;margin-top:8px;">
+        <button type="button" class="btn" @click="detailModal = false">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

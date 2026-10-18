@@ -1,160 +1,648 @@
 {% extends "orders/customer/base.html" %}
 {% load static %}
 
-{% block title %}FreshMart Online Supermarket — Fresh Groceries Delivered Fast{% endblock %}
+{% block title %}FreshMart — Fresh food. Everyday low prices. | Online Supermarket{% endblock %}
 
 {% block content %}
-<!-- Hero Promotional Banner -->
-<section style="background:#E8F4EC;border-radius:20px;padding:24px 20px;display:flex;flex-direction:column;gap:14px;position:relative;overflow:hidden">
-  <div style="display:flex;flex-direction:column;gap:6px;z-index:2">
-    <span style="font-size:12px;font-weight:700;color:var(--primary);letter-spacing:0.05em;text-transform:uppercase">Direct From Farm</span>
-    <h1 style="margin:0;font-size:28px;line-height:1.15;color:#104C32;font-weight:700">Fresh groceries, delivered to your door.</h1>
-    <p style="margin:0;font-size:15px;line-height:1.4;color:#4F5A52">Shop your everyday essentials, fruits, vegetables and staples from one convenient place.</p>
+<style>
+  /* Hero Carousel Styles */
+  .hero-carousel-container {
+    position: relative;
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    background: #0f3d21;
+    box-shadow: var(--shadow-md);
+  }
+
+  .carousel-slides {
+    display: flex;
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    min-height: 240px;
+  }
+
+  .carousel-slide {
+    flex: 0 0 100%;
+    width: 100%;
+    padding: 36px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    color: #ffffff;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .slide-1 {
+    background: linear-gradient(135deg, #0b341c 0%, #14532d 60%, #1e7240 100%);
+  }
+
+  .slide-2 {
+    background: linear-gradient(135deg, #1b4d3e 0%, #0f766e 60%, #14b8a6 100%);
+  }
+
+  .slide-3 {
+    background: linear-gradient(135deg, #7c2d12 0%, #c2410c 60%, #ea580c 100%);
+  }
+
+  .carousel-badge {
+    display: inline-block;
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(4px);
+    color: #ffffff;
+    padding: 4px 12px;
+    border-radius: 99px;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .carousel-title {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 32px;
+    line-height: 1.15;
+    font-weight: 700;
+    margin-bottom: 10px;
+    letter-spacing: -0.01em;
+  }
+
+  .carousel-desc {
+    font-size: 15px;
+    line-height: 1.45;
+    color: #e5f5ec;
+    margin-bottom: 20px;
+    max-width: 480px;
+  }
+
+  .carousel-cta-btn {
+    min-height: 44px;
+    padding: 0 24px;
+    border-radius: 10px;
+    background: #ffffff;
+    color: var(--deep-green);
+    font-weight: 700;
+    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    transition: transform 0.15s ease, background 0.15s ease;
+  }
+
+  .carousel-cta-btn:hover {
+    background: #f0fdf4;
+    transform: translateY(-2px);
+  }
+
+  .carousel-indicators {
+    position: absolute;
+    bottom: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 8px;
+    z-index: 10;
+  }
+
+  .indicator-dot {
+    width: 24px;
+    height: 6px;
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.4);
+    cursor: pointer;
+    transition: background 0.2s ease, width 0.2s ease;
+  }
+
+  .indicator-dot.active {
+    background: #ffffff;
+    width: 36px;
+  }
+
+  /* Category Icons Strip */
+  .category-strip {
+    display: flex;
+    gap: 16px;
+    overflow-x: auto;
+    padding: 4px 4px 12px;
+    margin: 0 -4px;
+  }
+
+  .category-strip-card {
+    flex: 0 0 100px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    text-align: center;
+    text-decoration: none;
+    transition: transform 0.15s ease;
+  }
+
+  .category-strip-card:hover {
+    transform: translateY(-3px);
+  }
+
+  .category-icon-circle {
+    width: 76px;
+    height: 76px;
+    border-radius: 38px;
+    background: #ffffff;
+    border: 2px solid #e2e8e3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    box-shadow: var(--shadow-sm);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .category-strip-card:hover .category-icon-circle {
+    border-color: var(--leaf);
+    box-shadow: 0 4px 14px rgba(34, 160, 90, 0.18);
+  }
+
+  .category-strip-name {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.25;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .category-discount-pill {
+    font-size: 10px;
+    font-weight: 800;
+    color: var(--tomato);
+    background: #fff1ee;
+    padding: 1px 6px;
+    border-radius: 4px;
+    border: 1px solid #fed7aa;
+  }
+
+  /* DMart Supermarket Product Card */
+  .product-rail {
+    display: flex;
+    gap: 14px;
+    overflow-x: auto;
+    padding: 4px 4px 16px;
+    margin: 0 -4px;
+  }
+
+  .dmart-card {
+    flex: 0 0 200px;
+    background: #ffffff;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .dmart-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
+    border-color: #cbd5e1;
+  }
+
+  .dmart-offer-badge {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    background: var(--tomato);
+    color: #ffffff;
+    font-size: 10.5px;
+    font-weight: 800;
+    padding: 3px 7px;
+    border-radius: 6px;
+    z-index: 2;
+    box-shadow: 0 2px 4px rgba(232, 83, 47, 0.3);
+  }
+
+  .dmart-img-box {
+    width: 100%;
+    height: 120px;
+    background: #f8faf8;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    margin-bottom: 10px;
+    position: relative;
+  }
+
+  .dmart-img-box img {
+    max-width: 90%;
+    max-height: 90%;
+    object-fit: contain;
+    transition: transform 0.2s ease;
+  }
+
+  .dmart-card:hover .dmart-img-box img {
+    transform: scale(1.05);
+  }
+
+  .dmart-product-title {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.35;
+    margin-bottom: 4px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    min-height: 36px;
+  }
+
+  .dmart-product-unit {
+    font-size: 11.5px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+
+  .dmart-pricing-block {
+    margin-top: auto;
+    padding-top: 6px;
+    border-top: 1px dashed #f1f5f9;
+  }
+
+  .dmart-effective-price {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--deep-green);
+  }
+
+  .dmart-mrp {
+    font-size: 12px;
+    color: #94a3b8;
+    text-decoration: line-through;
+    margin-left: 4px;
+  }
+
+  .dmart-save-pill {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--leaf);
+    margin-top: 1px;
+    margin-bottom: 8px;
+  }
+
+  .dmart-delivery-tag {
+    font-size: 10px;
+    font-weight: 600;
+    color: #0369a1;
+    background: #e0f2fe;
+    padding: 2px 5px;
+    border-radius: 4px;
+    display: inline-block;
+    margin-bottom: 8px;
+  }
+
+  /* Section Header */
+  .section-header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+
+  .section-title {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--deep-green);
+    letter-spacing: -0.01em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .section-link {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--leaf);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .section-link:hover {
+    text-decoration: underline;
+  }
+
+  /* Value Pillars ("Why FreshMart") */
+  .why-freshmart-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    margin-top: 10px;
+  }
+
+  .pillar-card {
+    background: #ffffff;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 22px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    transition: transform 0.15s ease;
+  }
+
+  .pillar-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .pillar-icon {
+    font-size: 32px;
+    margin-bottom: 4px;
+  }
+
+  .pillar-title {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 16.5px;
+    font-weight: 700;
+    color: var(--deep-green);
+  }
+
+  .pillar-desc {
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--text-secondary);
+  }
+
+  /* Swecha Spotlight Banner */
+  .swecha-spotlight-banner {
+    background: linear-gradient(135deg, #14532d 0%, #0f3d21 60%, #1e7240 100%);
+    color: #ffffff;
+    border-radius: var(--radius-xl);
+    padding: 32px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    box-shadow: var(--shadow-md);
+  }
+
+  /* FAQ Accordion */
+  .faq-card {
+    background: #ffffff;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    margin-bottom: 10px;
+    overflow: hidden;
+  }
+
+  .faq-header {
+    width: 100%;
+    padding: 16px 20px;
+    background: transparent;
+    border: none;
+    font-size: 14.5px;
+    font-weight: 700;
+    color: var(--deep-green);
+    text-align: left;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+  }
+
+  .faq-body {
+    padding: 0 20px 16px;
+    font-size: 13.5px;
+    line-height: 1.55;
+    color: var(--text-secondary);
+  }
+
+  @media (max-width: 768px) {
+    .carousel-slide {
+      padding: 24px 18px 40px;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    .carousel-title {
+      font-size: 24px;
+    }
+    .swecha-spotlight-banner {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
+</style>
+
+<!-- 1. Hero Banner Carousel (3 Offers) -->
+<section class="hero-carousel-container" aria-label="Featured Supermarket Offers">
+  <div class="carousel-slides" id="heroCarouselSlides">
+    <!-- Slide 1: Staples & Dals -->
+    <div class="carousel-slide slide-1">
+      <div>
+        <span class="carousel-badge">Super Savings Month</span>
+        <h2 class="carousel-title">Mega Grocery Carnival<br>Min. 20% to 50% Off</h2>
+        <p class="carousel-desc">Stock up on premium Basmati rice, unpolished Toor dal, Sharbati wheat atta and pure cooking oils at guaranteed lower-than-MRP prices.</p>
+        <a href="{% url 'orders_customer:menu' %}?category=Rice%2C+Pulses+and+Grains" class="carousel-cta-btn">
+          <span>Shop Daily Staples</span> &rarr;
+        </a>
+      </div>
+      <div style="font-size: 80px; text-shadow: 0 8px 24px rgba(0,0,0,0.25);" aria-hidden="true">
+        🌾
+      </div>
+    </div>
+
+    <!-- Slide 2: Farm-Fresh Produce -->
+    <div class="carousel-slide slide-2">
+      <div>
+        <span class="carousel-badge">Direct From Certified Farms</span>
+        <h2 class="carousel-title">Farm-Fresh Fruits &amp; Veggies<br>Harvested Every Morning</h2>
+        <p class="carousel-desc">Triple-sorted, crisp Shimla apples, Nashik red onions, farm tomatoes and leafy greens delivered directly to your kitchen in 2 hours.</p>
+        <a href="{% url 'orders_customer:menu' %}?category=Fruits+and+Vegetables" class="carousel-cta-btn">
+          <span>Shop Fresh Produce</span> &rarr;
+        </a>
+      </div>
+      <div style="font-size: 80px; text-shadow: 0 8px 24px rgba(0,0,0,0.25);" aria-hidden="true">
+        🍎
+      </div>
+    </div>
+
+    <!-- Slide 3: Household & Personal Care -->
+    <div class="carousel-slide slide-3">
+      <div>
+        <span class="carousel-badge">Buy 1 Get 1 &amp; Value Packs</span>
+        <h2 class="carousel-title">Household &amp; Cleaning Bumper Deals<br>Up to 40% Off</h2>
+        <p class="carousel-desc">Keep your home sparkling fresh with floor cleaners, detergents, dishwash gels, soaps and shampoos at everyday wholesale rates.</p>
+        <a href="{% url 'orders_customer:menu' %}?category=Household+Essentials" class="carousel-cta-btn">
+          <span>Shop Household Deals</span> &rarr;
+        </a>
+      </div>
+      <div style="font-size: 80px; text-shadow: 0 8px 24px rgba(0,0,0,0.25);" aria-hidden="true">
+        🧼
+      </div>
+    </div>
   </div>
 
-  <div class="ph" style="height:140px;background:#fff;border-radius:14px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-sm)">
-    <img src="{% static 'images/exterior.jpeg' %}" alt="Fresh Produce" onerror="this.src='/static/images/exterior.jpeg'" style="width:100%;height:100%;object-fit:cover">
-  </div>
-
-  <div style="display:flex;gap:10px;z-index:2">
-    <a href="{% url 'orders_customer:menu' %}" style="flex:1;min-height:48px;border-radius:12px;background:#176B45;color:#fff;font-weight:700;font-size:15px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(23,107,69,0.25)">Shop Now</a>
-    <a href="{% url 'orders_customer:menu' %}" style="flex:1;min-height:48px;border-radius:12px;background:#fff;color:#104C32;border:1.5px solid #176B45;font-weight:700;font-size:15px;display:flex;align-items:center;justify-content:center">All Categories</a>
+  <!-- Carousel Indicators -->
+  <div class="carousel-indicators">
+    <div class="indicator-dot active" onclick="setSlide(0)" title="Slide 1"></div>
+    <div class="indicator-dot" onclick="setSlide(1)" title="Slide 2"></div>
+    <div class="indicator-dot" onclick="setSlide(2)" title="Slide 3"></div>
   </div>
 </section>
 
-<!-- Shop by Category Section -->
-<section>
-  <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px">
-    <h2 style="margin:0;font-size:20px;font-weight:700;color:var(--text)">Shop by category</h2>
-    <a href="{% url 'orders_customer:menu' %}" style="min-height:44px;display:flex;align-items:center;font-size:14px;font-weight:700;color:#176B45">See all &rarr;</a>
+<!-- 2. Category Icon Strip -->
+<section aria-label="Shop by Department">
+  <div class="section-header-row">
+    <h2 class="section-title">Shop by Category</h2>
+    <a href="{% url 'orders_customer:menu' %}" class="section-link">View All &rarr;</a>
   </div>
 
-  <div class="noscroll" style="display:flex;gap:14px;overflow-x:auto;margin:0 -16px;padding:0 16px 4px">
+  <div class="category-strip noscroll">
     {% for cat in categories %}
-      <a href="{% url 'orders_customer:menu' %}?category={{ cat.name|urlencode }}" 
-         style="flex:0 0 92px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;text-decoration:none">
-        <div class="ph" style="width:84px;height:84px;border-radius:42px;box-shadow:var(--shadow-sm);border:1.5px solid #E5E9E3">
-          {% if cat.image %}
-            <img src="{{ cat.image.url }}" alt="{{ cat.name }}">
+      <a href="{% url 'orders_customer:menu' %}?category={{ cat.name|urlencode }}" class="category-strip-card">
+        <div class="category-icon-circle">
+          {% if "fruit" in cat.name|lower or "veg" in cat.name|lower %}
+            🥦
+          {% elif "rice" in cat.name|lower or "pulse" in cat.name|lower or "grain" in cat.name|lower %}
+            🌾
+          {% elif "dairy" in cat.name|lower or "egg" in cat.name|lower %}
+            🥛
+          {% elif "cook" in cat.name|lower or "oil" in cat.name|lower or "spic" in cat.name|lower %}
+            🫒
+          {% elif "snack" in cat.name|lower or "biscuit" in cat.name|lower %}
+            🍪
+          {% elif "bev" in cat.name|lower %}
+            ☕
+          {% elif "clean" in cat.name|lower or "house" in cat.name|lower %}
+            🧹
+          {% elif "personal" in cat.name|lower or "care" in cat.name|lower %}
+            🧴
           {% else %}
-            <img src="{{ cat.header_image_url }}" alt="{{ cat.name }}">
+            🛒
           {% endif %}
         </div>
-        <span style="font-size:13px;font-weight:600;line-height:1.2;color:var(--text);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">{{ cat.name }}</span>
+        <span class="category-strip-name">{{ cat.name }}</span>
+        <span class="category-discount-pill">Up to 35% Off</span>
       </a>
     {% empty %}
-      <p style="font-size:14px;color:var(--text-muted);padding:10px 0">Loading categories...</p>
+      <p style="font-size:14px;color:var(--text-muted);padding:10px 0;">Loading fresh supermarket categories...</p>
     {% endfor %}
   </div>
 </section>
 
-<!-- Best Sellers Products Grid / Rail -->
-<section>
-  <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px">
-    <h2 style="margin:0;font-size:20px;font-weight:700;color:var(--text)">Best sellers</h2>
-    <a href="{% url 'orders_customer:menu' %}?sort=relevance" style="min-height:44px;display:flex;align-items:center;font-size:14px;font-weight:700;color:#176B45">View all &rarr;</a>
+<!-- 3. Today's Best Deals (DMart Deal Rail) -->
+<section aria-label="Today's Best Deals">
+  <div class="section-header-row">
+    <h2 class="section-title">
+      <span>🔥 Today's Best Deals</span>
+      <span style="font-size:12px;font-family:'Inter',sans-serif;font-weight:700;background:var(--tomato);color:#fff;padding:2px 8px;border-radius:4px;text-transform:uppercase;">Everyday Low Prices</span>
+    </h2>
+    <a href="{% url 'orders_customer:menu' %}?sort=discount" class="section-link">All Deals &rarr;</a>
   </div>
 
-  <div class="noscroll" style="display:flex;gap:12px;overflow-x:auto;margin:0 -16px;padding:0 16px 6px">
-    {% for item in best_sellers %}
-      <div class="customer-card" style="flex:0 0 164px;padding:12px;display:flex;flex-direction:column;gap:6px">
-        <a href="{% url 'orders_customer:product_detail' item.pk %}" style="display:flex;flex-direction:column;gap:6px">
-          <div class="ph" style="height:112px;border-radius:10px">
+  <div class="product-rail noscroll">
+    {% for item in best_deals %}
+      <div class="dmart-card">
+        {% if item.offer_percent > 0 %}
+          <span class="dmart-offer-badge">{{ item.offer_percent }}% OFF</span>
+        {% else %}
+          <span class="dmart-offer-badge" style="background:var(--deep-green);">DMart Price</span>
+        {% endif %}
+
+        <a href="{% url 'orders_customer:product_detail' item.pk %}" style="display:flex;flex-direction:column;">
+          <div class="dmart-img-box">
             {% if item.image %}
-              <img src="{{ item.image.url }}" alt="{{ item.name }}">
+              <img src="{{ item.image.url }}" alt="{{ item.name }}" loading="lazy">
             {% else %}
-              <img src="/static/images/exterior.jpeg" alt="{{ item.name }}">
-            {% endif %}
-            {% if item.offer_percent > 0 %}
-              <span style="position:absolute;top:6px;left:6px;background:var(--danger);color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:6px">{{ item.offer_percent }}% OFF</span>
+              <div style="font-size:48px;" aria-hidden="true">🛒</div>
             {% endif %}
           </div>
-          <div style="font-weight:700;font-size:14px;margin-top:2px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="{{ item.name }}">{{ item.name }}</div>
-          <div style="font-size:12px;color:var(--text-muted)">1 {{ item.get_unit_display }}</div>
+          <h3 class="dmart-product-title" title="{{ item.name }}">{{ item.name }}</h3>
+          <div class="dmart-product-unit">1 {{ item.get_unit_display }}</div>
         </a>
 
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:auto;padding-top:4px">
+        <div class="dmart-delivery-tag">⚡ 2 Hr Delivery</div>
+
+        <div class="dmart-pricing-block">
           <div>
-            <span style="font-weight:700;font-size:16px;color:var(--primary-dark)">₹{{ item.effective_price }}</span>
+            <span class="dmart-effective-price">₹{{ item.effective_price }}</span>
             {% if item.offer_percent > 0 %}
-              <span style="font-size:12px;color:var(--text-muted);text-decoration:line-through;margin-left:2px">₹{{ item.price }}</span>
+              <span class="dmart-mrp">₹{{ item.price }}</span>
             {% endif %}
           </div>
+          
+          {% if item.offer_percent > 0 %}
+            <span class="dmart-save-pill">Save ₹{{ item.price|add:"0" }}</span>
+          {% else %}
+            <span class="dmart-save-pill" style="color:var(--text-muted);">Everyday Low Price</span>
+          {% endif %}
 
-          <!-- Add to Cart or Stepper -->
           {% if not item.is_orderable %}
-            <span style="font-size:11px;font-weight:700;color:var(--danger)">Sold out</span>
+            <span class="badge-out-of-stock">Out of stock</span>
           {% else %}
             <form action="{% url 'orders_customer:cart_add' %}" method="POST" style="margin:0" hx-post="{% url 'orders_customer:cart_add' %}" hx-swap="none">
               {% csrf_token %}
               <input type="hidden" name="menu_item_id" value="{{ item.pk }}">
               <input type="hidden" name="quantity" value="1">
-              <button type="submit" class="btn-add">Add</button>
+              <button type="submit" class="btn-add" style="width:100%;min-height:38px;">ADD</button>
             </form>
           {% endif %}
         </div>
       </div>
-    {% empty %}
-      {% for dish in sample_dishes %}
-        <div class="customer-card" style="flex:0 0 164px;padding:12px;display:flex;flex-direction:column;gap:6px">
-          <div class="ph" style="height:112px;border-radius:10px">
-            <img src="/static/images/exterior.jpeg" alt="{{ dish.name }}">
-          </div>
-          <div style="font-weight:700;font-size:14px;margin-top:2px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ dish.name }}</div>
-          <div style="font-size:12px;color:var(--text-muted)">1 Pack</div>
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:auto">
-            <span style="font-weight:700;font-size:16px;color:var(--primary-dark)">₹{{ dish.price }}</span>
-            <a href="{% url 'orders_customer:menu' %}" class="btn-add">Shop</a>
-          </div>
-        </div>
-      {% endfor %}
     {% endfor %}
   </div>
 </section>
 
-<!-- Featured Grocery Highlights Section -->
-{% if highlights %}
-<section>
-  <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px">
-    <h2 style="margin:0;font-size:20px;font-weight:700;color:var(--text)">Featured groceries</h2>
-    <a href="{% url 'orders_customer:menu' %}" style="min-height:44px;display:flex;align-items:center;font-size:14px;font-weight:700;color:#176B45">See all &rarr;</a>
+<!-- 4. Department Rail: Staples & Groceries -->
+{% if staples_items %}
+<section aria-label="Staples and Groceries">
+  <div class="section-header-row">
+    <h2 class="section-title">🌾 Staples, Rice &amp; Dals</h2>
+    <a href="{% url 'orders_customer:menu' %}?category=Rice%2C+Pulses+and+Grains" class="section-link">See All &rarr;</a>
   </div>
 
-  <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px">
-    {% for item in highlights %}
-      <div class="customer-card" style="padding:12px;display:flex;flex-direction:column;gap:6px">
-        <a href="{% url 'orders_customer:product_detail' item.pk %}" style="display:flex;flex-direction:column;gap:4px">
-          <div class="ph" style="height:112px;border-radius:10px">
+  <div class="product-rail noscroll">
+    {% for item in staples_items %}
+      <div class="dmart-card">
+        {% if item.offer_percent > 0 %}
+          <span class="dmart-offer-badge">{{ item.offer_percent }}% OFF</span>
+        {% endif %}
+        <a href="{% url 'orders_customer:product_detail' item.pk %}">
+          <div class="dmart-img-box">
             {% if item.image %}
-              <img src="{{ item.image.url }}" alt="{{ item.name }}">
+              <img src="{{ item.image.url }}" alt="{{ item.name }}" loading="lazy">
             {% else %}
-              <img src="/static/images/exterior.jpeg" alt="{{ item.name }}">
-            {% endif %}
-            {% if item.offer_percent > 0 %}
-              <span style="position:absolute;top:6px;left:6px;background:var(--danger);color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:6px">{{ item.offer_percent }}% OFF</span>
+              <div style="font-size:44px;" aria-hidden="true">🌾</div>
             {% endif %}
           </div>
-          <div style="font-weight:700;font-size:14px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="{{ item.name }}">{{ item.name }}</div>
-          <div style="font-size:12px;color:var(--text-muted)">{{ item.get_unit_display }}</div>
+          <h3 class="dmart-product-title">{{ item.name }}</h3>
+          <div class="dmart-product-unit">1 {{ item.get_unit_display }}</div>
         </a>
-
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:auto;padding-top:4px">
+        <div class="dmart-pricing-block">
           <div>
-            <span style="font-weight:700;font-size:16px;color:var(--primary-dark)">₹{{ item.effective_price }}</span>
+            <span class="dmart-effective-price">₹{{ item.effective_price }}</span>
             {% if item.offer_percent > 0 %}
-              <span style="font-size:11px;color:var(--text-muted);text-decoration:line-through">₹{{ item.price }}</span>
+              <span class="dmart-mrp">₹{{ item.price }}</span>
             {% endif %}
           </div>
-
-          {% if not item.is_orderable %}
-            <span style="font-size:11px;font-weight:700;color:var(--danger)">Sold out</span>
-          {% else %}
+          <span class="dmart-save-pill">Lowest price guaranteed</span>
+          {% if item.is_orderable %}
             <form action="{% url 'orders_customer:cart_add' %}" method="POST" style="margin:0" hx-post="{% url 'orders_customer:cart_add' %}" hx-swap="none">
               {% csrf_token %}
               <input type="hidden" name="menu_item_id" value="{{ item.pk }}">
               <input type="hidden" name="quantity" value="1">
-              <button type="submit" class="btn-add">Add</button>
+              <button type="submit" class="btn-add" style="width:100%;min-height:38px;">ADD</button>
             </form>
+          {% else %}
+            <span class="badge-out-of-stock">Sold out</span>
           {% endif %}
         </div>
       </div>
@@ -163,52 +651,322 @@
 </section>
 {% endif %}
 
-<!-- Swecha AI Shopping Assistant Callout Card -->
-<section>
-  <div style="background:#104C32;color:#fff;border-radius:20px;padding:24px 20px;display:flex;flex-direction:column;gap:12px;box-shadow:var(--shadow-md)">
-    <div style="display:flex;align-items:center;gap:8px">
-      <span style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:16px;background:rgba(255,255,255,0.15);font-size:16px">✨</span>
-      <span style="font-weight:700;font-size:20px;line-height:1.2">Need help with your shopping list?</span>
+<!-- 5. Department Rail: Fruits & Vegetables -->
+{% if fruits_veg_items %}
+<section aria-label="Fruits and Vegetables">
+  <div class="section-header-row">
+    <h2 class="section-title">🍎 Farm Fresh Fruits &amp; Vegetables</h2>
+    <a href="{% url 'orders_customer:menu' %}?category=Fruits+and+Vegetables" class="section-link">See All &rarr;</a>
+  </div>
+
+  <div class="product-rail noscroll">
+    {% for item in fruits_veg_items %}
+      <div class="dmart-card">
+        {% if item.offer_percent > 0 %}
+          <span class="dmart-offer-badge">{{ item.offer_percent }}% OFF</span>
+        {% endif %}
+        <a href="{% url 'orders_customer:product_detail' item.pk %}">
+          <div class="dmart-img-box">
+            {% if item.image %}
+              <img src="{{ item.image.url }}" alt="{{ item.name }}" loading="lazy">
+            {% else %}
+              <div style="font-size:44px;" aria-hidden="true">🍎</div>
+            {% endif %}
+          </div>
+          <h3 class="dmart-product-title">{{ item.name }}</h3>
+          <div class="dmart-product-unit">1 {{ item.get_unit_display }}</div>
+        </a>
+        <div class="dmart-pricing-block">
+          <div>
+            <span class="dmart-effective-price">₹{{ item.effective_price }}</span>
+            {% if item.offer_percent > 0 %}
+              <span class="dmart-mrp">₹{{ item.price }}</span>
+            {% endif %}
+          </div>
+          <span class="dmart-save-pill">Farm harvested daily</span>
+          {% if item.is_orderable %}
+            <form action="{% url 'orders_customer:cart_add' %}" method="POST" style="margin:0" hx-post="{% url 'orders_customer:cart_add' %}" hx-swap="none">
+              {% csrf_token %}
+              <input type="hidden" name="menu_item_id" value="{{ item.pk }}">
+              <input type="hidden" name="quantity" value="1">
+              <button type="submit" class="btn-add" style="width:100%;min-height:38px;">ADD</button>
+            </form>
+          {% else %}
+            <span class="badge-out-of-stock">Sold out</span>
+          {% endif %}
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<!-- 6. Department Rail: Dairy, Eggs & Bread -->
+{% if dairy_bakery_items %}
+<section aria-label="Dairy and Bakery">
+  <div class="section-header-row">
+    <h2 class="section-title">🥛 Dairy, Eggs &amp; Bread</h2>
+    <a href="{% url 'orders_customer:menu' %}?category=Dairy+and+Eggs" class="section-link">See All &rarr;</a>
+  </div>
+
+  <div class="product-rail noscroll">
+    {% for item in dairy_bakery_items %}
+      <div class="dmart-card">
+        {% if item.offer_percent > 0 %}
+          <span class="dmart-offer-badge">{{ item.offer_percent }}% OFF</span>
+        {% endif %}
+        <a href="{% url 'orders_customer:product_detail' item.pk %}">
+          <div class="dmart-img-box">
+            {% if item.image %}
+              <img src="{{ item.image.url }}" alt="{{ item.name }}" loading="lazy">
+            {% else %}
+              <div style="font-size:44px;" aria-hidden="true">🥛</div>
+            {% endif %}
+          </div>
+          <h3 class="dmart-product-title">{{ item.name }}</h3>
+          <div class="dmart-product-unit">1 {{ item.get_unit_display }}</div>
+        </a>
+        <div class="dmart-pricing-block">
+          <div>
+            <span class="dmart-effective-price">₹{{ item.effective_price }}</span>
+            {% if item.offer_percent > 0 %}
+              <span class="dmart-mrp">₹{{ item.price }}</span>
+            {% endif %}
+          </div>
+          <span class="dmart-save-pill">Fresh chilled batch</span>
+          {% if item.is_orderable %}
+            <form action="{% url 'orders_customer:cart_add' %}" method="POST" style="margin:0" hx-post="{% url 'orders_customer:cart_add' %}" hx-swap="none">
+              {% csrf_token %}
+              <input type="hidden" name="menu_item_id" value="{{ item.pk }}">
+              <input type="hidden" name="quantity" value="1">
+              <button type="submit" class="btn-add" style="width:100%;min-height:38px;">ADD</button>
+            </form>
+          {% else %}
+            <span class="badge-out-of-stock">Sold out</span>
+          {% endif %}
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<!-- 7. Swecha AI Shopping Assistant Spotlight -->
+<section class="swecha-spotlight-banner">
+  <div style="max-width:540px;">
+    <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.15);padding:4px 10px;border-radius:99px;font-size:12px;font-weight:700;margin-bottom:12px;">
+      <span>✨ Powered by Groq AI</span>
     </div>
-    <span style="font-size:14px;line-height:1.45;opacity:.92">Ask our AI assistant <strong>Swecha</strong> to find products, compare pack sizes, and plan within your budget.</span>
-    <div style="display:flex;gap:10px;margin-top:4px;flex-wrap:wrap">
-      <a href="{% url 'swecha:assistant' %}" style="align-self:flex-start;min-height:46px;padding:0 20px;border-radius:12px;background:#F4B942;color:#171A17;font-weight:700;font-size:15px;display:inline-flex;align-items:center;gap:6px;box-shadow:0 2px 8px rgba(0,0,0,0.18)">
-        <span>Ask Our AI Assistant</span>
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M5 12h14M12 5l7 7-7 7"></path>
-        </svg>
-      </a>
-      <button type="button" onclick="toggleSwechaDrawer()" style="align-self:flex-start;min-height:46px;padding:0 16px;border-radius:12px;background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3);font-weight:700;font-size:14px;display:inline-flex;align-items:center">
-        Quick Chat
-      </button>
+    <h2 style="font-family:'Fraunces',Georgia,serif;font-size:26px;font-weight:700;margin-bottom:8px;">
+      Tell Me the Recipe — Swecha Builds Your Cart
+    </h2>
+    <p style="font-size:14.5px;line-height:1.5;color:#d1fae5;margin-bottom:18px;">
+      Planning dinner or a weekly diet? Say "Paneer Butter Masala for 4" or "Quick healthy breakfast under ₹500" — our smart supermarket AI adds every ingredient with 1 tap.
+    </p>
+    <button type="button" class="carousel-cta-btn" onclick="toggleSwechaDrawer()" id="btnOpenSwechaHome">
+      <span>Ask Swecha Assistant</span> &rarr;
+    </button>
+  </div>
+  <div style="font-size:72px;" aria-hidden="true">
+    🤖🛒
+  </div>
+</section>
+
+<!-- 8. Value Proposition ("Why FreshMart") -->
+<section aria-label="Why Shop at FreshMart">
+  <div class="section-header-row">
+    <h2 class="section-title">Why FreshMart?</h2>
+  </div>
+
+  <div class="why-freshmart-grid">
+    <div class="pillar-card">
+      <div class="pillar-icon">💰</div>
+      <h3 class="pillar-title">Everyday Low Prices</h3>
+      <p class="pillar-desc">Direct sourcing from agricultural mills and consumer brands ensures guaranteed lower prices than MRP on every single grocery basket.</p>
+    </div>
+
+    <div class="pillar-card">
+      <div class="pillar-icon">🌿</div>
+      <h3 class="pillar-title">100% Quality Checked</h3>
+      <p class="pillar-desc">Every piece of fresh produce, grain bag, and dairy batch goes through rigorous 3-step quality and hygiene verification.</p>
+    </div>
+
+    <div class="pillar-card">
+      <div class="pillar-icon">⚡</div>
+      <h3 class="pillar-title">Express &amp; Slot Delivery</h3>
+      <p class="pillar-desc">Choose morning or evening delivery slots that fit your schedule, or opt for 2-hour express delivery for immediate essentials.</p>
+    </div>
+
+    <div class="pillar-card">
+      <div class="pillar-icon">🛡️</div>
+      <h3 class="pillar-title">No-Questions Doorstep Returns</h3>
+      <p class="pillar-desc">Not satisfied with an item? Return it right at your doorstep with our delivery partner for instant wallet or UPI refund.</p>
     </div>
   </div>
 </section>
 
-<!-- FreshMart Quality Guarantee Bar -->
-<section class="customer-card" style="padding:16px 20px;display:grid;grid-template-columns:1fr 1fr;gap:16px;background:#fff">
-  <div style="display:flex;gap:10px;align-items:center">
-    <div style="width:40px;height:40px;border-radius:20px;background:var(--primary-pill);color:var(--primary);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">🚀</div>
-    <div style="display:flex;flex-direction:column;line-height:1.2">
-      <b style="font-size:14px">Fast Delivery</b>
-      <span style="font-size:12px;color:var(--text-muted)">Direct to your doorstep</span>
-    </div>
+<!-- 9. How It Works -->
+<section aria-label="How FreshMart Works" style="background:#ffffff;border:1px solid var(--border);border-radius:var(--radius-xl);padding:32px 24px;">
+  <div style="text-align:center;margin-bottom:28px;">
+    <h2 class="section-title" style="justify-content:center;">How FreshMart Works</h2>
+    <p style="font-size:14px;color:var(--text-muted);margin-top:4px;">Four simple steps to effortless supermarket savings</p>
   </div>
-  <div style="display:flex;gap:10px;align-items:center">
-    <div style="width:40px;height:40px;border-radius:20px;background:var(--primary-pill);color:var(--primary);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">🌿</div>
-    <div style="display:flex;flex-direction:column;line-height:1.2">
-      <b style="font-size:14px">100% Farm Fresh</b>
-      <span style="font-size:12px;color:var(--text-muted)">Quality guaranteed daily</span>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:24px;text-align:center;">
+    <div>
+      <div style="width:48px;height:48px;border-radius:24px;background:#e8f5ec;color:var(--deep-green);font-size:20px;font-weight:800;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;">1</div>
+      <h4 style="font-size:15px;font-weight:700;margin-bottom:6px;">Select Pincode</h4>
+      <p style="font-size:13px;color:var(--text-muted);line-height:1.4;">Pick your local neighborhood to view live store stock and slots.</p>
+    </div>
+    <div>
+      <div style="width:48px;height:48px;border-radius:24px;background:#e8f5ec;color:var(--deep-green);font-size:20px;font-weight:800;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;">2</div>
+      <h4 style="font-size:15px;font-weight:700;margin-bottom:6px;">Shop Low Prices</h4>
+      <p style="font-size:13px;color:var(--text-muted);line-height:1.4;">Browse 5,000+ items with deep discounts &amp; MRP savings.</p>
+    </div>
+    <div>
+      <div style="width:48px;height:48px;border-radius:24px;background:#e8f5ec;color:var(--deep-green);font-size:20px;font-weight:800;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;">3</div>
+      <h4 style="font-size:15px;font-weight:700;margin-bottom:6px;">Pick a Delivery Slot</h4>
+      <p style="font-size:13px;color:var(--text-muted);line-height:1.4;">Select express 2-hr drop-off or morning/evening slots.</p>
+    </div>
+    <div>
+      <div style="width:48px;height:48px;border-radius:24px;background:#e8f5ec;color:var(--deep-green);font-size:20px;font-weight:800;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;">4</div>
+      <h4 style="font-size:15px;font-weight:700;margin-bottom:6px;">Doorstep Delivery</h4>
+      <p style="font-size:13px;color:var(--text-muted);line-height:1.4;">Our verified delivery partner arrives with your order on time.</p>
     </div>
   </div>
 </section>
 
-<!-- Supermarket Footer Links -->
-<footer style="display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:center;font-size:13px;color:var(--text-secondary);padding:10px 0 20px;border-top:1px solid var(--border)">
-  <a href="{% url 'contact' %}" style="min-height:44px;display:flex;align-items:center">About FreshMart</a>
-  <a href="{% url 'contact' %}" style="min-height:44px;display:flex;align-items:center">Contact Support</a>
-  <a href="{% url 'orders_customer:my_orders' %}" style="min-height:44px;display:flex;align-items:center">Track Order</a>
-  <a href="{% url 'orders_customer:cart' %}" style="min-height:44px;display:flex;align-items:center">Shopping Cart</a>
-  <a href="{% url 'orders_customer:menu' %}" style="min-height:44px;display:flex;align-items:center">All Products</a>
-</footer>
+<!-- 10. Verified Customer Testimonials -->
+<section aria-label="Customer Testimonials">
+  <div class="section-header-row">
+    <h2 class="section-title">What Our Shoppers Say</h2>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:16px;">
+    <div class="pillar-card">
+      <div style="color:var(--accent-gold);margin-bottom:6px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+      <p style="font-size:13.5px;line-height:1.55;color:var(--text-main);margin-bottom:12px;">
+        "FreshMart has completely replaced our weekend hypermarket trips. We easily save ₹2,000–₹3,000 on monthly staples and the fruits arrive fresher than the local mandi."
+      </p>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:36px;height:36px;border-radius:18px;background:#e8f5ec;color:var(--deep-green);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;">PK</div>
+        <div>
+          <div style="font-weight:700;font-size:13px;">Priya K.</div>
+          <div style="font-size:11px;color:var(--text-muted);">Verified Shopper &bull; Jubilee Hills</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pillar-card">
+      <div style="color:var(--accent-gold);margin-bottom:6px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+      <p style="font-size:13.5px;line-height:1.55;color:var(--text-main);margin-bottom:12px;">
+        "The Swecha AI assistant is incredible. I typed my dinner menu and it added all the vegetables, paneer and spices to my cart in 5 seconds. Fast 2-hour delivery too!"
+      </p>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:36px;height:36px;border-radius:18px;background:#e8f5ec;color:var(--deep-green);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;">RS</div>
+        <div>
+          <div style="font-weight:700;font-size:13px;">Rahul S.</div>
+          <div style="font-size:11px;color:var(--text-muted);">Verified Shopper &bull; Madhapur</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pillar-card">
+      <div style="color:var(--accent-gold);margin-bottom:6px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+      <p style="font-size:13.5px;line-height:1.55;color:var(--text-main);margin-bottom:12px;">
+        "Real DMart-level discount pricing delivered right to the apartment gate. Packaged neatly with zero plastic waste. Highly recommended for every household."
+      </p>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:36px;height:36px;border-radius:18px;background:#e8f5ec;color:var(--deep-green);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;">MN</div>
+        <div>
+          <div style="font-weight:700;font-size:13px;">Meera N.</div>
+          <div style="font-size:11px;color:var(--text-muted);">Verified Shopper &bull; Gachibowli</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 11. Frequently Asked Questions (FAQ) -->
+<section aria-label="Frequently Asked Questions">
+  <div class="section-header-row">
+    <h2 class="section-title">Frequently Asked Questions</h2>
+  </div>
+
+  <div class="faq-card" x-data="{ open: true }">
+    <button type="button" class="faq-header" @click="open = !open">
+      <span>What makes FreshMart prices lower than regular supermarkets?</span>
+      <span x-text="open ? '−' : '+'" style="font-size:18px;">−</span>
+    </button>
+    <div class="faq-body" x-show="open">
+      FreshMart follows an everyday low price (EDLP) direct sourcing model, purchasing staple grains, rice, oils, and FMCG products directly from agricultural mills and manufacturers in volume, passing maximum savings to households without middleman markups.
+    </div>
+  </div>
+
+  <div class="faq-card" x-data="{ open: false }">
+    <button type="button" class="faq-header" @click="open = !open">
+      <span>What are the available delivery slots and minimum order amounts?</span>
+      <span x-text="open ? '−' : '+'" style="font-size:18px;">+</span>
+    </button>
+    <div class="faq-body" x-show="open">
+      We offer 3 daily delivery slots (Morning: 7:00 AM – 10:00 AM, Afternoon: 1:00 PM – 4:00 PM, Evening: 6:00 PM – 9:00 PM) plus 2-hour express delivery. Orders above ₹499 qualify for 100% free delivery.
+    </div>
+  </div>
+
+  <div class="faq-card" x-data="{ open: false }">
+    <button type="button" class="faq-header" @click="open = !open">
+      <span>How do I return an item if I am not satisfied with the quality?</span>
+      <span x-text="open ? '−' : '+'" style="font-size:18px;">+</span>
+    </button>
+    <div class="faq-body" x-show="open">
+      We operate a hassle-free doorstep return policy. You can inspect all fresh fruits, vegetables, and groceries at the time of delivery and return anything unsatisfactory directly to our delivery agent for an instant refund.
+    </div>
+  </div>
+
+  <div class="faq-card" x-data="{ open: false }">
+    <button type="button" class="faq-header" @click="open = !open">
+      <span>What payment modes are accepted on FreshMart?</span>
+      <span x-text="open ? '−' : '+'" style="font-size:18px;">+</span>
+    </button>
+    <div class="faq-body" x-show="open">
+      We support Cash on Delivery (COD), UPI (Google Pay, PhonePe, Paytm), Visa, Mastercard, RuPay debit/credit cards, and NetBanking through encrypted secure payment gateways.
+    </div>
+  </div>
+</section>
+
+<script>
+  // Simple Carousel Slide Controller
+  let currentSlide = 0;
+  const totalSlides = 3;
+  const slideContainer = document.getElementById('heroCarouselSlides');
+  const indicatorDots = document.querySelectorAll('.indicator-dot');
+
+  function setSlide(index) {
+    currentSlide = index;
+    if (slideContainer) {
+      slideContainer.style.transform = `translateX(-${currentSlide * 100}%)`;
+    }
+    indicatorDots.forEach((dot, idx) => {
+      dot.classList.toggle('active', idx === currentSlide);
+    });
+  }
+
+  // Auto rotate carousel every 5 seconds
+  let carouselTimer = setInterval(() => {
+    currentSlide = (currentSlide + 1) % totalSlides;
+    setSlide(currentSlide);
+  }, 5000);
+
+  // Pause on hover
+  const carouselEl = document.querySelector('.hero-carousel-container');
+  if (carouselEl) {
+    carouselEl.addEventListener('mouseenter', () => clearInterval(carouselTimer));
+    carouselEl.addEventListener('mouseleave', () => {
+      carouselTimer = setInterval(() => {
+        currentSlide = (currentSlide + 1) % totalSlides;
+        setSlide(currentSlide);
+      }, 5000);
+    });
+  }
+</script>
 {% endblock %}

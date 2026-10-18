@@ -1,0 +1,59 @@
+{% extends "manager/base_manager.html" %}
+{% load static %}
+
+{% block title %}Stock Requests — Store Inventory{% endblock %}
+{% block page_title %}Stock Discrepancy &amp; Adjustment Requests{% endblock %}
+
+{% block content %}
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+  <h1 class="h1">Staff Stock Requests &amp; Discrepancies</h1>
+  <div class="sm">Operational stock count corrections, wastage, and shrinkage submitted by store staff.</div>
+</div>
+
+<div class="card" id="card-stock-requests-list">
+  {% if requests %}
+    {% for req in requests %}
+    <div class="row">
+      <div class="grow">
+        <b>{{ req.item.name }}</b> <span class="sm">({{ req.item.sku|default:"N/A" }})</span>
+        <div class="sm">
+          <strong>Type:</strong> {{ req.get_request_type_display }} · 
+          <strong>Quantity:</strong> {% if req.quantity > 0 %}+{% endif %}{{ req.quantity }} {{ req.item.unit }} · 
+          <strong>Requested by:</strong> {{ req.requested_by.get_full_name|default:req.requested_by.username }} ({{ req.created_at|date:"M d, H:i" }})
+        </div>
+        <div class="sm" style="margin-top:2px;color:var(--mgr-text);">
+          <strong>Reason:</strong> {{ req.reason }} {% if req.notes %}— {{ req.notes }}{% endif %}
+        </div>
+      </div>
+
+      <span class="bg {% if req.status == 'APPROVED' %}ok{% elif req.status == 'REJECTED' %}er{% else %}wn{% endif %}">
+        {{ req.get_status_display }}
+      </span>
+
+      {% if req.status == 'PENDING' and request.user.role == 'MANAGER' or request.user.is_superuser or request.user.role == 'ADMIN' %}
+      <div style="display:flex;gap:6px;">
+        <form method="post" action="{% url 'manager:stock_request_action' req.pk %}">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="approve">
+          <button type="submit" class="btn s p" id="btn-approve-request-{{ req.pk }}">Approve &amp; Adjust</button>
+        </form>
+        <form method="post" action="{% url 'manager:stock_request_action' req.pk %}">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="reject">
+          <button type="submit" class="btn s d" id="btn-reject-request-{{ req.pk }}">Reject</button>
+        </form>
+      </div>
+      {% elif req.reviewed_by %}
+      <div class="sm">
+        Reviewed by: {{ req.reviewed_by.username }} ({{ req.reviewed_at|date:"M d, H:i" }})
+      </div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  {% else %}
+    <div class="sm" style="padding:32px 0;text-align:center;">
+      No pending stock adjustment or discrepancy requests.
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

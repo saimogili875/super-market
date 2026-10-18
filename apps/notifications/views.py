@@ -13,11 +13,11 @@ def notification_list(request):
     if request.method == "POST":
         action = request.POST.get("action")
         if action == "mark_all_read":
-            AdminNotification.objects.filter(is_read=False).update(is_read=True)
+            AdminNotification.objects.filter(recipient__isnull=True, is_read=False).update(is_read=True)
             messages.success(request, "All notifications marked as read.")
         elif action == "mark_resolved":
             notif_id = request.POST.get("notif_id")
-            notif = get_object_or_404(AdminNotification, pk=notif_id)
+            notif = get_object_or_404(AdminNotification, pk=notif_id, recipient__isnull=True)
             notif.is_resolved = True
             notif.is_read = True
             notif.save()
@@ -26,7 +26,7 @@ def notification_list(request):
 
     # Filter tab
     filter_type = request.GET.get("filter", "All")
-    notifs = AdminNotification.objects.all()
+    notifs = AdminNotification.objects.filter(recipient__isnull=True)
 
     if filter_type == "Unread":
         notifs = notifs.filter(is_read=False)

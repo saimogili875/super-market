@@ -1,0 +1,227 @@
+{% extends "manager/base_manager.html" %}
+{% load static %}
+
+{% block title %}Products — Store Catalog{% endblock %}
+{% block page_title %}Products Catalog{% endblock %}
+
+{% block content %}
+<div x-data="{
+  addModal: false,
+  editModal: false,
+  editId: '',
+  editName: '',
+  editSku: '',
+  editCat: '',
+  editPrice: '',
+  editUnit: '',
+  editStock: '',
+  editThr: '',
+  openEdit(id, name, sku, catId, price, unit, stock, thr) {
+    this.editId = id;
+    this.editName = name;
+    this.editSku = sku;
+    this.editCat = catId;
+    this.editPrice = price;
+    this.editUnit = unit;
+    this.editStock = stock;
+    this.editThr = thr;
+    this.editModal = true;
+  }
+}">
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+    <h1 class="h1">Catalog Products</h1>
+    {% if request.user.role == 'MANAGER' or request.user.is_superuser or request.user.role == 'ADMIN' %}
+    <button type="button" class="btn p" @click="addModal = true" id="btn-add-product-trigger">
+      + Add Product
+    </button>
+    {% endif %}
+  </div>
+
+  <!-- Search & Filter -->
+  <div class="card" style="padding:10px 14px;">
+    <form method="get" action="{% url 'manager:products' %}" class="fl">
+      <input class="in" type="search" name="q" placeholder="Search by Product Name or SKU..." value="{{ q }}" id="products-search-input">
+      
+      <select class="in" name="category" onchange="this.form.submit()" id="select-prod-cat">
+        <option value="">All Categories</option>
+        {% for c in categories %}
+        <option value="{{ c.pk }}" {% if selected_cat == c.pk|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
+        {% endfor %}
+      </select>
+
+      <div style="display:flex;gap:6px;">
+        <button type="submit" class="btn s p" id="btn-filter-products">Filter</button>
+        {% if q or selected_cat %}
+        <a href="{% url 'manager:products' %}" class="btn s d" id="btn-clear-prod-filter">Clear</a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+
+  <!-- Products List -->
+  <div class="card" id="card-products-list">
+    {% if products %}
+      {% for p in products %}
+      <div class="row">
+        <div class="av">{{ p.name|slice:":1"|upper }}</div>
+        <div class="grow">
+          <b>{{ p.name }}</b>
+          <div class="sm">
+            SKU: {{ p.sku|default:"N/A" }} · {{ p.category.name }} · ₹{{ p.price }}/{{ p.unit }} · Stock: {{ p.stock_quantity }} {{ p.unit }}
+          </div>
+        </div>
+
+        <span class="bg {% if p.is_available %}ok{% else %}nt{% endif %}">
+          {% if p.is_available %}Active{% else %}Inactive{% endif %}
+        </span>
+
+        {% if request.user.role == 'MANAGER' or request.user.is_superuser or request.user.role == 'ADMIN' %}
+        <div style="display:flex;gap:4px;">
+          <button type="button" class="btn s" @click="openEdit({{ p.pk }}, '{{ p.name|escapejs }}', '{{ p.sku|default:"" }}', '{{ p.category.pk }}', '{{ p.price }}', '{{ p.unit }}', '{{ p.stock_quantity }}', '{{ p.low_stock_threshold }}')" id="btn-edit-prod-{{ p.pk }}">
+            Edit
+          </button>
+          
+          <form method="post" action="{% url 'manager:product_toggle' p.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="btn s {% if p.is_available %}d{% else %}p{% endif %}" id="btn-toggle-prod-{{ p.pk }}">
+              {% if p.is_available %}Deactivate{% else %}Activate{% endif %}
+            </button>
+          </form>
+        </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="sm" style="padding:32px 0;text-align:center;">
+        No products match your search.
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Add Product Modal -->
+  <div class="ov" x-show="addModal" x-cloak>
+    <div class="md" @click.away="addModal = false">
+      <h2 class="h2">Add New Product</h2>
+      
+      <form method="post" action="{% url 'manager:product_add' %}" style="display:flex;flex-direction:column;gap:10px;">
+        {% csrf_token %}
+        <label class="lab">
+          Product Name
+          <input class="in" type="text" name="name" required placeholder="e.g. Basmati Rice 5kg" id="input-add-name">
+        </label>
+
+        <label class="lab">
+          SKU Code
+          <input class="in" type="text" name="sku" required placeholder="e.g. RC-BAS-05" id="input-add-sku">
+        </label>
+
+        <label class="lab">
+          Category
+          <select class="in" name="category_id" required id="select-add-category">
+            {% for c in categories %}
+            <option value="{{ c.pk }}">{{ c.name }}</option>
+            {% endfor %}
+          </select>
+        </label>
+
+        <div class="fl">
+          <label class="lab">
+            Selling Price (₹)
+            <input class="in" type="number" step="0.01" min="0.01" name="price" required placeholder="645.00" id="input-add-price">
+          </label>
+          <label class="lab">
+            Unit
+            <select class="in" name="unit" id="select-add-unit">
+              <option value="pack">pack</option>
+              <option value="pcs">pcs</option>
+              <option value="kg">kg</option>
+              <option value="g">g</option>
+              <option value="L">L</option>
+              <option value="ml">ml</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="fl">
+          <label class="lab">
+            Initial Stock Quantity
+            <input class="in" type="number" min="0" name="stock_quantity" value="0" required id="input-add-stock">
+          </label>
+          <label class="lab">
+            Reorder Threshold
+            <input class="in" type="number" min="0" name="low_stock_threshold" value="10" required id="input-add-threshold">
+          </label>
+        </div>
+
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
+          <button type="button" class="btn" @click="addModal = false">Cancel</button>
+          <button type="submit" class="btn p" id="btn-save-new-product">Save Product</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Edit Product Modal -->
+  <div class="ov" x-show="editModal" x-cloak>
+    <div class="md" @click.away="editModal = false">
+      <h2 class="h2">Edit Product</h2>
+      
+      <form method="post" :action="'/manager/products/' + editId + '/edit/'" style="display:flex;flex-direction:column;gap:10px;">
+        {% csrf_token %}
+        <label class="lab">
+          Product Name
+          <input class="in" type="text" name="name" required x-model="editName" id="input-edit-name">
+        </label>
+
+        <label class="lab">
+          SKU Code
+          <input class="in" type="text" name="sku" required x-model="editSku" id="input-edit-sku">
+        </label>
+
+        <label class="lab">
+          Category
+          <select class="in" name="category_id" required x-model="editCat" id="select-edit-category">
+            {% for c in categories %}
+            <option value="{{ c.pk }}">{{ c.name }}</option>
+            {% endfor %}
+          </select>
+        </label>
+
+        <div class="fl">
+          <label class="lab">
+            Selling Price (₹)
+            <input class="in" type="number" step="0.01" min="0.01" name="price" required x-model="editPrice" id="input-edit-price">
+          </label>
+          <label class="lab">
+            Unit
+            <select class="in" name="unit" x-model="editUnit" id="select-edit-unit">
+              <option value="pack">pack</option>
+              <option value="pcs">pcs</option>
+              <option value="kg">kg</option>
+              <option value="g">g</option>
+              <option value="L">L</option>
+              <option value="ml">ml</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="fl">
+          <label class="lab">
+            Stock Quantity
+            <input class="in" type="number" min="0" name="stock_quantity" required x-model="editStock" id="input-edit-stock">
+          </label>
+          <label class="lab">
+            Reorder Threshold
+            <input class="in" type="number" min="0" name="low_stock_threshold" required x-model="editThr" id="input-edit-threshold">
+          </label>
+        </div>
+
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
+          <button type="button" class="btn" @click="editModal = false">Cancel</button>
+          <button type="submit" class="btn p" id="btn-update-product">Update Product</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

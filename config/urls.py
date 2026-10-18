@@ -14,14 +14,16 @@ _admin_path = env("ADMIN_URL", default="admin/")
 # Wrap admin login to protect against brute-force (avoids editing Django internals)
 admin.site.login = admin_login(admin.site.login)
 
+from apps.accounts.views import RoleLoginView
+from django.views.generic import RedirectView
+
 urlpatterns = [
     # Admin-scoped app endpoints must precede admin.site.urls so they resolve first.
     path(_admin_path, include("apps.menu.urls")),
     path(f"{_admin_path}orders/", include("apps.orders.urls_admin")),
-    path(f"{_admin_path}accounts/", include("apps.analytics.urls")),
     path(f"{_admin_path}reports/", include("apps.analytics.urls")),
     path(f"{_admin_path}agents/", include("apps.accounts.urls_admin")),
-    path(f"{_admin_path}customers/", include("apps.accounts.urls_admin")),
+    path(f"{_admin_path}customers/", RedirectView.as_view(pattern_name="accounts_admin:customers", permanent=False)),
     path(f"{_admin_path}suppliers/", include("apps.suppliers.urls")),
     path(f"{_admin_path}payments/", include("apps.payments.urls")),
     path(f"{_admin_path}coupons/", include("apps.coupons.urls")),
@@ -36,7 +38,11 @@ urlpatterns = [
     path("order/", include("apps.orders.urls_customer")),
     # Agent delivery dashboard (login required, role=AGENT).
     path("agent/", include("apps.orders.urls_agent")),
+    # Manager & Staff Portal (login required, role=MANAGER or STAFF).
+    path("manager/", include("apps.accounts.urls_manager")),
+    path("staff/", RedirectView.as_view(url="/manager/staff-dashboard/", permanent=False)),
     # Authentication (login/logout for all roles).
+    path("login/", RoleLoginView.as_view(), name="login"),
     path("accounts/", include("apps.accounts.urls")),
     # Public landing page — must precede the tables include so "/" resolves here
     # while dine-in "t/<token>/" routes still match below.

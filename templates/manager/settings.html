@@ -1,0 +1,68 @@
+{% extends "manager/base_manager.html" %}
+{% load static %}
+
+{% block title %}Settings — Store Operations{% endblock %}
+{% block page_title %}Store &amp; Manager Settings{% endblock %}
+
+{% block content %}
+<h1 class="h1">Portal Settings &amp; Preferences</h1>
+
+<div class="g2">
+  <!-- Profile Summary -->
+  <div class="card" id="card-manager-profile">
+    <h2 class="h2">Manager Profile</h2>
+    <div style="font-weight:700;font-size:16px;">{{ request.user.get_full_name|default:request.user.username }}</div>
+    <div class="sm">Role: {{ request.user.get_role_display }}</div>
+    <div class="sm" style="margin-top:2px;">Email: {{ request.user.email|default:"manager@supermarket.in" }}</div>
+    <div class="sm" style="margin-top:2px;">Phone: {{ request.user.phone|default:"+91 98765 00000" }}</div>
+  </div>
+
+  <!-- Store Information -->
+  <div class="card" id="card-store-info">
+    <h2 class="h2">Store Information</h2>
+    <div style="font-weight:700;font-size:16px;">SuperMarket – LB Nagar Hub</div>
+    <div class="sm">Operating Hours: 07:00 – 22:00 (Daily)</div>
+    <div class="sm" style="margin-top:2px;">Location: Hyderabad, Telangana, India</div>
+    <div class="sm" style="margin-top:2px;">Fulfillment: In-Store Pickup, Dine-in &amp; Home Delivery</div>
+  </div>
+
+  <!-- Notification Preferences -->
+  <div class="card" id="card-notification-prefs">
+    <h2 class="h2">Notification Preferences</h2>
+    <form method="post" action="{% url 'manager:settings' %}" style="display:flex;flex-direction:column;gap:12px;margin-top:8px;">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="save_prefs">
+
+      <label class="row" style="border:0;padding:4px 0;cursor:pointer;">
+        <input type="checkbox" name="pref_low_stock" value="1" {% if prefs.low_stock %}checked{% endif %} id="check-pref-low">
+        <span style="font-weight:600;">Low-Stock Operational Alerts</span>
+      </label>
+
+      <label class="row" style="border:0;padding:4px 0;cursor:pointer;">
+        <input type="checkbox" name="pref_new_orders" value="1" {% if prefs.new_orders %}checked{% endif %} id="check-pref-orders">
+        <span style="font-weight:600;">Incoming Customer Order Alerts</span>
+      </label>
+
+      <div>
+        <button type="submit" class="btn s p" id="btn-save-prefs">Save Preferences</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Portal Tools & Actions -->
+  <div class="card" id="card-portal-tools">
+    <h2 class="h2">Portal Actions</h2>
+    <div class="sm" style="margin-bottom:12px;">Manage session and platform operations.</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <form method="post" action="{% url 'manager:settings' %}">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="reset_demo">
+        <button type="submit" class="btn d s" id="btn-reset-demo" onclick="return confirm('Restore sample prototype data?');">
+          Reset Demo Data
+        </button>
+      </form>
+      <a href="{% url 'manager:logout' %}" class="btn s" id="btn-settings-logout">Sign Out</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

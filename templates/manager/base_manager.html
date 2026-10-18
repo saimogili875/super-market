@@ -1,0 +1,269 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
+  <title>{% block title %}Store Manager Portal — SuperMarket{% endblock %}</title>
+  
+  <link rel="stylesheet" href="{% static 'css/store_manager.css' %}">
+  
+  <!-- HTMX & Alpine.js -->
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  <script defer src="https://unpkg.com/alpinejs@3.13.3/dist/cdn.min.js"></script>
+  
+  {% block extra_head %}{% endblock %}
+</head>
+<body x-data="{ sideOpen: false, pmOpen: false, sideCollapsed: false }" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+  <div class="app">
+    <!-- Scrim for mobile drawer -->
+    <div class="scrim" :class="{ 'o': sideOpen }" @click="sideOpen = false"></div>
+
+    <!-- Sidebar Navigation -->
+    <nav class="side" :class="{ 'o': sideOpen, 'c': sideCollapsed }" aria-label="Main navigation">
+      <div style="display:flex;align-items:center;gap:10px;padding:6px 8px 14px;color:#fff;font-weight:700">
+        <div class="av" style="background:var(--mgr-accent);color:var(--mgr-brand)">S</div>
+        <div class="av-label">
+          <div style="font-size:15px;line-height:1.2;">SuperMarket</div>
+          <div style="font-weight:500;font-size:11px;color:#a9d2b9">
+            {% if request.user.role == 'MANAGER' %}Store Manager{% elif request.user.is_superuser or request.user.role == 'ADMIN' %}Store Admin{% else %}Store Staff{% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation Links -->
+      {% if request.user.role == 'MANAGER' or request.user.is_superuser or request.user.role == 'ADMIN' %}
+      <a href="{% url 'manager:dashboard' %}" class="nv {% if active_nav == 'dashboard' %}on{% endif %}" id="nav-dashboard">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M3 12l9-9 9 9M5 10v10h14V10"/>
+        </svg>
+        <span class="lb">Dashboard</span>
+      </a>
+      {% else %}
+      <a href="{% url 'manager:staff_dashboard' %}" class="nv {% if active_nav == 'staff_dashboard' %}on{% endif %}" id="nav-staff-dashboard">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M3 12l9-9 9 9M5 10v10h14V10"/>
+        </svg>
+        <span class="lb">My Dashboard</span>
+      </a>
+      {% endif %}
+
+      <a href="{% url 'manager:orders' %}" class="nv {% if active_nav == 'orders' %}on{% endif %}" id="nav-orders">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M9 3h6v4H9zM6 5H5v16h14V5h-1"/>
+        </svg>
+        <span class="lb">Orders</span>
+        {% if new_orders_badge %}
+        <span class="bd lb" id="nav-orders-badge">{{ new_orders_badge }}</span>
+        {% endif %}
+      </a>
+
+      <a href="{% url 'manager:inventory' %}" class="nv {% if active_nav == 'inventory' %}on{% endif %}" id="nav-inventory">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M21 8l-9-5-9 5v8l9 5 9-5zM3 8l9 5 9-5M12 13v8"/>
+        </svg>
+        <span class="lb">Inventory</span>
+      </a>
+
+      {% if request.user.role == 'MANAGER' or request.user.is_superuser or request.user.role == 'ADMIN' %}
+      <a href="{% url 'manager:products' %}" class="nv {% if active_nav == 'products' %}on{% endif %}" id="nav-products">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M20 12l-8 8-9-9V3h8z"/>
+        </svg>
+        <span class="lb">Products</span>
+      </a>
+
+      <a href="{% url 'manager:categories' %}" class="nv {% if active_nav == 'categories' %}on{% endif %}" id="nav-categories">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z"/>
+        </svg>
+        <span class="lb">Categories</span>
+      </a>
+      {% endif %}
+
+      <a href="{% url 'manager:movements' %}" class="nv {% if active_nav == 'movements' %}on{% endif %}" id="nav-movements">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M7 4v16M3 16l4 4 4-4M17 20V4M13 8l4-4 4 4"/>
+        </svg>
+        <span class="lb">Stock Movements</span>
+      </a>
+
+      <a href="{% url 'manager:low_stock' %}" class="nv {% if active_nav == 'low' %}on{% endif %}" id="nav-low">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M12 3l10 18H2zM12 10v5M12 18h.01"/>
+        </svg>
+        <span class="lb">Low Stock Alerts</span>
+        {% if low_stock_badge %}
+        <span class="bd lb" id="nav-low-badge">{{ low_stock_badge }}</span>
+        {% endif %}
+      </a>
+
+      <a href="{% url 'manager:stock_requests' %}" class="nv {% if active_nav == 'stock_requests' %}on{% endif %}" id="nav-stock-requests">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+        <span class="lb">Stock Requests</span>
+        {% if pending_requests_badge %}
+        <span class="bd lb" id="nav-requests-badge">{{ pending_requests_badge }}</span>
+        {% endif %}
+      </a>
+
+      {% if request.user.role == 'MANAGER' or request.user.is_superuser or request.user.role == 'ADMIN' %}
+      <a href="{% url 'manager:staff' %}" class="nv {% if active_nav == 'staff' %}on{% endif %}" id="nav-staff">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>
+        </svg>
+        <span class="lb">Staff Management</span>
+      </a>
+      {% endif %}
+
+      <a href="{% url 'manager:tasks' %}" class="nv {% if active_nav == 'tasks' %}on{% endif %}" id="nav-tasks">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+        </svg>
+        <span class="lb">Staff Tasks</span>
+      </a>
+
+      <a href="{% url 'manager:attendance' %}" class="nv {% if active_nav == 'attendance' %}on{% endif %}" id="nav-attendance">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M12 6v6l4 2"/>
+        </svg>
+        <span class="lb">Shifts & Attendance</span>
+      </a>
+
+      <a href="{% url 'manager:suppliers' %}" class="nv {% if active_nav == 'suppliers' %}on{% endif %}" id="nav-suppliers">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M1 6h14v11H1zM15 10h4l4 3v4h-8z"/>
+        </svg>
+        <span class="lb">Suppliers</span>
+      </a>
+
+      <a href="{% url 'manager:reports' %}" class="nv {% if active_nav == 'reports' %}on{% endif %}" id="nav-reports">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>
+        </svg>
+        <span class="lb">Reports</span>
+      </a>
+
+      <a href="{% url 'manager:notifications' %}" class="nv {% if active_nav == 'notifications' %}on{% endif %}" id="nav-notifications">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M6 8a6 6 0 0112 0c0 7 3 9 3 9H3s3-2 3-9M10 21h4"/>
+        </svg>
+        <span class="lb">Notifications</span>
+        {% if unread_notifs_count %}
+        <span class="bd lb" id="nav-notifs-badge">{{ unread_notifs_count }}</span>
+        {% endif %}
+      </a>
+
+      <a href="{% url 'manager:settings' %}" class="nv {% if active_nav == 'settings' %}on{% endif %}" id="nav-settings">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M14 4v4M8 10v4M16 16v4"/>
+        </svg>
+        <span class="lb">Settings</span>
+      </a>
+
+      <button class="nv dk" style="margin-top:auto" @click="sideCollapsed = !sideCollapsed" id="btn-collapse-sidebar" aria-label="Collapse sidebar">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M15 6l-6 6 6 6"/>
+        </svg>
+        <span class="lb">Collapse</span>
+      </button>
+    </nav>
+
+    <!-- Main Content Area -->
+    <div class="main">
+      <!-- Top Bar -->
+      <header class="top">
+        <button class="ib mob" @click="sideOpen = true" id="btn-mobile-menu" aria-label="Open menu">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M3 6h18M3 12h18M3 18h18"/>
+          </svg>
+        </button>
+
+        <div style="font-weight:700;font-size:16px;flex:1 1 120px;min-width:0" id="page-title">
+          {% block page_title %}Store Manager Portal{% endblock %}
+        </div>
+
+        <!-- Global Search -->
+        <form method="get" action="{% url 'manager:inventory' %}" style="flex:2 1 200px;max-width:340px;display:flex;">
+          <input class="in" type="search" name="q" placeholder="Search product or SKU" aria-label="Search products" value="{{ request.GET.q|default:'' }}" id="global-search-input">
+        </form>
+
+        <!-- Store Selector Indicator -->
+        <div class="in dk" style="width:190px;display:flex;align-items:center;font-size:13px;font-weight:600;color:var(--mgr-primary);background:#f0f7f2;" id="store-selector">
+          🏪 Hyderabad – LB Nagar
+        </div>
+
+        <!-- Notification Bell -->
+        <a href="{% url 'manager:notifications' %}" class="ib" id="btn-top-notif" aria-label="Notifications">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M6 8a6 6 0 0112 0c0 7 3 9 3 9H3s3-2 3-9M10 21h4"/>
+          </svg>
+          {% if unread_notifs_count %}
+          <span class="bd" style="position:absolute;top:-6px;right:-6px" id="top-notif-count">{{ unread_notifs_count }}</span>
+          {% endif %}
+        </a>
+
+        <!-- Profile Avatar Pill -->
+        <button class="ib" @click="pmOpen = !pmOpen" @click.away="pmOpen = false" id="btn-profile-menu" aria-label="Profile menu" style="font-weight:700;color:var(--mgr-primary)">
+          {{ request.user.first_name|default:request.user.username|slice:":1"|upper }}{{ request.user.last_name|slice:":1"|upper }}
+        </button>
+
+        <!-- Profile Menu Dropdown -->
+        <div class="pm" x-show="pmOpen" x-cloak id="profile-dropdown">
+          <div style="padding:8px">
+            <b>{{ request.user.get_full_name|default:request.user.username }}</b>
+            <div class="sm">{{ request.user.get_role_display }}</div>
+          </div>
+          <a href="{% url 'manager:settings' %}" class="nv" style="color:var(--mgr-text)" id="pm-link-settings">Settings</a>
+          <a href="{% url 'manager:logout' %}" class="nv" style="color:var(--mgr-danger)" id="pm-link-logout">Log out</a>
+        </div>
+      </header>
+
+      <!-- Main Page Content -->
+      <main class="pg">
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+  </div>
+
+  <!-- Toast Notification System -->
+  <div id="toast-container">
+    {% if messages %}
+      {% for message in messages %}
+      <div class="toast" role="status">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+  </div>
+
+  <script>
+    // Non-blocking Toast notification helper
+    function showToast(msg) {
+      var container = document.getElementById("toast-container");
+      var t = document.createElement("div");
+      t.className = "toast";
+      t.textContent = msg;
+      container.appendChild(t);
+      setTimeout(function() {
+        t.style.opacity = "0";
+        t.style.transition = "opacity 0.3s ease";
+        setTimeout(function() { t.remove(); }, 300);
+      }, 3000);
+    }
+
+    // Auto-dismiss Django server messages
+    document.addEventListener("DOMContentLoaded", function() {
+      var toms = document.querySelectorAll("#toast-container .toast");
+      toms.forEach(function(t) {
+        setTimeout(function() {
+          t.style.opacity = "0";
+          t.style.transition = "opacity 0.3s ease";
+          setTimeout(function() { t.remove(); }, 300);
+        }, 3200);
+      });
+    });
+  </script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

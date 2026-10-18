@@ -1,0 +1,56 @@
+{% extends "agent/base_agent.html" %}
+{% load static %}
+
+{% block title %}Receipt #{{ order.pk }} — SuperMarket{% endblock %}
+
+{% block content %}
+<div class="row">
+  <a href="{% url 'orders_agent:order_detail' order.pk %}" class="btn s" style="min-height: 38px; font-size: 13px;" id="btn-back-from-receipt">
+    ← Order #{{ order.pk }}
+  </a>
+  <button type="button" class="btn s" onclick="window.print()" style="min-height: 38px; font-size: 13px;" id="btn-print-receipt">
+    🖨 Print Receipt
+  </button>
+</div>
+
+<div class="card" id="printable-receipt" style="font-family: monospace; padding: 24px 20px; line-height: 1.5; border: 2px dashed #C9D3CD;">
+  <div style="text-align: center; margin-bottom: 16px;">
+    <h2 style="font-size: 18px; margin: 0;">SUPERMARKET STORE 01</h2>
+    <p style="font-size: 12px; margin: 0; color: #555;">Main Road, Hyderabad</p>
+    <p style="font-size: 12px; margin: 0; color: #555;">GST: 36AAAAA0000A1Z5</p>
+    <div style="border-top: 1px dashed #999; margin: 12px 0;"></div>
+    <b style="font-size: 16px;">DELIVERY RECEIPT</b>
+  </div>
+
+  <div style="font-size: 13px; margin-bottom: 12px;">
+    <div><strong>Order:</strong> #{{ order.pk }}</div>
+    <div><strong>Date:</strong> {{ order.created_at|date:"d/m/Y H:i" }}</div>
+    <div><strong>Agent:</strong> {{ request.user.get_full_name|default:request.user.username }}</div>
+    <div><strong>Customer:</strong> {{ card.customer_name }}</div>
+    <div><strong>Phone:</strong> {{ card.phone }}</div>
+    <div><strong>Address:</strong> {{ card.address }}</div>
+  </div>
+
+  <div style="border-top: 1px dashed #999; border-bottom: 1px dashed #999; padding: 8px 0; margin-bottom: 12px; font-size: 13px;">
+    {% for item in order.items.all %}
+    <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+      <span>{{ item.quantity }}x {{ item.name_snap }}</span>
+      <span>₹{{ item.line_total }}</span>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div style="display: flex; justify-content: space-between; font-size: 16px; font-weight: bold; margin-bottom: 16px;">
+    <span>TOTAL PAID</span>
+    <span>₹{{ order.total_amount }}</span>
+  </div>
+
+  <div style="font-size: 12px; color: #555; text-align: center;">
+    <div>Status: {{ card.label }}</div>
+    {% if order.delivery_pod_detail %}
+    <div>Verification: {{ order.delivery_pod_detail }}</div>
+    {% endif %}
+    <div style="margin-top: 8px;">Thank you for shopping with SuperMarket!</div>
+  </div>
+</div>
+{% endblock %}

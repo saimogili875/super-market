@@ -1,0 +1,71 @@
+{% extends "manager/base_manager.html" %}
+{% load static %}
+
+{% block title %}Reports — Store Operations{% endblock %}
+{% block page_title %}Operational Reports &amp; Analytics{% endblock %}
+
+{% block content %}
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+  <h1 class="h1">Store Operational Metrics</h1>
+  <div class="sm">Real-time calculations from store catalog, inventory valuations, and order flow.</div>
+</div>
+
+<!-- 4 Key Report Metrics -->
+<div class="g" id="report-kpis">
+  <div class="kpi">
+    <b>₹{{ total_valuation|floatformat:2 }}</b>
+    <span>Total Inventory Valuation</span>
+  </div>
+  <div class="kpi">
+    <b>{{ active_availability_pct }}%</b>
+    <span>Catalog Availability</span>
+  </div>
+  <div class="kpi">
+    <b>{{ low_stock_count }} / {{ out_of_stock_count }}</b>
+    <span>Low / Out of Stock Items</span>
+  </div>
+  <div class="kpi">
+    <b>{{ movements_count }}</b>
+    <span>Stock Movements Logged</span>
+  </div>
+</div>
+
+<!-- Distribution Bars -->
+<div class="g2" style="margin-top:8px;">
+  <!-- Units in Stock by Category -->
+  <div class="card" id="card-report-categories">
+    <h2 class="h2">Units in Stock by Category</h2>
+    {% for c in category_distributions %}
+    <div style="margin:10px 0;">
+      <div class="sm" style="display:flex;justify-content:space-between;">
+        <span>{{ c.name }}</span>
+        <span><strong>{{ c.units }}</strong> units</span>
+      </div>
+      <div class="bar" style="margin-top:4px;">
+        <div style="width:{{ c.pct }}%;background:var(--mgr-primary);"></div>
+      </div>
+    </div>
+    {% empty %}
+    <div class="sm" style="padding:16px 0;">No stock units registered.</div>
+    {% endfor %}
+  </div>
+
+  <!-- Orders Pipeline Distribution -->
+  <div class="card" id="card-report-pipeline">
+    <h2 class="h2">Order Pipeline Distribution</h2>
+    {% for s in status_distributions %}
+    <div style="margin:10px 0;">
+      <div class="sm" style="display:flex;justify-content:space-between;">
+        <span>{{ s.label }}</span>
+        <span><strong>{{ s.count }}</strong> orders</span>
+      </div>
+      <div class="bar" style="margin-top:4px;">
+        <div style="width:{{ s.pct }}%;background:var(--mgr-brand);"></div>
+      </div>
+    </div>
+    {% empty %}
+    <div class="sm" style="padding:16px 0;">No order activity logged.</div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
