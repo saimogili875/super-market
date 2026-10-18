@@ -1,33 +1,86 @@
 {% extends "orders/customer/base.html" %}
-{% load currency %}
+{% load static %}
 
-{% block title %}Order Placed — Order #{{ order.pk }}{% endblock %}
-
-{% block header_subtitle %}Fresh Groceries Delivered Fast{% endblock %}
-
-{% block header_actions %}
-<div class="badge badge-warning icon-text">
-  {% include "partials/icon.html" with name="truck" %} Delivery
-</div>
-{% endblock %}
+{% block title %}Order #{{ order.pk }} Confirmed — FreshMart Supermarket{% endblock %}
 
 {% block content %}
-<div class="card empty-state mt-6">
-  <div class="empty-state__icon" style="color: var(--color-brand-primary);">{% include "partials/icon.html" with name="check-circle" cls="icon icon-xl" %}</div>
-  <h1 class="text-2xl text-bold mb-2" style="color: var(--color-brand-primary);">Order Placed Successfully!</h1>
-  <p class="text-muted text-base mb-6" style="max-width: 450px; margin-left: auto; margin-right: auto;">
-    Your grocery delivery order #{{ order.pk }} has been received and sent to our store packing team. Please pay cash on delivery when your courier arrives.
-  </p>
-
-  <div class="mb-6" style="background-color: var(--bg-input); border-radius: var(--radius-md); padding: var(--space-4); max-width: 400px; margin-left: auto; margin-right: auto; text-align: left;">
-    <div class="mb-2 text-sm text-muted">Status: <strong class="text-bold" style="color: var(--color-brand-primary);">{{ order.get_status_display }}</strong></div>
-    <div class="mb-2 text-sm text-muted">Total (COD): <strong class="text-bold" style="color: var(--text-primary);">{{ order.total_amount|money }}</strong></div>
-    <div class="text-sm text-muted">Contact: <strong class="text-bold" style="color: var(--text-primary);">{{ order.contact_name }} ({{ order.contact_phone }})</strong></div>
+<div style="max-width:620px;margin:20px auto 40px;width:100%;display:flex;flex-direction:column;gap:18px">
+  <!-- Success Celebration Card -->
+  <div class="customer-card" style="padding:32px 24px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:14px;background:#fff">
+    <div style="width:72px;height:72px;border-radius:36px;background:var(--primary-pill);color:var(--primary);display:flex;align-items:center;justify-content:center;font-size:36px;box-shadow:var(--shadow-sm)">
+      ✓
+    </div>
+    <span style="font-size:12px;font-weight:700;color:var(--primary);letter-spacing:0.05em;text-transform:uppercase">Order Received</span>
+    <h1 style="margin:0;font-size:24px;font-weight:700;color:var(--text);line-height:1.2">Order Placed Successfully!</h1>
+    <div style="font-size:14px;color:var(--text-muted);font-weight:600">Order #{{ order.pk }}</div>
+    <p style="margin:0;font-size:14px;color:var(--text-secondary);max-width:380px;line-height:1.4">
+      Thank you! Your fresh groceries order has been confirmed and routed to our local store packing team.
+    </p>
   </div>
 
-  <div class="flex gap-4 justify-center">
-    <a href="{% url 'orders_customer:menu' %}" class="btn btn-outline">Back to Products</a>
-    <a href="{% url 'orders_customer:track' order.pk %}" class="btn btn-primary">Track Delivery</a>
+  <!-- Order Details Card -->
+  <div class="customer-card" style="padding:20px;background:#fff;display:flex;flex-direction:column;gap:12px">
+    <b style="font-size:16px;border-bottom:1px solid var(--border);padding-bottom:10px">Order Details</b>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:13px">
+      <div>
+        <span style="color:var(--text-muted);display:block">Order Number:</span>
+        <b style="font-size:15px">#{{ order.pk }}</b>
+      </div>
+      <div>
+        <span style="color:var(--text-muted);display:block">Order Status:</span>
+        <b style="color:var(--primary);font-size:15px">{{ order.get_status_display }}</b>
+      </div>
+      <div>
+        <span style="color:var(--text-muted);display:block">Payment Method:</span>
+        <b>Pay on Delivery (COD/UPI)</b>
+      </div>
+      <div>
+        <span style="color:var(--text-muted);display:block">Estimated Delivery:</span>
+        <b>30–45 Mins</b>
+      </div>
+    </div>
+
+    <!-- Contact & Destination Address -->
+    <div style="border-top:1px solid var(--border);padding-top:12px;display:flex;flex-direction:column;gap:4px;font-size:13px">
+      <span style="color:var(--text-muted)">Delivering to:</span>
+      <b style="font-size:14px">{{ order.contact_name }} · {{ order.contact_phone }}</b>
+      <span style="color:var(--text-secondary)">{{ order.instructions|default:"Address provided via checkout" }}</span>
+    </div>
+
+    <!-- Items Snapshot -->
+    <div style="border-top:1px solid var(--border);padding-top:12px;display:flex;flex-direction:column;gap:8px">
+      <b style="font-size:14px">Items:</b>
+      {% for item in order.items.all %}
+        <div style="display:flex;justify-content:space-between;font-size:13px">
+          <span>{{ item.quantity }}&times; {{ item.name_snap }}</span>
+          <span style="font-weight:600">₹{{ item.line_total }}</span>
+        </div>
+      {% endfor %}
+      <div style="border-top:1px solid var(--border);padding-top:8px;display:flex;justify-content:space-between;font-size:16px;font-weight:700">
+        <span>Total Amount Payable:</span>
+        <span style="color:var(--primary-dark)">₹{{ order.total_amount }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div style="display:flex;gap:10px">
+    <a href="{% url 'orders_customer:track' order.pk %}" style="flex:1;min-height:50px;border-radius:12px;background:var(--primary);color:#fff;font-weight:700;font-size:15px;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(23,107,69,0.3)">
+      Track Order Live &rarr;
+    </a>
+    <a href="{% url 'orders_customer:menu' %}" style="flex:1;min-height:50px;border-radius:12px;border:1.5px solid var(--border);background:#fff;color:var(--text);font-weight:700;font-size:15px;display:flex;align-items:center;justify-content:center">
+      Continue Shopping
+    </a>
   </div>
 </div>
+
+<script>
+  // Phase 17: Order Success Sound trigger - plays ONCE per order, deduplicated by order ID
+  document.addEventListener('DOMContentLoaded', () => {
+    if (typeof playOrderSuccessSound === 'function') {
+      playOrderSuccessSound('{{ order.pk }}');
+    }
+  });
+</script>
 {% endblock %}

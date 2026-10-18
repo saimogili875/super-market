@@ -1,313 +1,138 @@
 {% extends "orders/customer/base.html" %}
+{% load static %}
 
-{% block title %}Grocery Products{% endblock %}
-
-{% block container_class %}app-container--wide{% endblock %}
-
-{% block header_subtitle %}Fresh Groceries Delivered Fast{% endblock %}
-
-{% block header_actions %}
-<div class="badge badge-warning icon-text">
-  {% include "partials/icon.html" with name="truck" %} Delivery
-</div>
-{% endblock %}
+{% block title %}{{ category|default:"Products" }} — FreshMart Supermarket{% endblock %}
 
 {% block content %}
-<style>
-  /* Theme Mode View Switcher */
-  [data-theme="dark"] .poster-only {
-    display: none !important;
-  }
-  [data-theme="dark"] .standard-menu-only {
-    display: block !important;
-  }
+<!-- Category Page Header -->
+<div style="margin: -16px -16px 0; background: #fff; border-bottom: 1px solid var(--border); display: flex; flex-direction: column">
+  <div style="display: flex; align-items: center; padding: 4px 12px; gap: 4px">
+    <a href="{% url 'home' %}" aria-label="Back to home" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: var(--primary-dark)">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M15 18l-6-6 6-6"></path>
+      </svg>
+    </a>
+    <h1 style="margin: 0; flex: 1; font-size: 19px; font-weight: 700; color: var(--text); line-height: 1.2">
+      {% if category and category != "all" %}{{ category }}{% elif search %}Search: "{{ search }}"{% else %}All Groceries{% endif %}
+    </h1>
+    <a href="{% url 'orders_customer:cart' %}" aria-label="Cart" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: var(--primary-dark); position: relative">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M3 4h2.5l2 11h10l2-8H7"></path>
+        <circle cx="9" cy="19.5" r="1.3"></circle>
+        <circle cx="17" cy="19.5" r="1.3"></circle>
+      </svg>
+      {% if cart_count > 0 %}
+        <span class="cart-nav-badge" style="top:4px;right:2px">{{ cart_count }}</span>
+      {% endif %}
+    </a>
+  </div>
 
-  [data-theme="light"] .poster-only {
-    display: block !important;
-  }
-  [data-theme="light"] .standard-menu-only {
-    display: none !important;
-  }
+  <!-- Horizontal Category Filter Pills -->
+  <div class="noscroll" style="display: flex; gap: 8px; overflow-x: auto; padding: 4px 16px 12px">
+    <a href="{% url 'orders_customer:menu' %}?category=all{% if search %}&search={{ search|urlencode }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}" 
+       style="flex: 0 0 auto; min-height: 38px; padding: 0 16px; border-radius: 20px; font-size: 14px; font-weight: 700; display: flex; align-items: center; text-decoration: none; {% if category == 'all' or not category %}background: var(--primary); color: #fff;{% else %}background: #fff; border: 1.5px solid var(--border); color: var(--text);{% endif %}">
+      All
+    </a>
 
-  /* Decorative Poster Styles (Light Mode) */
-  .poster-container {
-    position: relative;
-    max-width: 960px;
-    margin: 0 auto;
-    padding: 0.5rem 0 2rem 0;
-  }
-
-  .poster-board {
-    position: relative;
-    background-color: #121212;
-    background-image: 
-      radial-gradient(ellipse at 50% 20%, #242321 0%, #111111 80%),
-      repeating-linear-gradient(45deg, rgba(255,255,255,0.012) 0px, rgba(255,255,255,0.012) 1px, transparent 1px, transparent 5px);
-    border: 2px solid rgba(242, 202, 80, 0.45);
-    border-radius: 20px;
-    padding: 3.5rem 2rem 2.5rem 2rem;
-    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.85), inset 0 0 90px rgba(0, 0, 0, 0.75);
-    overflow: hidden;
-    color: #ffffff;
-  }
-
-  @media (max-width: 640px) {
-    .poster-board {
-      padding: 2.5rem 1rem 1.5rem 1rem;
-      border-radius: 14px;
-    }
-  }
-
-  .poster-inner-border {
-    position: absolute;
-    inset: 12px;
-    border: 1px dashed rgba(242, 202, 80, 0.35);
-    border-radius: 12px;
-    pointer-events: none;
-    z-index: 2;
-  }
-
-  .poster-flourish {
-    position: absolute;
-    width: 100px;
-    height: 100px;
-    z-index: 3;
-    pointer-events: none;
-  }
-  .poster-flourish--top-left { top: 16px; left: 16px; }
-  .poster-flourish--top-right { top: 16px; right: 16px; transform: scaleX(-1); }
-  .poster-flourish--bottom-left { bottom: 16px; left: 16px; transform: scaleY(-1); }
-  .poster-flourish--bottom-right { bottom: 16px; right: 16px; transform: scale(-1, -1); }
-
-  @media (max-width: 640px) {
-    .poster-flourish {
-      width: 70px;
-      height: 70px;
-    }
-    .poster-flourish--top-left { top: 10px; left: 10px; }
-    .poster-flourish--top-right { top: 10px; right: 10px; }
-    .poster-flourish--bottom-left { bottom: 10px; left: 10px; }
-    .poster-flourish--bottom-right { bottom: 10px; right: 10px; }
-  }
-
-  .poster-header {
-    position: relative;
-    z-index: 4;
-    text-align: center;
-    margin-bottom: 2.25rem;
-  }
-  .poster-url {
-    font-family: var(--font-body);
-    font-style: italic;
-    color: #f2ca50;
-    font-size: 0.9rem;
-    letter-spacing: 0.12em;
-    margin-bottom: 0.3rem;
-  }
-  .poster-title {
-    font-family: var(--font-display);
-    font-size: 3.2rem;
-    font-weight: 800;
-    color: #ffffff;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    margin: 0;
-    line-height: 1.1;
-    text-shadow: 0 4px 14px rgba(0, 0, 0, 0.95);
-  }
-  .poster-subtitle {
-    font-family: var(--font-display);
-    font-style: italic;
-    color: #f2ca50;
-    font-size: 1.4rem;
-    font-weight: 500;
-    margin-top: 0.35rem;
-    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.85);
-  }
-  .poster-tagline {
-    font-family: var(--font-body);
-    font-size: 0.78rem;
-    color: rgba(255, 255, 255, 0.75);
-    text-transform: uppercase;
-    letter-spacing: 0.22em;
-    font-weight: 700;
-    margin-top: 0.4rem;
-  }
-
-  @media (max-width: 640px) {
-    .poster-title { font-size: 2.2rem; }
-    .poster-subtitle { font-size: 1.15rem; }
-  }
-
-  .poster-search-container {
-    max-width: 480px;
-    margin: 0 auto 2.25rem auto;
-    position: relative;
-    z-index: 4;
-  }
-  .poster-search-input {
-    background: rgba(0, 0, 0, 0.6) !important;
-    border: 1.5px solid rgba(242, 202, 80, 0.45) !important;
-    color: #ffffff !important;
-    border-radius: 9999px !important;
-    padding: 0.75rem 1.35rem !important;
-    font-size: 0.92rem !important;
-    box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.6), 0 4px 15px rgba(0, 0, 0, 0.3) !important;
-    transition: all 0.25s ease !important;
-  }
-  .poster-search-input:focus {
-    border-color: #f2ca50 !important;
-    box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.6), 0 0 16px rgba(242, 202, 80, 0.3) !important;
-  }
-  .poster-search-input::placeholder {
-    color: rgba(255, 255, 255, 0.5) !important;
-  }
-
-  .poster-footer {
-    text-align: center;
-    margin-top: 3.5rem;
-    padding-top: 1.5rem;
-    border-top: 1px dashed rgba(242, 202, 80, 0.35);
-    color: #f2ca50;
-    font-family: var(--font-body);
-    font-size: 0.92rem;
-    letter-spacing: 0.15em;
-    font-weight: 600;
-    position: relative;
-    z-index: 4;
-  }
-</style>
-
-<!-- Standard Menu Search & Wrapper (Active in Dark Mode) -->
-<div class="standard-menu-only">
-  <div class="mb-4">
-    <div class="form-group">
-      <input 
-        type="search" 
-        name="search"
-        value="{{ search|default:'' }}"
-        hx-get="{% url 'orders_customer:menu' %}"
-        hx-trigger="keyup changed delay:300ms, search"
-        hx-target="#menu-content"
-        hx-include="[name='category']"
-        hx-push-url="false"
-        class="form-input"
-        style="background: var(--rdh-surface-container); border: 1px solid rgba(255,255,255,0.12); color: var(--rdh-on-surface); border-radius: var(--radius-md); padding: 0.75rem 1rem;"
-        placeholder="🔍 Search grocery products...">
-    </div>
+    {% for cat in all_categories %}
+      <a href="{% url 'orders_customer:menu' %}?category={{ cat.name|urlencode }}{% if search %}&search={{ search|urlencode }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}" 
+         style="flex: 0 0 auto; min-height: 38px; padding: 0 16px; border-radius: 20px; font-size: 14px; display: flex; align-items: center; text-decoration: none; {% if category == cat.name %}background: var(--primary); color: #fff; font-weight: 700;{% else %}background: #fff; border: 1.5px solid var(--border); color: var(--text); font-weight: 500;{% endif %}">
+        {{ cat.name }}
+      </a>
+    {% endfor %}
   </div>
 </div>
 
-<!-- Decorative Poster Container (Active in Light Mode) -->
-<div class="poster-only">
-  <div class="poster-container">
-    <div class="poster-board">
-      <div class="poster-inner-border"></div>
+<!-- Filters & Sorting Action Bar -->
+<div style="display: flex; align-items: center; gap: 8px; padding: 10px 0; flex-wrap: wrap">
+  <!-- Filter Trigger Button -->
+  <button type="button" 
+          onclick="openCatalogFilterModal()" 
+          style="min-height: 40px; padding: 0 14px; border-radius: 12px; border: 1.5px solid var(--primary); background: #fff; color: var(--primary-dark); font-weight: 700; font-size: 13px; display: inline-flex; align-items: center; gap: 6px">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
+      <path d="M4 6h16M7 12h10M10 18h4"></path>
+    </svg>
+    <span>Filters</span>
+    {% if stock_filter %}
+      <span style="width: 8px; height: 8px; border-radius: 4px; background: var(--primary)"></span>
+    {% endif %}
+  </button>
 
-      <!-- Gold Corner Flourishes -->
-      <svg class="poster-flourish poster-flourish--top-left" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M 6,120 L 6,32 C 6,18 18,6 32,6 L 120,6" stroke="#f2ca50" stroke-width="2" fill="none"/>
-        <path d="M 14,120 L 14,38 C 14,24 24,14 38,14 L 120,14" stroke="#f2ca50" stroke-width="1" stroke-dasharray="3,3" fill="none"/>
-        <path d="M 14,90 C 26,78 32,58 26,38 C 20,24 36,14 62,14" stroke="#f2ca50" stroke-width="2" fill="none"/>
-        <path d="M 32,120 C 38,94 58,84 74,94 C 90,104 104,88 98,68 C 92,48 68,38 42,24 C 26,16 20,10 20,10" stroke="#f2ca50" stroke-width="1.5" fill="none"/>
-        <path d="M 24,64 Q 14,54 22,46 Q 30,54 24,64 Z" fill="#f2ca50"/>
-        <path d="M 46,26 Q 40,14 54,18 Q 54,30 46,26 Z" fill="#f2ca50"/>
-        <path d="M 76,14 Q 86,4 92,16 Q 82,22 76,14 Z" fill="#f2ca50"/>
-        <path d="M 14,80 Q 2,74 8,64 Q 18,70 14,80 Z" fill="#f2ca50"/>
-        <circle cx="28" cy="34" r="3" fill="#f2ca50"/>
-        <circle cx="36" cy="28" r="2.5" fill="#f2ca50"/>
-        <circle cx="64" cy="18" r="3" fill="#f2ca50"/>
-        <circle cx="18" cy="62" r="3" fill="#f2ca50"/>
-      </svg>
-      <svg class="poster-flourish poster-flourish--top-right" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M 6,120 L 6,32 C 6,18 18,6 32,6 L 120,6" stroke="#f2ca50" stroke-width="2" fill="none"/>
-        <path d="M 14,120 L 14,38 C 14,24 24,14 38,14 L 120,14" stroke="#f2ca50" stroke-width="1" stroke-dasharray="3,3" fill="none"/>
-        <path d="M 14,90 C 26,78 32,58 26,38 C 20,24 36,14 62,14" stroke="#f2ca50" stroke-width="2" fill="none"/>
-        <path d="M 32,120 C 38,94 58,84 74,94 C 90,104 104,88 98,68 C 92,48 68,38 42,24 C 26,16 20,10 20,10" stroke="#f2ca50" stroke-width="1.5" fill="none"/>
-        <path d="M 24,64 Q 14,54 22,46 Q 30,54 24,64 Z" fill="#f2ca50"/>
-        <path d="M 46,26 Q 40,14 54,18 Q 54,30 46,26 Z" fill="#f2ca50"/>
-        <path d="M 76,14 Q 86,4 92,16 Q 82,22 76,14 Z" fill="#f2ca50"/>
-        <path d="M 14,80 Q 2,74 8,64 Q 18,70 14,80 Z" fill="#f2ca50"/>
-        <circle cx="28" cy="34" r="3" fill="#f2ca50"/>
-        <circle cx="36" cy="28" r="2.5" fill="#f2ca50"/>
-        <circle cx="64" cy="18" r="3" fill="#f2ca50"/>
-        <circle cx="18" cy="62" r="3" fill="#f2ca50"/>
-      </svg>
-      <svg class="poster-flourish poster-flourish--bottom-left" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M 6,120 L 6,32 C 6,18 18,6 32,6 L 120,6" stroke="#f2ca50" stroke-width="2" fill="none"/>
-        <path d="M 14,120 L 14,38 C 14,24 24,14 38,14 L 120,14" stroke="#f2ca50" stroke-width="1" stroke-dasharray="3,3" fill="none"/>
-        <path d="M 14,90 C 26,78 32,58 26,38 C 20,24 36,14 62,14" stroke="#f2ca50" stroke-width="2" fill="none"/>
-        <path d="M 32,120 C 38,94 58,84 74,94 C 90,104 104,88 98,68 C 92,48 68,38 42,24 C 26,16 20,10 20,10" stroke="#f2ca50" stroke-width="1.5" fill="none"/>
-        <path d="M 24,64 Q 14,54 22,46 Q 30,54 24,64 Z" fill="#f2ca50"/>
-        <path d="M 46,26 Q 40,14 54,18 Q 54,30 46,26 Z" fill="#f2ca50"/>
-        <path d="M 76,14 Q 86,4 92,16 Q 82,22 76,14 Z" fill="#f2ca50"/>
-        <path d="M 14,80 Q 2,74 8,64 Q 18,70 14,80 Z" fill="#f2ca50"/>
-        <circle cx="28" cy="34" r="3" fill="#f2ca50"/>
-        <circle cx="36" cy="28" r="2.5" fill="#f2ca50"/>
-        <circle cx="64" cy="18" r="3" fill="#f2ca50"/>
-        <circle cx="18" cy="62" r="3" fill="#f2ca50"/>
-      </svg>
-      <svg class="poster-flourish poster-flourish--bottom-right" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M 6,120 L 6,32 C 6,18 18,6 32,6 L 120,6" stroke="#f2ca50" stroke-width="2" fill="none"/>
-        <path d="M 14,120 L 14,38 C 14,24 24,14 38,14 L 120,14" stroke="#f2ca50" stroke-width="1" stroke-dasharray="3,3" fill="none"/>
-        <path d="M 14,90 C 26,78 32,58 26,38 C 20,24 36,14 62,14" stroke="#f2ca50" stroke-width="2" fill="none"/>
-        <path d="M 32,120 C 38,94 58,84 74,94 C 90,104 104,88 98,68 C 92,48 68,38 42,24 C 26,16 20,10 20,10" stroke="#f2ca50" stroke-width="1.5" fill="none"/>
-        <path d="M 24,64 Q 14,54 22,46 Q 30,54 24,64 Z" fill="#f2ca50"/>
-        <path d="M 46,26 Q 40,14 54,18 Q 54,30 46,26 Z" fill="#f2ca50"/>
-        <path d="M 76,14 Q 86,4 92,16 Q 82,22 76,14 Z" fill="#f2ca50"/>
-        <path d="M 14,80 Q 2,74 8,64 Q 18,70 14,80 Z" fill="#f2ca50"/>
-        <circle cx="28" cy="34" r="3" fill="#f2ca50"/>
-        <circle cx="36" cy="28" r="2.5" fill="#f2ca50"/>
-        <circle cx="64" cy="18" r="3" fill="#f2ca50"/>
-        <circle cx="18" cy="62" r="3" fill="#f2ca50"/>
-      </svg>
-
-      <!-- Poster Display Header -->
-      <header class="poster-header">
-        <div class="poster-url">www.freshmart.in</div>
-        <h1 class="poster-title">GROCERY CATALOG</h1>
-        <div class="poster-subtitle">{{ BRAND_SHORT }} · {{ BRAND_NAME }}</div>
-        <div class="poster-tagline">{{ BRAND_TAGLINE }}</div>
-      </header>
-
-      <!-- Search Filter Bar (Poster Mode) -->
-      <div class="poster-search-container">
-        <input 
-          type="search" 
-          name="search"
-          value="{{ search|default:'' }}"
-          hx-get="{% url 'orders_customer:menu' %}"
-          hx-trigger="keyup changed delay:300ms, search"
-          hx-target="#menu-content"
-          hx-include="[name='category']"
-          hx-push-url="false"
-          class="form-input poster-search-input"
-          placeholder="🔍 Search grocery products...">
-      </div>
-    </div>
+  <!-- Sort Dropdown -->
+  <div style="position: relative; display: inline-block">
+    <select onchange="location = this.value;" 
+            aria-label="Sort products"
+            style="min-height: 40px; padding: 0 28px 0 12px; border-radius: 12px; border: 1.5px solid var(--border); background: #fff; color: var(--text); font-weight: 500; font-size: 13px; -webkit-appearance: none; appearance: none; cursor: pointer">
+      <option value="{% url 'orders_customer:menu' %}?category={{ category|default:'all'|urlencode }}&sort=relevance{% if search %}&search={{ search|urlencode }}{% endif %}{% if stock_filter %}&stock={{ stock_filter }}{% endif %}" {% if sort == 'relevance' or not sort %}selected{% endif %}>Sort: Relevance</option>
+      <option value="{% url 'orders_customer:menu' %}?category={{ category|default:'all'|urlencode }}&sort=price_asc{% if search %}&search={{ search|urlencode }}{% endif %}{% if stock_filter %}&stock={{ stock_filter }}{% endif %}" {% if sort == 'price_asc' %}selected{% endif %}>Price: Low to High</option>
+      <option value="{% url 'orders_customer:menu' %}?category={{ category|default:'all'|urlencode }}&sort=price_desc{% if search %}&search={{ search|urlencode }}{% endif %}{% if stock_filter %}&stock={{ stock_filter }}{% endif %}" {% if sort == 'price_desc' %}selected{% endif %}>Price: High to Low</option>
+    </select>
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;right:10px;top:13px;pointer-events:none;color:var(--text-muted)">
+      <path d="M6 9l6 6 6-6"></path>
+    </svg>
   </div>
+
+  <span style="margin-left: auto; font-size: 13px; color: var(--text-muted)">
+    {{ total_products_count|default:0 }} items
+  </span>
 </div>
 
-<!-- Shared Menu Content Target -->
-<div id="menu-content"
-     hx-get="{% url 'orders_customer:menu' %}"
-     hx-trigger="cartUpdated from:body"
-     hx-include="[name='search'], [name='category']"
-     hx-target="#menu-content"
-     hx-push-url="false">
+<!-- Product Results Grid -->
+<div id="product-results-wrapper">
   {% include "orders/customer/partials/menu_results.html" %}
 </div>
 
-<!-- Poster Footer (Light Mode) -->
-<div class="poster-only text-center" style="max-width: 960px; margin: 0 auto;">
-  <footer class="poster-footer" style="margin-top: 1rem; margin-bottom: 2rem;">
-    +91 {{ BRAND_PHONE|default:"6281238410" }} &nbsp;•&nbsp; www.freshmart.in
-  </footer>
+<!-- Filter Modal Dialog -->
+<div id="catalogFilterModal" class="customer-modal-backdrop" style="display:none">
+  <div class="customer-modal-card">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <h3 style="margin:0;font-size:18px;font-weight:700">Filter Groceries</h3>
+      <button type="button" onclick="closeCatalogFilterModal()" style="border:0;background:transparent;font-size:22px;cursor:pointer">&times;</button>
+    </div>
+
+    <form action="{% url 'orders_customer:menu' %}" method="GET" style="display:flex;flex-direction:column;gap:14px">
+      <input type="hidden" name="category" value="{{ category|default:'all' }}">
+      {% if search %}
+        <input type="hidden" name="search" value="{{ search }}">
+      {% endif %}
+
+      <div>
+        <label style="font-weight:700;font-size:14px;display:block;margin-bottom:8px">Stock Availability</label>
+        <div style="display:flex;gap:10px">
+          <label style="flex:1;padding:10px;border-radius:10px;border:1.5px solid var(--border);display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+            <input type="radio" name="stock" value="" {% if not stock_filter %}checked{% endif %}> All Items
+          </label>
+          <label style="flex:1;padding:10px;border-radius:10px;border:1.5px solid var(--border);display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+            <input type="radio" name="stock" value="in_stock" {% if stock_filter == 'in_stock' %}checked{% endif %}> In Stock Only
+          </label>
+        </div>
+      </div>
+
+      <div>
+        <label style="font-weight:700;font-size:14px;display:block;margin-bottom:8px">Sort Order</label>
+        <select name="sort" style="width:100%;min-height:44px;border:1.5px solid var(--border);border-radius:10px;padding:0 12px;font-size:14px">
+          <option value="relevance" {% if sort == 'relevance' %}selected{% endif %}>Relevance / Recommended</option>
+          <option value="price_asc" {% if sort == 'price_asc' %}selected{% endif %}>Price: Low to High</option>
+          <option value="price_desc" {% if sort == 'price_desc' %}selected{% endif %}>Price: High to Low</option>
+        </select>
+      </div>
+
+      <div style="display:flex;gap:10px;margin-top:6px">
+        <button type="submit" style="flex:1;min-height:48px;border-radius:12px;background:var(--primary);color:#fff;font-weight:700;font-size:15px;border:0">Apply Filters</button>
+        <a href="{% url 'orders_customer:menu' %}?category={{ category|default:'all' }}" style="flex:1;min-height:48px;border-radius:12px;border:1.5px solid var(--border);background:#fff;color:var(--text);font-weight:700;font-size:15px;display:flex;align-items:center;justify-content:center">Reset</a>
+      </div>
+    </form>
+  </div>
 </div>
 
-<div id="cart-bar-container">
-  {% include "orders/customer/partials/cart_bar.html" %}
-</div>
+<script>
+  function openCatalogFilterModal() {
+    const modal = document.getElementById('catalogFilterModal');
+    if (modal) modal.style.display = 'flex';
+  }
+  function closeCatalogFilterModal() {
+    const modal = document.getElementById('catalogFilterModal');
+    if (modal) modal.style.display = 'none';
+  }
+</script>
 {% endblock %}
-
-

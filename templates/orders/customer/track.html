@@ -1,157 +1,151 @@
 {% extends "orders/customer/base.html" %}
-{% load currency %}
+{% load static %}
 
-{% block title %}Track Order #{{ order.pk }}{% endblock %}
-
-{% block header_subtitle %}Fresh Groceries Delivered Fast{% endblock %}
-
-{% block header_actions %}
-<div class="badge badge-warning icon-text">
-  {% include "partials/icon.html" with name="truck" %} Delivery
-</div>
-{% endblock %}
-
-{% comment %}
-Live delivery tracking for the guest who placed this order (authorised by their
-signed cookie server-side). Alpine opens the order.<id> WebSocket room and:
-  - updates the status ticker on "order.status" events, and
-  - appends chat bubbles on "order.message" events (de-duped by element id).
-The socket is best-effort: the status shown on load is the DB truth, and
-messaging still works over plain HTTP if the socket is unavailable. No maps
-widget, and the socket only ever carries status codes + short escaped text.
-
-status_labels is emitted as safe JSON so the ticker can show human labels.
-{% endcomment %}
+{% block title %}Track Order #{{ order.pk }} — FreshMart Supermarket{% endblock %}
 
 {% block content %}
 {{ status_labels|json_script:"status-labels" }}
 
-<div
-  id="order-tracker-container"
-  data-order-id="{{ order.pk }}"
-  data-initial-status="{{ order.status|escapejs }}"
-  class="mt-4">
+<div id="order-tracker-container"
+     data-order-id="{{ order.pk }}"
+     data-initial-status="{{ order.status|escapejs }}"
+     style="max-width:680px;margin:0 auto;width:100%;display:flex;flex-direction:column;gap:16px">
 
-  <a href="{% url 'orders_customer:menu' %}"
-     class="text-sm text-bold" style="color: var(--text-secondary); text-decoration: none;">
-    &larr; Back to Products
-  </a>
-
-  <div class="card my-4">
-    <div class="card-body">
-      <h2 class="text-xl text-bold mb-2">Order #{{ order.pk }}</h2>
-      <p class="text-sm text-muted mb-4">
-        Total (COD): <strong style="color: var(--text-primary);">{{ order.total_amount|money }}</strong>
-      </p>
-      
-      <div class="flex justify-between items-center mb-2" style="background-color: var(--bg-input); padding: var(--space-3); border-radius: var(--radius-md);">
-        <span class="text-sm text-muted">Status</span>
-        <span id="order-status-display" class="text-bold text-lg" style="color: var(--color-brand-primary);">
-          {% for code, label in status_labels.items %}{% if order.status == code %}{{ label }}{% endif %}{% endfor %}
-        </span>
-      </div>
-      
-      <p id="offline-warning" class="text-xs text-muted mt-2">
-        Live updates unavailable — status shown is current as of page load.
-      </p>
-    </div>
+  <!-- Back Link -->
+  <div style="display:flex;align-items:center;justify-content:space-between">
+    <a href="{% url 'orders_customer:my_orders' %}" 
+       style="display:inline-flex;align-items:center;gap:6px;min-height:44px;color:var(--primary);font-weight:700;font-size:14px">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M15 18l-6-6 6-6"></path>
+      </svg>
+      <span>All Orders</span>
+    </a>
+    <span style="font-size:13px;color:var(--text-muted)">Order #{{ order.pk }}</span>
   </div>
 
-  <!-- Timeline / Progress Tracker Card -->
-  <div class="timeline-card">
-    <div class="timeline-header">
-      <h3 class="timeline-title">
-        {% include "partials/icon.html" with name="clock" cls="icon text-primary" %} Order Progress
-      </h3>
+  <!-- Status Card Header -->
+  <div class="customer-card" style="padding:20px;background:#fff;display:flex;flex-direction:column;gap:10px">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
+      <div>
+        <span style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em">Live Tracking</span>
+        <h2 style="margin:2px 0 0;font-size:22px;font-weight:700;color:var(--text)">Order #{{ order.pk }}</h2>
+      </div>
       <div id="payment-status-badge">
         {% if order.status == "PAID" %}
-        <span class="badge badge-success" style="background: rgba(52, 211, 153, 0.15); color: #34d399; border: 1px solid #34d399; font-weight: 600; padding: 4px 10px; border-radius: 9999px; display: inline-flex; align-items: center; gap: 4px;">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Paid
-        </span>
+          <span style="background:#DEF7EC;color:#03543F;border:1px solid #BCF0DA;font-weight:700;padding:4px 10px;border-radius:20px;font-size:12px;display:inline-flex;align-items:center;gap:4px">
+            ✓ Paid
+          </span>
         {% else %}
-        <span class="badge badge-outline" style="background: rgba(242, 202, 80, 0.1); color: var(--rdh-primary); border: 1px solid var(--rdh-outline-variant); font-size: 0.75rem; padding: 4px 10px; border-radius: 9999px; display: inline-flex; align-items: center; gap: 4px;">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> Payment: COD
-        </span>
+          <span style="background:var(--primary-pill);color:var(--primary-dark);border:1px solid #C4E2CE;font-weight:700;padding:4px 10px;border-radius:20px;font-size:12px;display:inline-flex;align-items:center;gap:4px">
+            Cash / UPI on Delivery
+          </span>
         {% endif %}
       </div>
     </div>
 
-    <!-- Cancelled state banner -->
-    <div id="cancelled-notice" class="cancelled-card" {% if order.status != 'CANCEL' %}style="display: none;"{% endif %}>
-      <div class="cancelled-icon">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
-      </div>
-      <div>
-        <h4 class="text-md text-bold mb-1" style="color: var(--rdh-error);">Order Cancelled</h4>
-        <p class="text-xs text-muted" style="color: var(--rdh-on-surface-variant); margin: 0;">
-          This order has been cancelled. If you have any questions, please contact support or send us a message below.
-        </p>
-      </div>
-    </div>
-
-    <!-- Stepper Progress Timeline -->
-    <div id="timeline-wrapper" {% if order.status == 'CANCEL' %}style="display: none;"{% endif %}>
-      <div class="timeline-stepper">
-        {% for code, label in tracking_steps %}
-        {% with idx=forloop.counter0 %}
-        <div id="step-{{ code }}"
-             class="timeline-step {% if idx < current_step_index %}completed{% elif idx == current_step_index %}active{% else %}upcoming{% endif %}">
-          
-          {% if not forloop.last %}
-          <div id="line-{{ code }}" class="step-line {% if idx < current_step_index %}completed{% endif %}"></div>
-          {% endif %}
-
-          <div id="step-node-{{ code }}" class="step-node">
-            {% if idx < current_step_index %}
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-            {% elif idx == current_step_index %}
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="8"/></svg>
-            {% else %}
-            {{ forloop.counter }}
-            {% endif %}
-          </div>
-
-          <div class="step-content">
-            <span class="step-label">{{ label }}</span>
-          </div>
-        </div>
-        {% endwith %}
-        {% endfor %}
-      </div>
+    <!-- Active Status Banner -->
+    <div style="background:var(--primary-pill);border-radius:12px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between">
+      <span style="font-size:13px;color:var(--primary-dark)">Current Progress:</span>
+      <b id="order-status-display" style="font-size:15px;color:var(--primary-dark)">
+        {% for code, label in status_labels.items %}{% if order.status == code %}{{ label }}{% endif %}{% endfor %}
+      </b>
     </div>
   </div>
 
+  <!-- Progress Stepper Timeline Card -->
+  <div class="customer-card" style="padding:20px;background:#fff;display:flex;flex-direction:column;gap:14px">
+    <b style="font-size:16px">Delivery Timeline</b>
 
-  <div class="card">
-    <div class="card-body">
-      <h3 class="text-lg text-bold mb-3">Messages</h3>
-      <ul id="message-thread" class="msg-thread" style="list-style: none; padding: 0; margin-bottom: var(--space-4); max-height: 40vh; overflow-y: auto;">
-        {% for message in messages %}
-        {% include "orders/customer/partials/message.html" %}
-        {% endfor %}
-      </ul>
-
-      <form
-        id="chat-form"
-        hx-post="{% url 'orders_customer:message' order.pk %}"
-        hx-target="#message-thread"
-        hx-swap="beforeend"
-        hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
-        class="flex gap-2">
-        <input
-          type="text"
-          name="body"
-          maxlength="300"
-          required
-          placeholder="Message the driver…"
-          class="form-input"
-          style="flex: 1;">
-        <button type="submit" class="btn btn-primary">Send</button>
-      </form>
+    <!-- Cancelled notice if cancelled -->
+    <div id="cancelled-notice" style="{% if order.status != 'CANCEL' %}display: none;{% endif %}background:#FDE8E8;border:1px solid #F8B4B4;color:#9B1C1C;border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:10px">
+      <span style="font-size:20px">✕</span>
+      <div>
+        <b style="font-size:14px;display:block">Order Cancelled</b>
+        <span style="font-size:12px">This order has been cancelled. Please contact support or message our dispatch below if you have any questions.</span>
+      </div>
     </div>
+
+    <!-- Steps -->
+    <div id="timeline-wrapper" style="{% if order.status == 'CANCEL' %}display: none;{% else %}display:flex;flex-direction:column;gap:12px;padding:4px 0;{% endif %}">
+      {% for code, label in tracking_steps %}
+        {% with idx=forloop.counter0 %}
+          <div id="step-{{ code }}" style="display:flex;align-items:center;gap:14px;position:relative">
+            <!-- Node circle -->
+            <div id="step-node-{{ code }}" 
+                 style="width:32px;height:32px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;z-index:2;{% if idx < current_step_index %}background:var(--primary);color:#fff;{% elif idx == current_step_index %}background:var(--accent-gold);color:#171A17;box-shadow:0 0 0 4px var(--primary-pill);{% else %}background:#E5E9E3;color:var(--text-muted);{% endif %}">
+              {% if idx < current_step_index %}✓{% else %}{{ forloop.counter }}{% endif %}
+            </div>
+            
+            <div style="flex:1;display:flex;flex-direction:column;line-height:1.2">
+              <span style="font-size:14px;font-weight:{% if idx == current_step_index %}700{% elif idx < current_step_index %}600{% else %}500{% endif %};color:{% if idx == current_step_index %}var(--primary-dark){% elif idx < current_step_index %}var(--text){% else %}var(--text-muted){% endif %}">
+                {{ label }}
+              </span>
+              {% if idx == current_step_index %}
+                <span style="font-size:12px;color:var(--primary)">In progress right now</span>
+              {% endif %}
+            </div>
+          </div>
+        {% endwith %}
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Order Items & Total Card -->
+  <div class="customer-card" style="padding:20px;background:#fff;display:flex;flex-direction:column;gap:10px">
+    <b style="font-size:16px;border-bottom:1px solid var(--border);padding-bottom:8px">Purchased Items</b>
+    {% for item in order.items.all %}
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:14px">
+        <div>
+          <span style="font-weight:700;color:var(--primary-dark)">{{ item.quantity }}&times;</span>
+          <span>{{ item.name_snap }}</span>
+        </div>
+        <span style="font-weight:600">₹{{ item.line_total }}</span>
+      </div>
+    {% endfor %}
+    <div style="border-top:1px solid var(--border);padding-top:10px;display:flex;justify-content:space-between;font-size:16px;font-weight:700">
+      <span>Order Total:</span>
+      <span style="color:var(--primary-dark)">₹{{ order.total_amount }}</span>
+    </div>
+    <div style="font-size:13px;color:var(--text-muted);margin-top:2px">
+      Delivery: {{ order.contact_name }} ({{ order.contact_phone }}) · {{ order.instructions|default:"Address given at checkout" }}
+    </div>
+  </div>
+
+  <!-- Driver / Dispatch Chat Section -->
+  <div class="customer-card" style="padding:18px;background:#fff;display:flex;flex-direction:column;gap:12px">
+    <b style="font-size:16px">Delivery Messages</b>
+    <ul id="message-thread" style="list-style:none;padding:0;margin:0;max-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:8px">
+      {% for message in messages %}
+        {% include "orders/customer/partials/message.html" %}
+      {% empty %}
+        <li style="font-size:13px;color:var(--text-muted);padding:8px 0;text-align:center">No messages yet. Send a note to the delivery driver below.</li>
+      {% endfor %}
+    </ul>
+
+    <form id="chat-form"
+          hx-post="{% url 'orders_customer:message' order.pk %}"
+          hx-target="#message-thread"
+          hx-swap="beforeend"
+          hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+          style="display:flex;gap:8px;align-items:center;margin-top:4px">
+      <input type="text"
+             name="body"
+             maxlength="300"
+             required
+             placeholder="Message driver (e.g. Call when outside)..."
+             style="flex:1;min-height:44px;border:1.5px solid var(--border);border-radius:10px;padding:0 14px;font:400 14px 'DM Sans',sans-serif">
+      <button type="submit" class="btn-add" style="min-height:44px;min-width:60px">Send</button>
+    </form>
   </div>
 </div>
 
-{% load static %}
 <script src="{% static 'js/order-tracker.js' %}" defer></script>
+<script>
+  // Trigger sound effect deduplicated by order ID
+  document.addEventListener('DOMContentLoaded', () => {
+    if (typeof playOrderSuccessSound === 'function') {
+      playOrderSuccessSound('{{ order.pk }}');
+    }
+  });
+</script>
 {% endblock %}

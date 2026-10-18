@@ -4,58 +4,39 @@
 {% block title %}Verify Code — {{ BRAND_NAME|default:"FreshMart" }}{% endblock %}
 
 {% block content %}
-<div class="mt-4" style="max-width: 480px; margin-left: auto; margin-right: auto;">
-  <div class="text-center mb-6">
-    <p class="label-caps mb-2">Step 2 of 2</p>
-    <h2 class="headline-md">Enter Verification Code</h2>
-    <p class="text-sm text-muted mt-2">
-      {% if is_returning_customer %}
-        Welcome back! We've sent a verification code to <strong style="color: var(--text-primary);">{{ email }}</strong>
-      {% else %}
-        Welcome! We've sent a verification code to <strong style="color: var(--text-primary);">{{ email }}</strong> to create your account
-      {% endif %}
+<div style="max-width:440px;margin:20px auto 40px;width:100%;display:flex;flex-direction:column;gap:18px">
+  <div style="text-align:center;display:flex;flex-direction:column;gap:6px">
+    <span style="font-size:12px;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:0.04em">Verification</span>
+    <h1 style="margin:0;font-size:24px;font-weight:700;color:var(--text)">Enter Verification Code</h1>
+    <p style="margin:0;font-size:14px;color:var(--text-muted);line-height:1.4">
+      We sent a 6-digit code to <strong>{{ email }}</strong>
       <br>
-      <a href="{% url 'customer_auth:login' %}" class="text-xs" style="color: var(--color-brand-primary); text-decoration: underline;">
-        Wrong email or phone number?
-      </a>
+      <a href="{% url 'customer_auth:login' %}" style="font-size:12px;color:var(--primary);text-decoration:underline">Wrong email? Change here</a>
     </p>
   </div>
 
-  {% if messages %}
-    <div class="mb-4">
-      {% for message in messages %}
-        <div class="card card-body mb-2 {% if message.tags == 'success' %}badge-success{% else %}badge-danger{% endif %}" style="padding: 0.75rem 1rem; font-size: var(--fs-sm); border-radius: var(--radius-md);">
-          {{ message }}
-        </div>
-      {% endfor %}
-    </div>
-  {% endif %}
-
-  <div class="card card-body glow-hover" style="padding: 2rem; background: var(--rdh-surface-container);">
-    <form method="post" action="{% url 'customer_auth:verify_otp' %}">
+  <div class="customer-card" style="padding:24px;background:#fff;display:flex;flex-direction:column;gap:16px">
+    <form method="post" action="{% url 'customer_auth:verify_otp' %}" style="display:flex;flex-direction:column;gap:16px">
       {% csrf_token %}
 
-      <div class="form-group mb-6 text-center">
-        <label for="{{ form.otp.id_for_label }}" class="form-label mb-3">6-Digit OTP Code</label>
+      <div style="text-align:center">
+        <label for="{{ form.otp.id_for_label }}" style="display:block;font-size:13px;font-weight:700;margin-bottom:8px">Enter 6-Digit Code</label>
         {{ form.otp }}
         {% if form.otp.errors %}
-          <div class="text-xs mt-2" style="color: var(--rdh-error);">{{ form.otp.errors.0 }}</div>
+          <div style="font-size:12px;color:var(--danger);margin-top:6px">{{ form.otp.errors.0 }}</div>
         {% endif %}
       </div>
 
-      <button type="submit" class="btn btn-primary btn-block btn-lg glow-hover mb-4">
-        Verify & Sign In
+      <button type="submit" class="btn-add" style="width:100%;min-height:48px;border-radius:12px;font-size:15px">
+        Verify &amp; Continue &rarr;
       </button>
     </form>
 
-    <div class="divider-gold my-4" style="margin: 1.5rem 0;"></div>
-
-    <div class="text-center">
-      <p class="text-xs text-muted mb-2">Didn't receive the code?</p>
-
-      <form method="post" action="{% url 'customer_auth:resend_otp' %}" id="resend-form">
+    <div style="border-top:1px solid var(--border);padding-top:14px;text-align:center;display:flex;flex-direction:column;gap:8px">
+      <span style="font-size:13px;color:var(--text-muted)">Didn't receive the code?</span>
+      <form method="post" action="{% url 'customer_auth:resend_otp' %}" id="resend-form" style="margin:0">
         {% csrf_token %}
-        <button type="submit" id="resend-btn" class="btn btn-secondary btn-sm" disabled style="opacity: 0.6; cursor: not-allowed;">
+        <button type="submit" id="resend-btn" disabled style="min-height:36px;padding:0 14px;border-radius:8px;border:1px solid var(--border);background:#fff;font-size:13px;font-weight:600;opacity:0.6;cursor:not-allowed">
           Resend Code <span id="cooldown-timer"></span>
         </button>
       </form>
@@ -76,8 +57,8 @@
     btn.disabled = false;
     btn.style.opacity = "1";
     btn.style.cursor = "pointer";
-    btn.classList.add("btn-outline");
-    btn.classList.remove("btn-secondary");
+    btn.style.borderColor = "var(--primary)";
+    btn.style.color = "var(--primary)";
     if (timerSpan) timerSpan.textContent = "";
   }
 
@@ -86,8 +67,8 @@
     btn.disabled = true;
     btn.style.opacity = "0.6";
     btn.style.cursor = "not-allowed";
-    btn.classList.remove("btn-outline");
-    btn.classList.add("btn-secondary");
+    btn.style.borderColor = "var(--border)";
+    btn.style.color = "var(--text-muted)";
     if (timerSpan) timerSpan.textContent = "(" + seconds + "s)";
   }
 

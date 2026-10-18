@@ -32,6 +32,7 @@ urlpatterns = [
     path(_admin_path, admin.site.urls),
     # Customer delivery authentication & flow.
     path("order/auth/", include("apps.customer_auth.urls")),
+    path("order/assistant/", include("apps.swecha.urls")),
     path("order/", include("apps.orders.urls_customer")),
     # Agent delivery dashboard (login required, role=AGENT).
     path("agent/", include("apps.orders.urls_agent")),

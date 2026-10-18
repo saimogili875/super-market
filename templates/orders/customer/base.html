@@ -1,96 +1,889 @@
-<!DOCTYPE html>
+{% load static %}<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}Grocery Order{% endblock %} — {{ BRAND_SHORT }} · {{ BRAND_NAME }}</title>
-  {% load static %}
-  <link rel="stylesheet" href="{% static 'css/design-tokens.css' %}">
-  <!-- Open Graph / Social Media Preview -->
-  <meta property="og:title" content="{{ BRAND_NAME }} — {{ BRAND_TAGLINE }}" />
-  <meta property="og:description" content="Fresh groceries, daily essentials, organic fruits & vegetables, and pantry staples delivered directly to your doorstep." />
-  <meta property="og:image" content="https://www.freshmart.in/static/images/share-preview.jpg" />
-  <meta property="og:url" content="https://www.freshmart.in" />
-  <meta property="og:type" content="website" />
-
-  <!-- Twitter Card -->
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="{{ BRAND_NAME }} — {{ BRAND_TAGLINE }}" />
-  <meta name="twitter:description" content="Fresh groceries, daily essentials, organic produce, and pantry staples delivered fast." />
-  <meta name="twitter:image" content="https://www.freshmart.in/static/images/share-preview.jpg" />
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <title>{% block title %}{{ BRAND_NAME|default:"FreshMart" }}{% endblock %} — {{ BRAND_TAGLINE|default:"Fresh groceries, delivered fast" }}</title>
+  
+  <!-- DM Sans Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap" rel="stylesheet">
+  
+  <!-- HTMX & Alpine.js -->
   <script src="https://unpkg.com/htmx.org@1.9.10"></script>
   <script defer src="https://unpkg.com/alpinejs@3.13.3/dist/cdn.min.js"></script>
+
+  <!-- Open Graph / Meta -->
+  <meta property="og:title" content="{{ BRAND_NAME }} — {{ BRAND_TAGLINE }}" />
+  <meta property="og:description" content="Fresh groceries, daily essentials, organic fruits & vegetables, and pantry staples delivered directly to your doorstep." />
+  <meta property="og:type" content="website" />
+  <meta name="theme-color" content="#176B45">
+
+  <style>
+    :root {
+      --bg: #F7F8F5;
+      --surface: #FFFFFF;
+      --border: #E5E9E3;
+      --primary: #176B45;
+      --primary-dark: #104C32;
+      --primary-pill: #E8F4EC;
+      --accent-gold: #F4B942;
+      --danger: #B3261E;
+      --text: #171A17;
+      --text-muted: #5C645D;
+      --text-secondary: #4F5A52;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+      --shadow-md: 0 4px 14px rgba(0,0,0,0.08);
+      --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-xl: 20px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: var(--text);
+      background-color: var(--bg);
+      -webkit-font-smoothing: antialiased;
+      line-height: 1.45;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    button {
+      font-family: inherit;
+      cursor: pointer;
+    }
+
+    input, select, textarea {
+      font-family: inherit;
+    }
+
+    /* Accessibility touch targets */
+    button, a.touch-target, .btn-action {
+      min-height: 44px;
+    }
+
+    .noscroll {
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+    .noscroll::-webkit-scrollbar {
+      display: none;
+    }
+
+    /* Common Card */
+    .customer-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .customer-card:hover {
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* Image Placeholder */
+    .ph {
+      background: var(--primary-pill);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-secondary);
+      font-size: 13px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .ph img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    /* Stepper Control */
+    .qty-stepper {
+      display: inline-flex;
+      align-items: center;
+      background: var(--primary);
+      border-radius: 10px;
+      color: #fff;
+      overflow: hidden;
+    }
+
+    .qty-stepper button {
+      width: 34px;
+      min-height: 44px;
+      border: 0;
+      background: transparent;
+      color: #fff;
+      font-size: 18px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.1s ease;
+    }
+
+    .qty-stepper button:active {
+      background: rgba(255,255,255,0.2);
+    }
+
+    .qty-stepper span {
+      font-weight: 700;
+      font-size: 14px;
+      min-width: 16px;
+      text-align: center;
+    }
+
+    /* Add Button */
+    .btn-add {
+      min-height: 44px;
+      min-width: 64px;
+      border: 0;
+      border-radius: 10px;
+      background: var(--primary);
+      color: #fff;
+      font-weight: 700;
+      font-size: 14px;
+      padding: 0 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s ease, transform 0.1s ease;
+    }
+
+    .btn-add:hover {
+      background: var(--primary-dark);
+    }
+
+    .btn-add:active {
+      transform: scale(0.97);
+    }
+
+    /* Out of stock badge */
+    .badge-out-of-stock {
+      color: var(--danger);
+      font-weight: 700;
+      font-size: 13px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* Container wrapper */
+    .app-shell {
+      width: 100%;
+      max-width: 1200px;
+      margin: 0 auto;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    /* Customer Header */
+    .supermarket-header {
+      background: #FFFFFF;
+      border-bottom: 1px solid var(--border);
+      padding: 12px 16px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      position: sticky;
+      top: 0;
+      z-index: 900;
+    }
+
+    .header-top-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .store-brand-logo {
+      font-weight: 700;
+      font-size: 22px;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      text-decoration: none;
+    }
+
+    .store-brand-logo svg {
+      color: var(--primary);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .sound-toggle-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      transition: all 0.15s ease;
+    }
+
+    .sound-toggle-btn:hover {
+      background: var(--bg);
+      color: var(--primary);
+      border-color: var(--primary);
+    }
+
+    .account-link-btn {
+      min-height: 44px;
+      padding: 0 14px;
+      border-radius: var(--radius-md);
+      display: inline-flex;
+      align-items: center;
+      font-weight: 700;
+      font-size: 14px;
+      color: var(--primary-dark);
+      background: var(--primary-pill);
+      transition: all 0.15s ease;
+    }
+
+    .account-link-btn:hover {
+      background: #d4ebd9;
+    }
+
+    /* Location Picker Bar */
+    .location-picker-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 44px;
+      font-size: 14px;
+      color: var(--primary-dark);
+      font-weight: 500;
+      background: transparent;
+      border: 0;
+      padding: 0 4px;
+      text-align: left;
+    }
+
+    .location-picker-btn:hover {
+      color: var(--primary);
+    }
+
+    /* Search Input Box */
+    .header-search-form {
+      position: relative;
+      display: block;
+      width: 100%;
+    }
+
+    .search-icon-wrapper {
+      position: absolute;
+      left: 14px;
+      top: 0;
+      bottom: 0;
+      display: flex;
+      align-items: center;
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+
+    .header-search-input {
+      width: 100%;
+      min-height: 48px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 0 14px 0 44px;
+      font: 400 15px 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      transition: border-color 0.15s ease, background 0.15s ease;
+    }
+
+    .header-search-input:focus {
+      outline: none;
+      border-color: var(--primary);
+      background: #FFFFFF;
+    }
+
+    /* Main Content Area */
+    .main-scroll-area {
+      flex: 1;
+      padding: 16px 16px 84px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    @media (min-width: 1024px) {
+      .main-scroll-area {
+        padding-bottom: 40px;
+      }
+    }
+
+    /* Floating Swecha Button */
+    .swecha-floating-btn {
+      position: fixed;
+      bottom: 76px;
+      right: 18px;
+      width: 58px;
+      height: 58px;
+      border-radius: 29px;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color: #fff;
+      border: 2px solid #FFFFFF;
+      box-shadow: 0 6px 20px rgba(16, 76, 50, 0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 980;
+      cursor: pointer;
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+    }
+
+    .swecha-floating-btn:hover {
+      transform: scale(1.08);
+      box-shadow: 0 8px 24px rgba(16, 76, 50, 0.45);
+    }
+
+    .swecha-floating-btn:active {
+      transform: scale(0.95);
+    }
+
+    .swecha-floating-badge {
+      position: absolute;
+      top: -3px;
+      right: -3px;
+      width: 16px;
+      height: 16px;
+      border-radius: 8px;
+      background: var(--accent-gold);
+      border: 2px solid #FFFFFF;
+    }
+
+    /* Slide-over Swecha Drawer Modal */
+    .swecha-drawer-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      display: none;
+      backdrop-filter: blur(2px);
+    }
+
+    .swecha-drawer {
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 100%;
+      max-width: 440px;
+      background: var(--bg);
+      z-index: 1001;
+      display: flex;
+      flex-direction: column;
+      transform: translateX(100%);
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: -4px 0 30px rgba(0,0,0,0.15);
+    }
+
+    .swecha-drawer.open {
+      transform: translateX(0);
+    }
+
+    /* Modal Styles */
+    .customer-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      z-index: 1100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      backdrop-filter: blur(2px);
+    }
+
+    .customer-modal-card {
+      background: #FFFFFF;
+      border-radius: var(--radius-xl);
+      max-width: 420px;
+      width: 100%;
+      padding: 24px;
+      box-shadow: var(--shadow-lg);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+  </style>
+
+  {% block extra_head %}{% endblock %}
 </head>
 <body>
-  <header class="app-header">
-    <div>
-      <h1 class="app-header__title">{{ BRAND_SHORT }} · {{ BRAND_NAME }}</h1>
-      <span class="app-header__subtitle">Fresh Grocery Delivery</span>
-    </div>
-    <div class="flex items-center gap-2" style="display: flex; align-items: center; gap: 0.65rem; flex-wrap: wrap; justify-content: flex-end;">
-      <button type="button" 
-              onclick="toggleTheme()" 
-              class="btn btn-xs theme-toggle-btn" 
-              style="background: #2a2a2a; border: 1px solid #99907c; color: #e5e2e1; padding: 0.4rem 0.85rem; border-radius: 9999px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem; transition: all 0.2s ease;">
-        ☀️ Light Mode
-      </button>
-      {% include "partials/share_modal.html" %}
-      <a href="{% url 'orders_customer:my_orders' %}" class="btn btn-xs btn-outline" style="border-color: #f2ca50; color: #f2ca50; padding: 0.35rem 0.65rem; border-radius: 0.25rem; font-weight: 600; text-decoration: none;">
-        📦 My Orders
-      </a>
-      {% if delivery_customer %}
-        <span class="text-xs text-muted" title="{{ delivery_customer.email }}">
-          {{ delivery_customer.email|truncatechars:14 }}
+  <div class="app-shell">
+    <!-- Supermarket Header -->
+    <header class="supermarket-header">
+      <div class="header-top-row">
+        <a href="{% url 'home' %}" class="store-brand-logo">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 4h2.5l2 11h10l2-8H7"></path>
+            <circle cx="9" cy="19.5" r="1.3"></circle>
+            <circle cx="17" cy="19.5" r="1.3"></circle>
+          </svg>
+          <span>{{ BRAND_NAME|default:"FreshMart" }}</span>
+        </a>
+
+        <div class="header-actions">
+          <!-- Sound Preference Button -->
+          <button type="button" 
+                  id="soundToggleBtn" 
+                  class="sound-toggle-btn" 
+                  onclick="toggleSoundPreference()"
+                  title="Toggle Sound Effects">
+            🔊
+          </button>
+
+          <!-- Account / Sign In -->
+          {% if delivery_customer %}
+            <a href="{% url 'orders_customer:settings' %}" class="account-link-btn" title="{{ delivery_customer.phone }}">
+              <span>👤 {{ delivery_customer.name|default:delivery_customer.phone|truncatechars:12 }}</span>
+            </a>
+          {% else %}
+            <a href="{% url 'customer_auth:login' %}?next={{ request.path }}" class="account-link-btn">
+              <span>Sign in</span>
+            </a>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Location Selector Bar -->
+      <button type="button" class="location-picker-btn" onclick="openLocationModal()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color:var(--primary);flex-shrink:0">
+          <path d="M12 21s7-6.2 7-11.5a7 7 0 0 0-14 0C5 14.8 12 21 12 21z"></path>
+          <circle cx="12" cy="9.5" r="2.5"></circle>
+        </svg>
+        <span style="display:flex;align-items:center;gap:4px">
+          <span>Delivering to <strong>{{ customer_location|default:"Hyderabad" }}</strong></span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M6 9l6 6 6-6"></path>
+          </svg>
         </span>
-        <a href="{% url 'customer_auth:logout' %}" class="btn btn-xs btn-outline">Logout</a>
-      {% else %}
-        <a href="{% url 'customer_auth:login' %}" class="btn btn-xs btn-outline">Sign In</a>
-      {% endif %}
-      <div class="table-badge">
-        Delivery
+      </button>
+
+      <!-- Global Search Bar -->
+      <form action="{% url 'orders_customer:menu' %}" method="GET" class="header-search-form">
+        <span class="search-icon-wrapper">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="6.5"></circle>
+            <path d="M16 16l4.5 4.5"></path>
+          </svg>
+        </span>
+        <input type="text" 
+               name="search" 
+               value="{{ search|default:'' }}"
+               aria-label="Search products" 
+               placeholder="Search rice, milk, cooking oil, brands..." 
+               class="header-search-input">
+      </form>
+    </header>
+
+    <!-- Global Messages Toast -->
+    {% if messages %}
+      <div style="padding: 10px 16px 0;">
+        {% for message in messages %}
+          <div style="padding: 10px 14px; border-radius: 12px; margin-bottom: 8px; font-size: 14px; font-weight: 500; display: flex; align-items: center; justify-content: space-between; {% if message.tags == 'error' %}background:#FDE8E8;color:#9B1C1C;border:1px solid #F8B4B4;{% elif message.tags == 'success' %}background:#DEF7EC;color:#03543F;border:1px solid #BCF0DA;{% else %}background:#E1EFFE;color:#1E429F;border:1px solid #B4C6FC;{% endif %}">
+            <span>{{ message }}</span>
+            <button type="button" onclick="this.parentElement.remove()" style="border:0;background:transparent;font-size:16px;cursor:pointer;color:inherit">&times;</button>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <!-- Main Content Body -->
+    <main class="main-scroll-area">
+      {% block content %}{% endblock %}
+    </main>
+
+    <!-- Floating Swecha AI Button -->
+    <button type="button" 
+            class="swecha-floating-btn" 
+            onclick="toggleSwechaDrawer()" 
+            aria-label="Ask Swecha AI Shopping Assistant"
+            title="Ask Swecha AI Shopping Assistant">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"></path>
+        <path d="M19 16l.7 1.8 1.8.7-1.8.7L19 21l-.7-1.8-1.8-.7 1.8-.7z"></path>
+      </svg>
+      <span class="swecha-floating-badge" aria-hidden="true"></span>
+    </button>
+
+    <!-- Bottom Navigation (Mobile & Tablet) -->
+    {% include "orders/customer/partials/bottom_nav.html" %}
+  </div>
+
+  <!-- Location Picker Modal -->
+  <div id="locationModal" class="customer-modal-backdrop" style="display:none;">
+    <div class="customer-modal-card">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <h3 style="margin:0;font-size:18px;font-weight:700;color:var(--text)">Choose Delivery Area</h3>
+        <button type="button" onclick="closeLocationModal()" style="border:0;background:transparent;font-size:20px;color:var(--text-muted);cursor:pointer">&times;</button>
+      </div>
+      <p style="margin:0;font-size:13px;color:var(--text-muted)">Select your neighbourhood to check delivery slots and local store inventory:</p>
+      
+      <form action="{% url 'orders_customer:set_location' %}" method="POST" style="display:flex;flex-direction:column;gap:8px">
+        {% csrf_token %}
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          {% for loc in "Hyderabad,Banjara Hills,Jubilee Hills,Hitec City,Gachibowli,Madhapur,Kondapur,Secunderabad"|make_list %}
+          {% endfor %}
+          <button type="submit" name="location" value="Hyderabad" class="customer-card" style="padding:10px;text-align:center;font-weight:600;font-size:13px">Hyderabad</button>
+          <button type="submit" name="location" value="Banjara Hills" class="customer-card" style="padding:10px;text-align:center;font-weight:600;font-size:13px">Banjara Hills</button>
+          <button type="submit" name="location" value="Jubilee Hills" class="customer-card" style="padding:10px;text-align:center;font-weight:600;font-size:13px">Jubilee Hills</button>
+          <button type="submit" name="location" value="Hitec City" class="customer-card" style="padding:10px;text-align:center;font-weight:600;font-size:13px">Hitec City</button>
+          <button type="submit" name="location" value="Gachibowli" class="customer-card" style="padding:10px;text-align:center;font-weight:600;font-size:13px">Gachibowli</button>
+          <button type="submit" name="location" value="Madhapur" class="customer-card" style="padding:10px;text-align:center;font-weight:600;font-size:13px">Madhapur</button>
+          <button type="submit" name="location" value="Kondapur" class="customer-card" style="padding:10px;text-align:center;font-weight:600;font-size:13px">Kondapur</button>
+          <button type="submit" name="location" value="Secunderabad" class="customer-card" style="padding:10px;text-align:center;font-weight:600;font-size:13px">Secunderabad</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Swecha Drawer Slide-over -->
+  <div id="swechaBackdrop" class="swecha-drawer-backdrop" onclick="toggleSwechaDrawer()"></div>
+  <div id="swechaDrawer" class="swecha-drawer">
+    <header style="background:var(--primary);color:#fff;padding:12px 14px;display:flex;align-items:center;gap:10px;flex-shrink:0">
+      <div style="flex:1;display:flex;flex-direction:column;line-height:1.2">
+        <b style="font-size:17px;display:flex;align-items:center;gap:6px">
+          <span>SWECHA AI</span>
+          <span style="font-size:10px;padding:2px 6px;border-radius:10px;background:var(--accent-gold);color:#171A17;font-weight:700">Groq</span>
+        </b>
+        <span style="font-size:12px;opacity:.9">Your smart supermarket assistant</span>
+      </div>
+      <button type="button" onclick="toggleSwechaDrawer()" aria-label="Close" style="width:40px;height:40px;border:0;background:transparent;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <path d="M18 6L6 18M6 6l12 12"></path>
+        </svg>
+      </button>
+    </header>
+
+    <!-- Chat Messages Scroll Area -->
+    <div id="swechaMessages" class="noscroll" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px">
+      <!-- Welcome Message -->
+      <div class="customer-card" style="max-width:320px;padding:12px 14px;font-size:14px;line-height:1.45;border-radius:16px 16px 16px 4px">
+        Hi! I'm <strong>Swecha</strong>, your AI shopping assistant powered by Groq. I can help you find groceries, compare pack sizes, plan within your budget, and track orders. What are you looking for today?
+      </div>
+
+      <!-- Quick Suggestion Chips -->
+      <div style="display:flex;flex-wrap:wrap;gap:6px" id="swechaQuickChips">
+        <button type="button" onclick="sendSwechaPrompt('Find basmati rice under ₹300')" style="min-height:36px;padding:0 12px;border-radius:18px;border:1.5px solid var(--primary);background:#fff;color:var(--primary-dark);font-weight:600;font-size:12px">Rice under ₹300</button>
+        <button type="button" onclick="sendSwechaPrompt('What cooking oils are in stock?')" style="min-height:36px;padding:0 12px;border-radius:18px;border:1.5px solid var(--primary);background:#fff;color:var(--primary-dark);font-weight:600;font-size:12px">Cooking Oils</button>
+        <button type="button" onclick="sendSwechaPrompt('Show dairy and milk essentials')" style="min-height:36px;padding:0 12px;border-radius:18px;border:1.5px solid var(--primary);background:#fff;color:var(--primary-dark);font-weight:600;font-size:12px">Milk &amp; Dairy</button>
+        <button type="button" onclick="sendSwechaPrompt('Find healthy breakfast snacks')" style="min-height:36px;padding:0 12px;border-radius:18px;border:1.5px solid var(--primary);background:#fff;color:var(--primary-dark);font-weight:600;font-size:12px">Breakfast Snacks</button>
       </div>
     </div>
-  </header>
 
-  <main class="container {% block container_class %}{% endblock %} customer-main-container" id="main-content">
-    {% block content %}{% endblock %}
-  </main>
+    <!-- Drawer Input Bar -->
+    <div style="background:#fff;border-top:1px solid var(--border);padding:10px 12px 16px;display:flex;gap:8px;align-items:center;flex-shrink:0">
+      <input type="text" 
+             id="swechaInput" 
+             placeholder="Ask about groceries or budget..." 
+             onkeydown="if(event.key==='Enter') sendSwechaMessage()"
+             style="flex:1;min-width:0;min-height:48px;border:1.5px solid var(--border);border-radius:24px;padding:0 16px;font:400 14px 'DM Sans',sans-serif;background:var(--bg)">
+      <button type="button" 
+              onclick="sendSwechaMessage()" 
+              aria-label="Send" 
+              style="width:48px;height:48px;border:0;border-radius:24px;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 12l16-8-6 16-3-7z"></path>
+        </svg>
+      </button>
+    </div>
+  </div>
 
-  {% include "orders/customer/partials/bottom_nav.html" %}
+  <!-- Audio Assets (Phase 17 - Exactly Two Sound Effects) -->
+  <audio id="audioOrderSuccess" preload="auto">
+    <source src="{% static 'audio/order_success.mp3' %}" type="audio/mpeg">
+    <source src="{% static 'audio/order_success.wav' %}" type="audio/wav">
+  </audio>
+  <audio id="audioSwechaResponse" preload="auto">
+    <source src="{% static 'audio/swecha_response.mp3' %}" type="audio/mpeg">
+    <source src="{% static 'audio/swecha_response.wav' %}" type="audio/wav">
+  </audio>
 
+  <!-- Client-side Audio & Swecha JavaScript Engine -->
   <script>
-    function applyTheme(theme) {
-      document.documentElement.setAttribute('data-theme', theme);
-      document.body.setAttribute('data-theme', theme);
-      localStorage.setItem('rdh_theme', theme);
-      const btns = document.querySelectorAll('.theme-toggle-btn');
+    /* ==============================================================
+       PHASE 17: EXACTLY TWO SOUND EFFECTS ENGINE
+       ============================================================== */
+    const SOUND_PREF_KEY = 'freshmart_sound_enabled';
+
+    function isSoundEnabled() {
+      const val = localStorage.getItem(SOUND_PREF_KEY);
+      return val === null || val === '1' || val === 'true';
+    }
+
+    function updateSoundIcons() {
+      const enabled = isSoundEnabled();
+      const btns = document.querySelectorAll('#soundToggleBtn, .sound-pref-btn');
       btns.forEach(btn => {
-        btn.innerHTML = theme === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
-        btn.setAttribute('aria-label', `Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`);
+        btn.textContent = enabled ? '🔊' : '🔇';
+        btn.setAttribute('aria-label', enabled ? 'Sound effects enabled' : 'Sound effects disabled');
       });
     }
 
-    function toggleTheme() {
-      const current = document.documentElement.getAttribute('data-theme') || 'dark';
-      const next = current === 'dark' ? 'light' : 'dark';
-      applyTheme(next);
+    function toggleSoundPreference() {
+      const current = isSoundEnabled();
+      const next = !current;
+      localStorage.setItem(SOUND_PREF_KEY, next ? '1' : '0');
+      updateSoundIcons();
+      showToast(next ? 'Sound effects enabled 🔊' : 'Sound effects muted 🔇');
     }
 
-    (function() {
-      const saved = localStorage.getItem('rdh_theme') || 'dark';
-      document.documentElement.setAttribute('data-theme', saved);
-      document.body.setAttribute('data-theme', saved);
-    })();
+    // SOUND 1: ORDER SUCCESS SOUND
+    // Plays ONCE for confirmed order, deduplicated using orderId
+    function playOrderSuccessSound(orderId) {
+      if (!orderId || !isSoundEnabled()) return;
+      const key = 'played_order_' + orderId;
+      if (sessionStorage.getItem(key)) return; // Deduplicated!
 
+      const audio = document.getElementById('audioOrderSuccess');
+      if (audio) {
+        audio.currentTime = 0;
+        audio.play().then(() => {
+          sessionStorage.setItem(key, '1');
+        }).catch(err => {
+          console.warn('[Audio] Autoplay blocked:', err);
+        });
+      }
+    }
+
+    // SOUND 2: SWECHA RESPONSE SOUND
+    // Plays ONCE per completed assistant response, deduplicated using messageId
+    function playSwechaResponseSound(messageId) {
+      if (!messageId || !isSoundEnabled()) return;
+      const key = 'played_swecha_' + messageId;
+      if (sessionStorage.getItem(key)) return; // Deduplicated!
+
+      const audio = document.getElementById('audioSwechaResponse');
+      if (audio) {
+        audio.currentTime = 0;
+        audio.play().then(() => {
+          sessionStorage.setItem(key, '1');
+        }).catch(err => {
+          console.warn('[Audio] Autoplay blocked:', err);
+        });
+      }
+    }
+
+    // Modal & Toast Helpers
+    function openLocationModal() {
+      const modal = document.getElementById('locationModal');
+      if (modal) modal.style.display = 'flex';
+    }
+
+    function closeLocationModal() {
+      const modal = document.getElementById('locationModal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function showToast(msg) {
+      const toast = document.createElement('div');
+      toast.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#104C32;color:#fff;padding:8px 16px;border-radius:20px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.15);transition:opacity 0.3s ease';
+      toast.textContent = msg;
+      document.body.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+      }, 2500);
+    }
+
+    /* ==============================================================
+       PHASE 16: SWECHA AI DRAWER ENGINE
+       ============================================================== */
+    let swechaHistory = [];
+
+    function toggleSwechaDrawer() {
+      const drawer = document.getElementById('swechaDrawer');
+      const backdrop = document.getElementById('swechaBackdrop');
+      if (!drawer) return;
+      const isOpen = drawer.classList.contains('open');
+      if (isOpen) {
+        drawer.classList.remove('open');
+        if (backdrop) backdrop.style.display = 'none';
+      } else {
+        drawer.classList.add('open');
+        if (backdrop) backdrop.style.display = 'block';
+        const input = document.getElementById('swechaInput');
+        if (input) setTimeout(() => input.focus(), 300);
+      }
+    }
+
+    function sendSwechaPrompt(text) {
+      const input = document.getElementById('swechaInput');
+      if (input) {
+        input.value = text;
+        sendSwechaMessage();
+      }
+    }
+
+    async function sendSwechaMessage() {
+      const input = document.getElementById('swechaInput');
+      if (!input) return;
+      const message = input.value.trim();
+      if (!message) return;
+
+      input.value = '';
+      const msgContainer = document.getElementById('swechaMessages');
+
+      // Append user bubble
+      const userBubble = document.createElement('div');
+      userBubble.style.cssText = 'align-self:flex-end;background:var(--primary);color:#fff;border-radius:16px 16px 4px 16px;padding:10px 14px;max-width:280px;font-size:14px;line-height:1.4';
+      userBubble.textContent = message;
+      msgContainer.appendChild(userBubble);
+
+      // Append thinking indicator
+      const thinkingEl = document.createElement('div');
+      thinkingEl.id = 'swechaThinking';
+      thinkingEl.className = 'customer-card';
+      thinkingEl.style.cssText = 'max-width:260px;padding:10px 14px;font-size:13px;color:var(--text-muted);display:flex;align-items:center;gap:8px';
+      thinkingEl.innerHTML = '<span style="animation:spin 1s linear infinite">✨</span> Swecha is checking catalog...';
+      msgContainer.appendChild(thinkingEl);
+      msgContainer.scrollTop = msgContainer.scrollHeight;
+
+      // Update history
+      swechaHistory.push({ role: 'user', content: message });
+
+      try {
+        const response = await fetch("{% url 'swecha:chat_api' %}", {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+          },
+          body: JSON.stringify({ message: message, history: swechaHistory })
+        });
+
+        const data = await response.json();
+        const thinking = document.getElementById('swechaThinking');
+        if (thinking) thinking.remove();
+
+        // Append assistant response
+        const aiBubble = document.createElement('div');
+        aiBubble.className = 'customer-card';
+        aiBubble.style.cssText = 'max-width:320px;padding:12px 14px;font-size:14px;line-height:1.45;border-radius:16px 16px 16px 4px';
+        aiBubble.innerHTML = data.response.replace(/\n/g, '<br>');
+        msgContainer.appendChild(aiBubble);
+
+        // Append product cards if found
+        if (data.products && data.products.length > 0) {
+          data.products.forEach(p => {
+            const card = document.createElement('div');
+            card.className = 'customer-card';
+            card.style.cssText = 'padding:10px 12px;display:flex;gap:10px;align-items:center;background:#fff';
+            card.innerHTML = `
+              <div class="ph" style="width:52px;height:52px;flex:0 0 52px;border-radius:8px">
+                <img src="${p.image_url}" alt="${p.name}" onerror="this.src='/static/images/exterior.jpeg'">
+              </div>
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:1px">
+                <a href="/order/product/${p.id}/" style="font-weight:700;font-size:14px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.name}</a>
+                <span style="font-size:12px;color:var(--text-muted)">${p.unit} · ${p.in_stock ? 'In stock' : '<span style=\"color:var(--danger)\">Sold out</span>'}</span>
+                <span style="font-weight:700;font-size:15px;color:var(--primary-dark)">${p.price}</span>
+              </div>
+              ${p.in_stock ? `
+                <form action="{% url 'orders_customer:cart_add' %}" method="POST" style="margin:0" hx-post="{% url 'orders_customer:cart_add' %}" hx-swap="none">
+                  <input type="hidden" name="csrfmiddlewaretoken" value="${getCookie('csrftoken')}">
+                  <input type="hidden" name="menu_item_id" value="${p.id}">
+                  <input type="hidden" name="quantity" value="1">
+                  <button type="submit" class="btn-add" style="min-height:36px;min-width:52px;font-size:13px">Add</button>
+                </form>
+              ` : `
+                <button disabled style="min-height:36px;min-width:52px;border:0;border-radius:10px;background:#E5E9E3;color:#8E968F;font-weight:700;font-size:12px">Sold</button>
+              `}
+            `;
+            msgContainer.appendChild(card);
+          });
+        }
+
+        // Trigger Sound Effect 2 (Deduplicated via message_id)
+        if (data.audio_trigger && data.message_id) {
+          playSwechaResponseSound(data.message_id);
+        }
+
+        swechaHistory.push({ role: 'assistant', content: data.response });
+        msgContainer.scrollTop = msgContainer.scrollHeight;
+
+      } catch (err) {
+        console.error('Swecha chat error:', err);
+        const thinking = document.getElementById('swechaThinking');
+        if (thinking) thinking.remove();
+
+        const errBubble = document.createElement('div');
+        errBubble.className = 'customer-card';
+        errBubble.style.cssText = 'max-width:300px;padding:12px;font-size:13px;color:var(--danger);background:#FFF5F5';
+        errBubble.textContent = 'Sorry, I encountered an issue connecting. Please try again.';
+        msgContainer.appendChild(errBubble);
+      }
+    }
+
+    function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i].trim();
+          if (cookie.substring(0, name.length + 1) === (name + '=')) {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;
+          }
+        }
+      }
+      return cookieValue;
+    }
+
+    // Initialize on page load
     document.addEventListener('DOMContentLoaded', () => {
-      const saved = localStorage.getItem('rdh_theme') || 'dark';
-      applyTheme(saved);
+      updateSoundIcons();
     });
 
-    document.body.addEventListener('htmx:afterSwap', () => {
-      const saved = localStorage.getItem('rdh_theme') || 'dark';
-      applyTheme(saved);
+    // Listen for HTMX cart update events to refresh cart badge
+    document.body.addEventListener('cartUpdated', () => {
+      fetch("{% url 'orders_customer:cart' %}")
+        .then(r => r.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(html, 'text/html');
+          const badge = doc.querySelector('.mobile-bottom-nav__badge, .cart-nav-badge');
+          const localBadge = document.querySelector('.mobile-bottom-nav__badge, #nav-cart-badge');
+          if (localBadge && badge) {
+            localBadge.textContent = badge.textContent.trim();
+            localBadge.style.display = badge.textContent.trim() === '0' ? 'none' : 'flex';
+          }
+        }).catch(() => {});
     });
   </script>
 </body>

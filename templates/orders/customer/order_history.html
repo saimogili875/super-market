@@ -1,171 +1,136 @@
 {% extends "orders/customer/base.html" %}
 {% load static %}
 
-{% block title %}My Order History — {{ BRAND_SHORT }} · {{ BRAND_NAME }}{% endblock %}
+{% block title %}Order History — FreshMart Supermarket{% endblock %}
 
 {% block content %}
-<div class="container" style="max-width: 720px; margin: 0 auto; padding-top: 1.5rem; padding-bottom: 3rem;">
-  
-  <!-- Header -->
-  <div class="flex items-center justify-between mb-6" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+<div style="max-width:720px;margin:0 auto;width:100%;display:flex;flex-direction:column;gap:16px">
+  <!-- Top Header -->
+  <div style="display:flex;align-items:center;justify-content:space-between">
     <div>
-      <p class="label-caps mb-1" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--color-brand-primary);">Account History</p>
-      <h2 class="headline-md" style="margin: 0; font-size: 1.75rem; font-weight: 700;">My Grocery Orders</h2>
+      <span style="font-size:12px;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:0.04em">Purchases</span>
+      <h1 style="margin:2px 0 0;font-size:22px;font-weight:700">My Grocery Orders</h1>
     </div>
-    <a href="{% url 'orders_customer:menu' %}" class="btn btn-sm btn-outline" style="border-color: var(--color-brand-primary); color: var(--color-brand-primary); padding: 0.5rem 1rem; border-radius: var(--radius-md);">
-      &larr; Products Catalog
+    <a href="{% url 'orders_customer:menu' %}" style="min-height:40px;padding:0 14px;border-radius:10px;border:1.5px solid var(--border);background:#fff;color:var(--text);font-weight:700;font-size:13px;display:flex;align-items:center">
+      &larr; Groceries
     </a>
   </div>
 
+  <!-- Live Active Order Banner if present -->
   {% if active_order %}
-    <!-- Active Order Banner Tracker -->
-    <div class="card card-body mb-6 glow-hover" style="background: linear-gradient(135deg, rgba(234, 179, 8, 0.15) 0%, rgba(202, 138, 4, 0.05) 100%); border: 1px solid var(--color-brand-primary); border-radius: var(--radius-lg); padding: 1.25rem; margin-bottom: 1.5rem;">
-      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem;">
-        <div>
-          <span class="badge" style="background: var(--color-brand-primary); color: #000; padding: 0.25rem 0.6rem; border-radius: var(--radius-full); font-size: 0.75rem; font-weight: 700; text-transform: uppercase;">
-            🛵 Live Active Order
-          </span>
-          <h3 style="margin: 0.5rem 0 0.2rem 0; font-size: 1.2rem; font-weight: 700;">Order #{{ active_order.pk }}</h3>
-          <p style="margin: 0; font-size: 0.85rem; color: #ccc;">Status: <strong style="color: var(--color-brand-primary);">{{ active_order.get_status_display }}</strong></p>
+    <div class="customer-card" style="padding:16px;background:var(--primary-pill);border-color:var(--primary);display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <span style="background:var(--primary);color:#fff;padding:2px 10px;border-radius:12px;font-size:11px;font-weight:700;display:inline-flex;align-items:center;gap:4px">
+          🛵 Live Delivery Active
+        </span>
+        <b style="font-size:14px;color:var(--primary-dark)">Order #{{ active_order.pk }}</b>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div style="display:flex;flex-direction:column;line-height:1.2">
+          <b style="font-size:16px;color:var(--text)">{{ active_order.get_status_display }}</b>
+          <span style="font-size:12px;color:var(--text-muted)">{{ active_order.items.count }} items · ₹{{ active_order.total_amount }}</span>
         </div>
-        <a href="{% url 'orders_customer:track' active_order.pk %}" class="btn btn-sm btn-primary glow-hover" style="border-radius: var(--radius-md); padding: 0.5rem 1rem; font-size: 0.85rem; font-weight: 700; text-decoration: none;">
+        <a href="{% url 'orders_customer:track' active_order.pk %}" class="btn-add" style="min-height:40px;font-size:13px">
           Track Live &rarr;
         </a>
-      </div>
-      <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 0.6rem; font-size: 0.85rem; color: #aaa;">
-        <span>{{ active_order.items.count }} item{% if active_order.items.count > 1 %}s{% endif %} · ₹{{ active_order.total_amount }}</span>
-        <span>Placed {{ active_order.created_at|timesince }} ago</span>
       </div>
     </div>
   {% endif %}
 
-  <!-- Filter Segmented Control Tabs -->
-  <div class="card card-body mb-6" style="background: var(--rdh-surface-container); border: 1px solid rgba(255,255,255,0.1); border-radius: var(--radius-lg); padding: 0.5rem; display: flex; gap: 0.5rem; margin-bottom: 1.5rem;">
-    <a href="{% url 'orders_customer:my_orders' %}?status=all" class="btn btn-sm flex-1 text-center" {% if status_filter == 'all' or not status_filter %}style="flex: 1; text-align: center; border-radius: var(--radius-md); padding: 0.6rem; text-decoration: none; font-weight: 600; font-size: 0.85rem; background: var(--color-brand-primary); color: #000;"{% else %}style="flex: 1; text-align: center; border-radius: var(--radius-md); padding: 0.6rem; text-decoration: none; font-weight: 600; font-size: 0.85rem; background: transparent; color: var(--text-muted);"{% endif %}>
-      All Orders
+  <!-- Filter Segmented Tabs -->
+  <div class="customer-card" style="padding:4px;background:#fff;display:flex;gap:4px">
+    <a href="{% url 'orders_customer:my_orders' %}?status=all" 
+       style="flex:1;min-height:40px;display:flex;align-items:center;justify-content:center;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;{% if status_filter == 'all' or not status_filter %}background:var(--primary);color:#fff;{% else %}background:transparent;color:var(--text-muted);{% endif %}">
+      All
     </a>
-    <a href="{% url 'orders_customer:my_orders' %}?status=not_completed" class="btn btn-sm flex-1 text-center" {% if status_filter == 'not_completed' or status_filter == 'active' %}style="flex: 1; text-align: center; border-radius: var(--radius-md); padding: 0.6rem; text-decoration: none; font-weight: 600; font-size: 0.85rem; background: var(--color-brand-primary); color: #000;"{% else %}style="flex: 1; text-align: center; border-radius: var(--radius-md); padding: 0.6rem; text-decoration: none; font-weight: 600; font-size: 0.85rem; background: transparent; color: var(--text-muted);"{% endif %}>
-      Not Completed
+    <a href="{% url 'orders_customer:my_orders' %}?status=not_completed" 
+       style="flex:1;min-height:40px;display:flex;align-items:center;justify-content:center;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;{% if status_filter == 'not_completed' or status_filter == 'active' %}background:var(--primary);color:#fff;{% else %}background:transparent;color:var(--text-muted);{% endif %}">
+      Active
     </a>
-    <a href="{% url 'orders_customer:my_orders' %}?status=completed" class="btn btn-sm flex-1 text-center" {% if status_filter == 'completed' %}style="flex: 1; text-align: center; border-radius: var(--radius-md); padding: 0.6rem; text-decoration: none; font-weight: 600; font-size: 0.85rem; background: var(--color-brand-primary); color: #000;"{% else %}style="flex: 1; text-align: center; border-radius: var(--radius-md); padding: 0.6rem; text-decoration: none; font-weight: 600; font-size: 0.85rem; background: transparent; color: var(--text-muted);"{% endif %}>
+    <a href="{% url 'orders_customer:my_orders' %}?status=completed" 
+       style="flex:1;min-height:40px;display:flex;align-items:center;justify-content:center;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;{% if status_filter == 'completed' %}background:var(--primary);color:#fff;{% else %}background:transparent;color:var(--text-muted);{% endif %}">
       Completed
     </a>
   </div>
 
-  <!-- Order List -->
+  <!-- Orders List -->
   {% if orders %}
-    <div class="space-y-4" style="display: flex; flex-direction: column; gap: 1rem;">
+    <div style="display:flex;flex-direction:column;gap:12px">
       {% for order in orders %}
-        <div class="card card-body glow-hover" style="background: var(--rdh-surface-container); border: 1px solid rgba(255,255,255,0.1); border-radius: var(--radius-lg); padding: 1.5rem; transition: transform 0.2s ease, border-color 0.2s ease;">
-          
-          <!-- Card Top Bar: Order ID, Date, and Status Badge -->
-          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 0.75rem;">
+        <div class="customer-card" style="padding:16px;background:#fff;display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;border-bottom:1px solid var(--border);padding-bottom:10px">
             <div>
-              <span class="text-xs font-mono" style="color: var(--color-brand-primary); font-weight: 700; font-size: 0.9rem;">
-                Order #{{ order.pk }}
-              </span>
-              <div class="text-xs text-muted mt-1" style="color: #aaa; font-size: 0.8rem;">
-                {{ order.created_at|date:"N j, Y · g:i A" }}
-              </div>
+              <b style="font-size:15px;color:var(--text)">Order #{{ order.pk }}</b>
+              <span style="font-size:12px;color:var(--text-muted);display:block">{{ order.created_at|date:"M j, Y · g:i A" }}</span>
             </div>
-
-            <!-- Status Badge -->
             <div>
-              {% if order.status == 'PAID' or order.status == 'COLLECT' %}
-                <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #10B981; border: 1px solid rgba(16, 185, 129, 0.3); padding: 0.35rem 0.75rem; border-radius: var(--radius-full); font-size: 0.75rem; font-weight: 700;">
-                  ✓ Delivered / Paid
-                </span>
-              {% elif order.status == 'CANCEL' %}
-                <span class="badge" style="background: rgba(239, 68, 68, 0.15); color: #EF4444; border: 1px solid rgba(239, 68, 68, 0.3); padding: 0.35rem 0.75rem; border-radius: var(--radius-full); font-size: 0.75rem; font-weight: 700;">
-                  ✕ Cancelled
-                </span>
-              {% elif order.status == 'READY' %}
-                <span class="badge" style="background: rgba(52, 211, 153, 0.15); color: #34D399; border: 1px solid rgba(52, 211, 153, 0.3); padding: 0.35rem 0.75rem; border-radius: var(--radius-full); font-size: 0.75rem; font-weight: 700;">
-                  ⚡ Ready for Pickup
-                </span>
-              {% elif order.status == 'DISPATCH' or order.status == 'ARRIVED' %}
-                <span class="badge" style="background: rgba(251, 191, 36, 0.15); color: #FBBF24; border: 1px solid rgba(251, 191, 36, 0.3); padding: 0.35rem 0.75rem; border-radius: var(--radius-full); font-size: 0.75rem; font-weight: 700;">
-                  🛵 Out for Delivery
+              {% if order.status in completed_statuses %}
+                <span style="background:#DEF7EC;color:#03543F;font-size:12px;font-weight:700;padding:2px 8px;border-radius:8px">
+                  ✓ {{ order.get_status_display }}
                 </span>
               {% else %}
-                <span class="badge" style="background: rgba(245, 158, 11, 0.15); color: #F59E0B; border: 1px solid rgba(245, 158, 11, 0.3); padding: 0.35rem 0.75rem; border-radius: var(--radius-full); font-size: 0.75rem; font-weight: 700;">
-                  ⏳ {{ order.get_status_display }}
+                <span style="background:var(--primary-pill);color:var(--primary-dark);font-size:12px;font-weight:700;padding:2px 8px;border-radius:8px">
+                  ⚡ {{ order.get_status_display }}
                 </span>
               {% endif %}
             </div>
           </div>
 
-          <!-- Order Items List -->
-          <div class="mb-4" style="margin-bottom: 1rem;">
-            <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.4rem;">
-              {% for item in order.items.all %}
-                <li style="display: flex; justify-content: space-between; font-size: 0.85rem; color: #ddd;">
-                  <span>
-                    <strong style="color: var(--color-brand-primary);">{{ item.quantity }}x</strong> 
-                    {{ item.name_snap }}
-                  </span>
-                  <span style="font-family: monospace; color: #aaa;">₹{{ item.line_total }}</span>
-                </li>
-              {% endfor %}
-            </ul>
+          <!-- Items preview -->
+          <div style="display:flex;flex-direction:column;gap:4px">
+            {% for itm in order.items.all|slice:":3" %}
+              <div style="display:flex;justify-content:space-between;font-size:13px">
+                <span>{{ itm.quantity }}&times; {{ itm.name_snap }}</span>
+                <span style="color:var(--text-muted)">₹{{ itm.line_total }}</span>
+              </div>
+            {% endfor %}
+            {% if order.items.count > 3 %}
+              <span style="font-size:12px;color:var(--text-muted)">+ {{ order.items.count|add:"-3" }} more item{% if order.items.count > 4 %}s{% endif %}</span>
+            {% endif %}
           </div>
 
-          <!-- Card Bottom Bar: Total Amount & Track Action -->
-          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 0.75rem;">
+          <!-- Footer with Total & Track -->
+          <div style="display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--border);padding-top:10px;margin-top:2px">
             <div>
-              <span class="text-xs text-muted" style="color: #aaa; font-size: 0.8rem;">Total Price:</span>
-              <span style="font-size: 1.1rem; font-weight: 700; color: var(--color-brand-primary); margin-left: 0.3rem;">
-                ₹{{ order.total_amount }}
-              </span>
+              <span style="font-size:12px;color:var(--text-muted)">Total:</span>
+              <b style="font-size:16px;color:var(--primary-dark);margin-left:4px">₹{{ order.total_amount }}</b>
             </div>
-
-            <a href="{% url 'orders_customer:track' order.pk %}" class="btn btn-sm btn-primary glow-hover" style="border-radius: var(--radius-md); padding: 0.45rem 0.9rem; font-size: 0.8rem; font-weight: 600;">
-              Track Order &rarr;
+            <a href="{% url 'orders_customer:track' order.pk %}" style="min-height:38px;padding:0 14px;border-radius:10px;background:var(--primary);color:#fff;font-weight:700;font-size:13px;display:inline-flex;align-items:center">
+              View Order &rarr;
             </a>
           </div>
-
         </div>
       {% endfor %}
     </div>
-
   {% else %}
-    <!-- Empty / Anonymous Prompt State -->
-    <div class="card card-body text-center" style="background: var(--rdh-surface-container); border: 1px solid rgba(255,255,255,0.1); border-radius: var(--radius-lg); padding: 3rem 1.5rem; text-align: center; margin-top: 1rem;">
-      {% if delivery_customer %}
-        <div style="font-size: 2.5rem; margin-bottom: 1rem;">🛍️</div>
-        <h3 class="headline-sm mb-2" style="font-size: 1.25rem; font-weight: 700;">No orders found</h3>
-        <p class="text-sm text-muted mb-6" style="color: #aaa; max-width: 400px; margin-left: auto; margin-right: auto; margin-bottom: 1.5rem;">
-          {% if status_filter == 'completed' %}
-            You don't have any completed orders yet.
-          {% elif status_filter == 'not_completed' %}
-            You don't have any active in-progress orders right now.
-          {% else %}
-            No orders yet — browse the menu to place your first order!
-          {% endif %}
+    {% if not delivery_customer and not request.session.delv_orders %}
+      <div class="customer-card" style="padding:48px 20px;text-align:center;background:#fff;display:flex;flex-direction:column;align-items:center;gap:12px">
+        <div style="font-size:32px">👤</div>
+        <b style="font-size:17px">Sign in to view your order history</b>
+        <p style="margin:0;font-size:13px;color:var(--text-muted);max-width:320px;line-height:1.4">
+          Please sign in to your supermarket account or create an account to view and track your orders.
         </p>
-        <a href="{% url 'orders_customer:menu' %}" class="btn btn-primary btn-md glow-hover" style="display: inline-flex; align-items: center; gap: 0.5rem; border-radius: var(--radius-md); padding: 0.75rem 1.5rem; font-weight: 700; text-decoration: none;">
-          Browse Menu &rarr;
-        </a>
-      {% else %}
-        <div style="font-size: 2.5rem; margin-bottom: 1rem;">📋</div>
-        <h3 class="headline-sm mb-2" style="font-size: 1.25rem; font-weight: 700;">Sign in to view your order history</h3>
-        <p class="text-sm text-muted mb-6" style="color: #aaa; max-width: 400px; margin-left: auto; margin-right: auto; margin-bottom: 1.5rem;">
-          Log in or create an account to view your past and active delivery orders.
-        </p>
-        <div class="flex flex-col gap-3" style="max-width: 320px; margin: 0 auto; display: flex; flex-direction: column; gap: 0.75rem;">
-          <a href="{% url 'customer_auth:login' %}" class="btn btn-primary btn-block glow-hover" style="text-decoration: none; justify-content: center;">
+        <div style="display:flex;gap:10px;margin-top:6px">
+          <a href="/order/auth/login/?next={% url 'orders_customer:my_orders' %}" class="btn-add" style="min-height:44px;padding:0 22px;font-size:14px">
             Sign In
           </a>
-          <a href="{% url 'customer_auth:signup' %}" class="btn btn-outline btn-block" style="text-decoration: none; justify-content: center;">
+          <a href="/order/auth/signup/?next={% url 'orders_customer:my_orders' %}" style="min-height:44px;padding:0 18px;border-radius:10px;border:1.5px solid var(--border);color:var(--text);font-size:14px;font-weight:700;display:flex;align-items:center">
             Create Account
           </a>
-          <a href="{% url 'orders_customer:menu' %}" class="btn btn-outline btn-block" style="text-decoration: none; justify-content: center;">
-            Browse Menu
-          </a>
         </div>
-      {% endif %}
-    </div>
+      </div>
+    {% else %}
+      <div class="customer-card" style="padding:48px 20px;text-align:center;background:#fff;display:flex;flex-direction:column;align-items:center;gap:12px">
+        <div style="font-size:32px">🛍️</div>
+        <b style="font-size:17px">No orders yet</b>
+        <p style="margin:0;font-size:13px;color:var(--text-muted);max-width:340px;line-height:1.4">
+          No orders yet — browse the menu to place your first order!
+        </p>
+        <a href="{% url 'orders_customer:menu' %}" class="btn-add" style="min-height:44px;padding:0 20px;font-size:14px;margin-top:4px">
+          Browse Supermarket
+        </a>
+      </div>
+    {% endif %}
   {% endif %}
-
 </div>
 {% endblock %}

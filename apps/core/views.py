@@ -11,17 +11,38 @@ def healthz(request):
 
 
 def home(request):
-    """Public supermarket landing page served at "/".
+    """Public supermarket customer homepage.
 
-    Pulls up to six available products for the "Featured Products" section.
-    Falls back to curated sample groceries when the catalogue is empty so the
-    section always renders. Purely presentational — no state is mutated.
+    Loads real categories, best sellers, featured products, customer location,
+    and active cart state for the mobile & desktop customer UI/UX.
     """
+    from apps.menu.models import Category
+    from apps.orders.views_customer import _get_delivery_cart
+    from apps.customer_auth.views import get_logged_in_customer
+
+    customer = getattr(request, "delivery_customer", None) or get_logged_in_customer(request)
+    if customer:
+        request.delivery_customer = customer
+
+    categories = list(Category.objects.filter(is_active=True).order_by("sort_order", "name"))
+    
+    # Live catalog items
+    best_sellers = list(
+        MenuItem.objects.filter(is_available=True)
+        .select_related("category")
+        .order_by("-stock_quantity", "name")[:8]
+    )
+    
     highlights = list(
         MenuItem.objects.filter(is_available=True)
         .select_related("category")
-        .order_by("category__sort_order", "name")[:6]
+        .order_by("category__sort_order", "name")[:8]
     )
+
+    cart_items, cart_total, cart_count = _get_delivery_cart(request.session)
+    cart_map = {str(entry["item"].pk): entry["quantity"] for entry in cart_items}
+
+    customer_location = request.session.get("customer_location", "Hyderabad")
 
     sample_dishes = [
         {"name": "Organic Farm Fresh Apples (1kg)",
@@ -39,8 +60,17 @@ def home(request):
     ]
 
     context = {
+        "categories": categories,
+        "best_sellers": best_sellers,
         "highlights": highlights,
         "sample_dishes": sample_dishes,
+        "cart_items": cart_items,
+        "cart_total": cart_total,
+        "cart_count": cart_count,
+        "cart_map": cart_map,
+        "customer_location": customer_location,
+        "delivery_customer": customer,
+        "active_nav": "home",
     }
     return render(request, "pages/home.html", context)
 

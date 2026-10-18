@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     "apps.orders",
     "apps.payments",
     "apps.realtime",
+    "apps.swecha",
     "apps.suppliers",
     "apps.tables",
 ]
@@ -173,14 +174,15 @@ CONTENT_SECURITY_POLICY = {
     "DIRECTIVES": {
         "default-src": ["'self'"],
         # HTMX and Alpine loaded from unpkg
-        "script-src": ["'self'", "https://unpkg.com"],
-        # Templates use inline styles
-        "style-src": ["'self'", "'unsafe-inline'"],
-        # Local + data uris + blob
-        "img-src": ["'self'", "data:", "blob:"],
+        "script-src": ["'self'", "'unsafe-inline'", "https://unpkg.com"],
+        # Templates use inline styles and Google Fonts
+        "style-src": ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+        # Local + data uris + blob + external images
+        "img-src": ["'self'", "data:", "blob:", "https:"],
         # WebSocket status feed
         "connect-src": ["'self'", "ws:", "wss:"],
-        "font-src": ["'self'"],
+        "font-src": ["'self'", "https://fonts.gstatic.com", "data:"],
+        "media-src": ["'self'", "data:", "blob:"],
         "frame-ancestors": ["'none'"],
         "base-uri": ["'self'"],
         "form-action": ["'self'"],
@@ -210,6 +212,10 @@ BRAND_PHONE_INTL = env("BRAND_PHONE_INTL", default="916281238410")
 BRAND_EMAIL = env("BRAND_EMAIL", default="support@freshmart.com")
 BRAND_LOCATION = env("BRAND_LOCATION", default="Hyderabad")
 
+
+# ---------- AI Assistant (SWECHA) ----------
+GROQ_API_KEY = env("GROQ_API_KEY", default="")
+GROQ_MODEL = env("GROQ_MODEL", default="llama-3.3-70b-versatile")
 
 # ---------- default primary key ----------
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

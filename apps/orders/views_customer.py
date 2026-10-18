@@ -6,15 +6,17 @@ Never computes pricing or mutates status directly.
 import re
 from decimal import Decimal
 
+from django.contrib import messages
 from django.core import signing
 from django.core.exceptions import ValidationError
-from django.db.models import Prefetch, Q
-from django.http import Http404, HttpResponseBadRequest
+from django.db.models import F, Prefetch, Q
+from django.http import Http404, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
 from apps.core.ratelimits import checkout, messaging
 from apps.customer_auth.decorators import customer_login_required
+from apps.customer_auth.models import CustomerAddress, WishlistItem
 from apps.menu.models import Category as MenuCategory
 from apps.menu.models import MenuItem
 from apps.menu.services import get_cached_menu
@@ -25,6 +27,32 @@ from apps.orders.services import build_maps_url, create_order
 # Salt for the per-order signed tracking cookie set at checkout. Must match
 # the value used when the cookie is written in delivery_checkout().
 _TRACKING_SALT = "delv_tracking"
+
+
+def _get_cart_coupon_summary(session_dict: dict, subtotal: Decimal) -> tuple[dict | None, Decimal, Decimal]:
+    """Validate and compute coupon discount for delivery cart."""
+    code = session_dict.get("delv_coupon_code", "")
+    if not code:
+        return None, Decimal("0.00"), subtotal
+
+    from apps.coupons.models import Coupon
+    coupon = Coupon.objects.filter(code__iexact=str(code).strip(), is_active=True).first()
+    if not coupon:
+        session_dict.pop("delv_coupon_code", None)
+        return None, Decimal("0.00"), subtotal
+
+    valid, msg = coupon.is_valid_for(subtotal)
+    if not valid:
+        return {"code": coupon.code, "error": msg, "valid": False}, Decimal("0.00"), subtotal
+
+    discount = coupon.calculate_discount(subtotal)
+    payable = max(Decimal("0.00"), subtotal - discount)
+    return {
+        "code": coupon.code,
+        "discount": discount,
+        "display": coupon.discount_display,
+        "valid": True,
+    }, discount, payable
 
 
 def _get_delivery_cart(session_dict: dict) -> tuple[list[dict], Decimal, int]:
@@ -71,13 +99,25 @@ def delivery_menu(request):
     all_categories = get_cached_menu()
     search = request.GET.get("search", "").strip()
     category = request.GET.get("category", "all")
+    sort = request.GET.get("sort", "relevance")
+    stock_filter = request.GET.get("stock", "")
 
-    if search or (category and category != "all"):
-        item_qs = MenuItem.objects.filter(is_available=True).order_by("name")
-        if search:
-            item_qs = item_qs.filter(Q(name__icontains=search) | Q(description__icontains=search))
-        if category and category != "all":
-            item_qs = item_qs.filter(category__name=category)
+    order_fields = ["name"]
+    if sort == "price_asc":
+        order_fields = ["price", "name"]
+    elif sort == "price_desc":
+        order_fields = ["-price", "name"]
+
+    item_qs = MenuItem.objects.all().order_by(*order_fields)
+    if stock_filter == "in_stock":
+        item_qs = item_qs.filter(is_available=True).exclude(track_stock=True, stock_quantity__lte=0)
+
+    if search:
+        item_qs = item_qs.filter(Q(name__icontains=search) | Q(description__icontains=search) | Q(sku__icontains=search))
+    if category and category != "all":
+        item_qs = item_qs.filter(category__name=category)
+
+    if search or (category and category != "all") or sort != "relevance" or stock_filter:
         categories = MenuCategory.objects.filter(is_active=True).prefetch_related(
             Prefetch("items", queryset=item_qs)
         ).order_by("sort_order", "name")
@@ -85,18 +125,25 @@ def delivery_menu(request):
         categories = all_categories
 
     has_results = any(len(cat.items.all()) > 0 for cat in categories)
+    total_products_count = sum(len(cat.items.all()) for cat in categories)
     cart_items, cart_total, cart_count = _get_delivery_cart(request.session)
+    cart_map = {str(entry["item"].pk): entry["quantity"] for entry in cart_items}
 
     context = {
         "categories": categories,
         "all_categories": all_categories,
         "has_results": has_results,
+        "total_products_count": total_products_count,
         "search": search,
         "category": category,
+        "sort": sort,
+        "stock_filter": stock_filter,
         "cart_items": cart_items,
         "cart_total": cart_total,
         "cart_count": cart_count,
+        "cart_map": cart_map,
         "delivery_customer": customer,
+        "active_nav": "categories",
     }
     if request.headers.get("HX-Request"):
         return render(request, "orders/customer/partials/menu_results.html", context)
@@ -142,6 +189,8 @@ def cart_add(request):
     response = render(request, "orders/customer/partials/cart_bar.html", context)
     if request.headers.get("HX-Request"):
         response["HX-Trigger"] = "cartUpdated"
+    elif request.POST.get("next"):
+        return redirect(request.POST.get("next"))
     return response
 
 
@@ -242,7 +291,7 @@ def cart_update(request):
 @require_http_methods(["GET", "POST"])
 @customer_login_required
 def delivery_checkout(request):
-    """Render checkout form or process delivery order placement (COD)."""
+    """Render checkout form or process delivery order placement."""
     from apps.customer_auth.views import get_logged_in_customer
 
     cart_items, cart_total, cart_count = _get_delivery_cart(request.session)
@@ -251,6 +300,11 @@ def delivery_checkout(request):
         return redirect("orders_customer:menu")
 
     delivery_customer = get_logged_in_customer(request)
+    coupon_data, coupon_discount, payable_total = _get_cart_coupon_summary(request.session, cart_total)
+
+    saved_addresses = []
+    if delivery_customer:
+        saved_addresses = list(CustomerAddress.objects.filter(customer=delivery_customer))
 
     if request.method == "GET":
         form_data = {}
@@ -264,18 +318,37 @@ def delivery_checkout(request):
             "cart_items": cart_items,
             "cart_total": cart_total,
             "cart_count": cart_count,
+            "coupon_data": coupon_data,
+            "coupon_discount": coupon_discount,
+            "payable_total": payable_total,
+            "saved_addresses": saved_addresses,
             "form_data": form_data,
             "delivery_customer": delivery_customer,
         }
         return render(request, "orders/customer/checkout.html", context)
 
     # POST checkout
+    address_id = request.POST.get("address_id", "").strip()
     contact_name = request.POST.get("contact_name", "").strip()
     contact_phone = request.POST.get("contact_phone", "").strip()
     address = request.POST.get("address", "").strip()
     instructions = request.POST.get("instructions", "").strip()
+    delivery_slot = request.POST.get("delivery_slot", "Standard Delivery (30-45 mins)").strip()
+    payment_method = request.POST.get("payment_method", "Cash on Delivery").strip()
+    save_address = request.POST.get("save_address")
+    address_title = request.POST.get("address_title", "Home").strip()
     lat = request.POST.get("lat", "").strip()
     lng = request.POST.get("lng", "").strip()
+
+    # Pre-fill from selected saved address if provided
+    if address_id and delivery_customer:
+        chosen_addr = CustomerAddress.objects.filter(pk=address_id, customer=delivery_customer).first()
+        if chosen_addr:
+            address = chosen_addr.address
+            if not contact_name and chosen_addr.recipient_name:
+                contact_name = chosen_addr.recipient_name
+            if not contact_phone and chosen_addr.phone:
+                contact_phone = chosen_addr.phone
 
     valid_lat = None
     valid_lng = None
@@ -302,7 +375,7 @@ def delivery_checkout(request):
     if not contact_phone:
         errors.append("Contact phone number is required.")
     if not (valid_lat and valid_lng) and not address:
-        errors.append("A delivery location is required (share your location or enter an address).")
+        errors.append("A delivery location is required (select a saved address or enter an address).")
 
     form_data = request.POST.copy()
     form_data["lat"] = lat
@@ -313,6 +386,10 @@ def delivery_checkout(request):
             "cart_items": cart_items,
             "cart_total": cart_total,
             "cart_count": cart_count,
+            "coupon_data": coupon_data,
+            "coupon_discount": coupon_discount,
+            "payable_total": payable_total,
+            "saved_addresses": saved_addresses,
             "errors": errors,
             "form_data": form_data,
             "delivery_customer": delivery_customer,
@@ -330,6 +407,18 @@ def delivery_checkout(request):
 
     customer = request.user if request.user.is_authenticated else None
 
+    # Format combined instructions with slot, payment method and coupon info
+    notes_parts = []
+    if delivery_slot:
+        notes_parts.append(f"Slot: {delivery_slot}")
+    if payment_method:
+        notes_parts.append(f"Payment: {payment_method}")
+    if coupon_data and coupon_data.get("valid"):
+        notes_parts.append(f"Coupon: {coupon_data['code']} (-₹{coupon_discount:.2f})")
+    if instructions:
+        notes_parts.append(instructions)
+    combined_instructions = " | ".join(notes_parts)
+
     try:
         order = create_order(
             order_type="DELV",
@@ -339,8 +428,15 @@ def delivery_checkout(request):
             contact_name=contact_name,
             contact_phone=contact_phone,
             maps_url=maps_url,
-            instructions=instructions,
+            instructions=combined_instructions,
         )
+
+        # Apply coupon discount to authoritative order total
+        if coupon_data and coupon_data.get("valid"):
+            from apps.coupons.models import Coupon
+            Coupon.objects.filter(code=coupon_data["code"]).update(times_used=F("times_used") + 1)
+            order.total_amount = payable_total
+            order.save(update_fields=["total_amount"])
 
         # Save customer default address and name for future pre-filling
         if delivery_customer:
@@ -354,26 +450,42 @@ def delivery_checkout(request):
             if updated:
                 delivery_customer.save()
 
+            if address and save_address:
+                CustomerAddress.objects.create(
+                    customer=delivery_customer,
+                    title=address_title or "Home",
+                    recipient_name=contact_name,
+                    phone=contact_phone,
+                    address=address,
+                    city=request.session.get("customer_location", "Hyderabad"),
+                    is_default=(len(saved_addresses) == 0),
+                )
+
     except ValidationError as exc:
         context = {
             "cart_items": cart_items,
             "cart_total": cart_total,
             "cart_count": cart_count,
+            "coupon_data": coupon_data,
+            "coupon_discount": coupon_discount,
+            "payable_total": payable_total,
+            "saved_addresses": saved_addresses,
             "errors": exc.messages if hasattr(exc, "messages") else [str(exc)],
             "form_data": form_data,
             "delivery_customer": delivery_customer,
         }
         return render(request, "orders/customer/checkout.html", context, status=400)
 
-    # Clear delivery cart
+    # Clear delivery cart and coupon
     request.session["delv_cart"] = {}
+    request.session.pop("delv_coupon_code", None)
     delv_orders = request.session.get("delv_orders", [])
     if order.pk not in delv_orders:
         delv_orders.append(order.pk)
     request.session["delv_orders"] = delv_orders
     request.session.modified = True
 
-    response = render(request, "orders/customer/thank_you.html", {"order": order})
+    response = render(request, "orders/customer/thank_you.html", {"order": order, "sound_order_id": order.pk})
     response.set_signed_cookie(
         f"delv_token_{order.pk}", str(order.pk), salt=_TRACKING_SALT
     )
@@ -516,14 +628,270 @@ def delivery_cart_view(request):
         request.delivery_customer = customer
 
     cart_items, cart_total, cart_count = _get_delivery_cart(request.session)
+    coupon_data, coupon_discount, payable_total = _get_cart_coupon_summary(request.session, cart_total)
+
+    # Delivering to location or address
+    current_location = request.session.get("customer_location", "Hyderabad")
+    delivering_to = customer.default_address if (customer and customer.default_address) else current_location
 
     context = {
         "cart_items": cart_items,
         "cart_total": cart_total,
         "cart_count": cart_count,
+        "coupon_data": coupon_data,
+        "coupon_discount": coupon_discount,
+        "payable_total": payable_total,
+        "delivering_to": delivering_to,
         "delivery_customer": customer,
     }
     return render(request, "orders/customer/cart.html", context)
+
+
+@require_POST
+def cart_apply_coupon(request):
+    """Apply coupon code to delivery cart session."""
+    code = request.POST.get("code", "").strip().upper()
+    cart_items, cart_total, cart_count = _get_delivery_cart(request.session)
+
+    if not code:
+        messages.error(request, "Please enter a coupon code.")
+        return redirect("orders_customer:cart")
+
+    from apps.coupons.models import Coupon
+    coupon = Coupon.objects.filter(code__iexact=code, is_active=True).first()
+    if not coupon:
+        messages.error(request, f"Coupon '{code}' is invalid or does not exist.")
+        request.session.pop("delv_coupon_code", None)
+        request.session.modified = True
+    else:
+        valid, msg = coupon.is_valid_for(cart_total)
+        if not valid:
+            messages.error(request, msg)
+            request.session.pop("delv_coupon_code", None)
+            request.session.modified = True
+        else:
+            request.session["delv_coupon_code"] = coupon.code
+            request.session.modified = True
+            messages.success(request, f"Coupon '{coupon.code}' applied: {coupon.discount_display}!")
+
+    referer = request.META.get("HTTP_REFERER", "")
+    if "checkout" in referer:
+        return redirect("orders_customer:checkout")
+    return redirect("orders_customer:cart")
+
+
+@require_POST
+def cart_remove_coupon(request):
+    """Remove active coupon from delivery cart."""
+    request.session.pop("delv_coupon_code", None)
+    request.session.modified = True
+    messages.info(request, "Coupon removed.")
+    referer = request.META.get("HTTP_REFERER", "")
+    if "checkout" in referer:
+        return redirect("orders_customer:checkout")
+    return redirect("orders_customer:cart")
+
+
+@require_GET
+def product_detail(request, pk):
+    """Individual product detail page."""
+    item = get_object_or_404(MenuItem.objects.select_related("category"), pk=pk)
+    related_items = MenuItem.objects.filter(
+        category=item.category, is_available=True
+    ).exclude(pk=item.pk)[:4]
+
+    cart = request.session.get("delv_cart", {})
+    cart_qty = cart.get(str(item.pk), 0)
+
+    from apps.customer_auth.views import get_logged_in_customer
+    customer = getattr(request, "delivery_customer", None) or get_logged_in_customer(request)
+
+    is_wishlisted = False
+    if customer:
+        is_wishlisted = WishlistItem.objects.filter(customer=customer, item=item).exists()
+    elif request.user.is_authenticated:
+        is_wishlisted = WishlistItem.objects.filter(user=request.user, item=item).exists()
+
+    cart_items, cart_total, cart_count = _get_delivery_cart(request.session)
+
+    context = {
+        "item": item,
+        "related_items": related_items,
+        "cart_qty": cart_qty,
+        "is_wishlisted": is_wishlisted,
+        "cart_count": cart_count,
+        "cart_total": cart_total,
+        "delivery_customer": customer,
+    }
+    return render(request, "orders/customer/product_detail.html", context)
+
+
+@require_GET
+def wishlist_view(request):
+    """Customer saved wishlist page."""
+    from apps.customer_auth.views import get_logged_in_customer
+    customer = getattr(request, "delivery_customer", None) or get_logged_in_customer(request)
+    
+    wishlist_items = []
+    if customer:
+        wishlist_items = list(WishlistItem.objects.filter(customer=customer).select_related("item", "item__category"))
+    elif request.user.is_authenticated:
+        wishlist_items = list(WishlistItem.objects.filter(user=request.user).select_related("item", "item__category"))
+
+    cart_items, cart_total, cart_count = _get_delivery_cart(request.session)
+
+    context = {
+        "wishlist_items": wishlist_items,
+        "cart_count": cart_count,
+        "cart_total": cart_total,
+        "delivery_customer": customer,
+    }
+    return render(request, "orders/customer/wishlist.html", context)
+
+
+@require_http_methods(["GET", "POST"])
+def wishlist_toggle(request, pk):
+    """Add or remove an item from the customer's wishlist."""
+    item = get_object_or_404(MenuItem, pk=pk)
+    from apps.customer_auth.views import get_logged_in_customer
+    customer = getattr(request, "delivery_customer", None) or get_logged_in_customer(request)
+
+    if not customer and not request.user.is_authenticated:
+        # Prompt login
+        if request.headers.get("HX-Request"):
+            return JsonResponse({"status": "error", "message": "Login required"}, status=401)
+        return redirect("customer_auth:login")
+
+    filter_kwargs = {"item": item}
+    if customer:
+        filter_kwargs["customer"] = customer
+    else:
+        filter_kwargs["user"] = request.user
+
+    existing = WishlistItem.objects.filter(**filter_kwargs).first()
+    if existing:
+        existing.delete()
+        is_wishlisted = False
+        messages.info(request, f"Removed {item.name} from wishlist.")
+    else:
+        WishlistItem.objects.create(**filter_kwargs)
+        is_wishlisted = True
+        messages.success(request, f"Added {item.name} to wishlist!")
+
+    if request.headers.get("HX-Request"):
+        return JsonResponse({"status": "ok", "is_wishlisted": is_wishlisted})
+
+    referer = request.META.get("HTTP_REFERER", "")
+    if referer:
+        return redirect(referer)
+    return redirect("orders_customer:wishlist")
+
+
+@require_GET
+def customer_addresses(request):
+    """Customer saved addresses management page."""
+    from apps.customer_auth.views import get_logged_in_customer
+    customer = getattr(request, "delivery_customer", None) or get_logged_in_customer(request)
+    if not customer:
+        return redirect("customer_auth:login")
+
+    addresses = list(CustomerAddress.objects.filter(customer=customer))
+    cart_items, cart_total, cart_count = _get_delivery_cart(request.session)
+
+    context = {
+        "addresses": addresses,
+        "cart_count": cart_count,
+        "delivery_customer": customer,
+    }
+    return render(request, "orders/customer/addresses.html", context)
+
+
+@require_POST
+def address_add(request):
+    """Add a new delivery address for the customer."""
+    from apps.customer_auth.views import get_logged_in_customer
+    customer = getattr(request, "delivery_customer", None) or get_logged_in_customer(request)
+    if not customer:
+        return redirect("customer_auth:login")
+
+    title = request.POST.get("title", "Home").strip()
+    recipient_name = request.POST.get("recipient_name", customer.name or "").strip()
+    phone = request.POST.get("phone", customer.phone or "").strip()
+    address = request.POST.get("address", "").strip()
+    city = request.POST.get("city", "Hyderabad").strip()
+    is_default = bool(request.POST.get("is_default"))
+
+    if not address:
+        messages.error(request, "Address cannot be empty.")
+        return redirect("orders_customer:addresses")
+
+    if is_default:
+        CustomerAddress.objects.filter(customer=customer).update(is_default=False)
+
+    CustomerAddress.objects.create(
+        customer=customer,
+        title=title or "Home",
+        recipient_name=recipient_name,
+        phone=phone,
+        address=address,
+        city=city,
+        is_default=is_default or (CustomerAddress.objects.filter(customer=customer).count() == 0),
+    )
+    messages.success(request, "Address saved successfully.")
+    
+    referer = request.META.get("HTTP_REFERER", "")
+    if "checkout" in referer:
+        return redirect("orders_customer:checkout")
+    return redirect("orders_customer:addresses")
+
+
+@require_POST
+def address_delete(request, pk):
+    """Delete a customer saved delivery address."""
+    from apps.customer_auth.views import get_logged_in_customer
+    customer = getattr(request, "delivery_customer", None) or get_logged_in_customer(request)
+    if not customer:
+        return redirect("customer_auth:login")
+
+    addr = get_object_or_404(CustomerAddress, pk=pk, customer=customer)
+    addr.delete()
+    messages.info(request, "Address removed.")
+    return redirect("orders_customer:addresses")
+
+
+@require_POST
+def address_set_default(request, pk):
+    """Set an address as customer default."""
+    from apps.customer_auth.views import get_logged_in_customer
+    customer = getattr(request, "delivery_customer", None) or get_logged_in_customer(request)
+    if not customer:
+        return redirect("customer_auth:login")
+
+    addr = get_object_or_404(CustomerAddress, pk=pk, customer=customer)
+    CustomerAddress.objects.filter(customer=customer).update(is_default=False)
+    addr.is_default = True
+    addr.save(update_fields=["is_default"])
+    if customer:
+        customer.default_address = addr.address
+        customer.save(update_fields=["default_address"])
+    messages.success(request, f"Set '{addr.title}' as default address.")
+    return redirect("orders_customer:addresses")
+
+
+@require_POST
+def set_location(request):
+    """Set customer active delivery location in session."""
+    location = request.POST.get("location", "Hyderabad").strip()
+    allowed_locations = ["Hyderabad", "Banjara Hills", "Jubilee Hills", "Hitec City", "Gachibowli", "Madhapur", "Kondapur", "Secunderabad"]
+    if location in allowed_locations or len(location) <= 60:
+        request.session["customer_location"] = location
+        request.session.modified = True
+    
+    referer = request.META.get("HTTP_REFERER", "")
+    if referer:
+        return redirect(referer)
+    return redirect("orders_customer:menu")
+
 
 
 @require_GET

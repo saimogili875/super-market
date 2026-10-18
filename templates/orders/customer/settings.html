@@ -1,48 +1,118 @@
 {% extends "orders/customer/base.html" %}
+{% load static %}
 
-{% block title %}Account Settings — {{ BRAND_NAME }}{% endblock %}
+{% block title %}Account &amp; Preferences — FreshMart Supermarket{% endblock %}
 
 {% block content %}
-<div class="card mt-6">
-  <div class="card-body">
-    <h2 class="headline-md mb-4">Account Settings</h2>
+<div style="max-width:640px;margin:0 auto;width:100%;display:flex;flex-direction:column;gap:16px">
+  <div style="display:flex;align-items:center;justify-content:space-between">
+    <h1 style="margin:0;font-size:22px;font-weight:700">Account &amp; Settings</h1>
+  </div>
 
-    {% if delivery_customer %}
-      <div class="form-group mb-6">
-        <div class="text-xs text-muted font-bold mb-1" style="text-transform: uppercase; letter-spacing: 0.08em; font-size: var(--fs-xs); color: var(--text-secondary); font-weight: var(--fw-bold);">
-          Logged-in Account
+  {% if delivery_customer %}
+    <!-- Profile Card -->
+    <div class="customer-card" style="padding:20px;background:#fff;display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;align-items:center;gap:14px">
+        <div style="width:54px;height:54px;border-radius:27px;background:var(--primary-pill);color:var(--primary-dark);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700">
+          {{ delivery_customer.name|default:delivery_customer.phone|slice:":1"|upper }}
         </div>
-        <div class="text-lg text-bold text-gold" style="font-size: var(--fs-lg); font-weight: var(--fw-bold); color: var(--color-brand-primary);">
-          {{ delivery_customer.email }}
+        <div style="flex:1;display:flex;flex-direction:column;line-height:1.25">
+          <b style="font-size:17px">{{ delivery_customer.name|default:"Supermarket Customer" }}</b>
+          <span style="font-size:13px;color:var(--text-muted)">{{ delivery_customer.phone }}</span>
+          {% if delivery_customer.email %}
+            <span style="font-size:13px;color:var(--text-muted)">{{ delivery_customer.email }}</span>
+          {% endif %}
         </div>
-        {% if delivery_customer.name %}
-          <div class="text-sm text-muted mt-1">{{ delivery_customer.name }}</div>
-        {% endif %}
-        {% if delivery_customer.phone %}
-          <div class="text-sm text-muted mt-1">{{ delivery_customer.phone }}</div>
-        {% endif %}
       </div>
+    </div>
 
-      <div class="divider-gold"></div>
+    <!-- Quick Navigation Hub -->
+    <div class="customer-card" style="background:#fff;overflow:hidden;display:flex;flex-direction:column">
+      <a href="{% url 'orders_customer:my_orders' %}" style="padding:16px 18px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border);text-decoration:none">
+        <span style="font-size:20px">📦</span>
+        <div style="flex:1;display:flex;flex-direction:column;line-height:1.2">
+          <b style="font-size:15px;color:var(--text)">Order History &amp; Tracking</b>
+          <span style="font-size:12px;color:var(--text-muted)">View past purchases and live delivery status</span>
+        </div>
+        <span style="color:var(--text-muted);font-weight:700">&rarr;</span>
+      </a>
 
-      <div class="mt-4">
-        <a href="{% url 'customer_auth:logout' %}" class="btn btn-outline btn-block" style="border-color: var(--color-danger); color: var(--color-danger);">
-          Sign Out
+      <a href="{% url 'orders_customer:addresses' %}" style="padding:16px 18px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border);text-decoration:none">
+        <span style="font-size:20px">📍</span>
+        <div style="flex:1;display:flex;flex-direction:column;line-height:1.2">
+          <b style="font-size:15px;color:var(--text)">Saved Addresses</b>
+          <span style="font-size:12px;color:var(--text-muted)">Manage default home and office delivery addresses</span>
+        </div>
+        <span style="color:var(--text-muted);font-weight:700">&rarr;</span>
+      </a>
+
+      <a href="{% url 'orders_customer:wishlist' %}" style="padding:16px 18px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border);text-decoration:none">
+        <span style="font-size:20px">🤍</span>
+        <div style="flex:1;display:flex;flex-direction:column;line-height:1.2">
+          <b style="font-size:15px;color:var(--text)">My Wishlist</b>
+          <span style="font-size:12px;color:var(--text-muted)">Quickly access your saved groceries</span>
+        </div>
+        <span style="color:var(--text-muted);font-weight:700">&rarr;</span>
+      </a>
+
+      <a href="{% url 'swecha:assistant' %}" style="padding:16px 18px;display:flex;align-items:center;gap:12px;text-decoration:none">
+        <span style="font-size:20px">✨</span>
+        <div style="flex:1;display:flex;flex-direction:column;line-height:1.2">
+          <b style="font-size:15px;color:var(--text)">Swecha AI Shopping Assistant</b>
+          <span style="font-size:12px;color:var(--text-muted)">Groq-powered grocery advice and budget planner</span>
+        </div>
+        <span style="color:var(--text-muted);font-weight:700">&rarr;</span>
+      </a>
+    </div>
+
+    <!-- Sound Effects Preferences (Phase 17) -->
+    <div class="customer-card" style="padding:18px 20px;background:#fff;display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:22px">🔊</span>
+          <div style="display:flex;flex-direction:column;line-height:1.2">
+            <b style="font-size:15px">Application Sound Effects</b>
+            <span style="font-size:12px;color:var(--text-muted)">Order confirmation &amp; Swecha AI response audio</span>
+          </div>
+        </div>
+        <button type="button" 
+                onclick="toggleSoundPreference()"
+                class="sound-pref-btn"
+                style="min-height:38px;padding:0 14px;border-radius:19px;border:1.5px solid var(--primary);background:var(--primary-pill);color:var(--primary-dark);font-weight:700;font-size:13px">
+          🔊 Enabled
+        </button>
+      </div>
+      <p style="margin:0;font-size:12px;color:var(--text-muted);line-height:1.4">
+        FreshMart uses exactly two licensed pleasant sounds: one when your order is placed, and one when Swecha finishes responding. You can mute or enable them at any time.
+      </p>
+    </div>
+
+    <!-- Sign Out Button -->
+    <div style="padding:10px 0">
+      <a href="{% url 'customer_auth:logout' %}" style="width:100%;min-height:48px;border-radius:12px;border:1.5px solid var(--danger);background:#fff;color:var(--danger);font-weight:700;font-size:15px;display:flex;align-items:center;justify-content:center;text-decoration:none">
+        Sign Out
+      </a>
+    </div>
+
+  {% else %}
+    <!-- Guest State -->
+    <div class="customer-card" style="padding:40px 24px;text-align:center;background:#fff;display:flex;flex-direction:column;align-items:center;gap:14px">
+      <div style="width:64px;height:64px;border-radius:32px;background:var(--primary-pill);color:var(--primary);display:flex;align-items:center;justify-content:center;font-size:28px">
+        👤
+      </div>
+      <h2 style="margin:0;font-size:18px;font-weight:700">Sign in to FreshMart</h2>
+      <p style="margin:0;font-size:14px;color:var(--text-muted);max-width:320px;line-height:1.4">
+        Sign in with your mobile number to view past orders, manage delivery addresses, and save favorites.
+      </p>
+      <div style="display:flex;gap:10px;width:100%;max-width:280px;margin-top:6px">
+        <a href="{% url 'customer_auth:login' %}?next={% url 'orders_customer:settings' %}" style="flex:1;min-height:46px;border-radius:12px;background:var(--primary);color:#fff;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center">
+          Sign In
+        </a>
+        <a href="{% url 'customer_auth:signup' %}?next={% url 'orders_customer:settings' %}" style="flex:1;min-height:46px;border-radius:12px;border:1.5px solid var(--border);background:#fff;color:var(--text);font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center">
+          Register
         </a>
       </div>
-    {% else %}
-      <div class="empty-state" style="padding: var(--space-4) 0;">
-        <p class="empty-state__text mb-6">Sign in or create an account to view your details and order history.</p>
-        <div class="flex flex-col gap-3">
-          <a href="{% url 'customer_auth:login' %}" class="btn btn-primary btn-block">
-            Sign In
-          </a>
-          <a href="{% url 'customer_auth:signup' %}" class="btn btn-outline btn-block">
-            Create Account
-          </a>
-        </div>
-      </div>
-    {% endif %}
-  </div>
+    </div>
+  {% endif %}
 </div>
 {% endblock %}

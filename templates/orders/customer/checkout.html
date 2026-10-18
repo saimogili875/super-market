@@ -1,107 +1,257 @@
 {% extends "orders/customer/base.html" %}
-{% load static currency %}
+{% load static %}
 
-{% block title %}Grocery Checkout — {{ BRAND_SHORT }} · {{ BRAND_NAME }}{% endblock %}
-
-{% block header_subtitle %}Fresh Groceries Delivered Fast{% endblock %}
-
-{% block header_actions %}
-<div class="badge badge-warning icon-text">
-  {% include "partials/icon.html" with name="truck" %} Delivery
-</div>
-{% endblock %}
+{% block title %}Checkout — FreshMart Supermarket{% endblock %}
 
 {% block content %}
-<div class="mt-4">
-  <a href="{% url 'orders_customer:menu' %}" class="text-sm text-bold" style="color: var(--text-secondary);">&larr; Back to Products</a>
-  <h2 class="text-xl text-bold mt-4 mb-6">Complete Your Grocery Order</h2>
-
-  {% if delivery_customer %}
-  <div class="card mb-4" style="background-color: var(--color-brand-primary-light); border-color: var(--color-brand-primary);">
-    <div class="card-body flex justify-between items-center" style="padding: 0.85rem 1.25rem;">
-      <div class="text-sm">
-        <strong style="color: var(--color-brand-primary);">Signed In:</strong>
-        <span>{{ delivery_customer.email }} ({{ delivery_customer.phone }})</span>
-      </div>
-      <a href="{% url 'customer_auth:logout' %}" class="text-xs text-muted" style="text-decoration: underline;">Switch Account</a>
-    </div>
+<div style="max-width:720px;margin:0 auto;width:100%;display:flex;flex-direction:column;gap:18px">
+  <!-- Back Header -->
+  <div style="display:flex;align-items:center;gap:6px">
+    <a href="{% url 'orders_customer:cart' %}" aria-label="Back to Cart" style="display:inline-flex;align-items:center;gap:6px;min-height:44px;color:var(--primary);font-weight:700;font-size:14px">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M15 18l-6-6 6-6"></path>
+      </svg>
+      <span>Back to Cart</span>
+    </a>
+    <h1 style="margin:0 0 0 auto;font-size:18px;font-weight:700">Checkout</h1>
   </div>
-  {% endif %}
 
   {% if errors %}
-  <div class="card mb-4" style="background-color: var(--color-danger-light); border-color: var(--color-danger); color: var(--color-danger-dark);">
-    <div class="card-body">
-      <ul style="margin-left: var(--space-4);">
+    <div style="background:#FDE8E8;border:1.5px solid #F8B4B4;color:#9B1C1C;border-radius:14px;padding:14px 16px">
+      <b style="font-size:14px;display:block;margin-bottom:6px">Please resolve the following:</b>
+      <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.4">
         {% for err in errors %}
-        <li>{{ err }}</li>
+          <li>{{ err }}</li>
         {% endfor %}
       </ul>
     </div>
-  </div>
   {% endif %}
 
-  <!-- Order Summary Card -->
-  {% include "orders/customer/partials/checkout_summary.html" %}
+  <!-- Order Items & Price Summary -->
+  <div class="customer-card" style="padding:16px 18px;background:#fff;display:flex;flex-direction:column;gap:12px">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <b style="font-size:16px">Items Summary ({{ cart_count }})</b>
+      <a href="{% url 'orders_customer:cart' %}" style="font-size:13px;font-weight:700;color:var(--primary)">Edit Cart</a>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--border);padding-top:10px">
+      {% for entry in cart_items %}
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:14px">
+          <div style="display:flex;align-items:center;gap:8px;min-width:0">
+            <span style="font-weight:700;color:var(--primary-dark)">{{ entry.quantity }}&times;</span>
+            <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ entry.item.name }}</span>
+            <span style="font-size:12px;color:var(--text-muted)">({{ entry.item.get_unit_display }})</span>
+          </div>
+          <span style="font-weight:600">₹{{ entry.line_total }}</span>
+        </div>
+      {% endfor %}
+    </div>
+
+    <!-- Pricing Calculations -->
+    <div style="border-top:1px solid var(--border);padding-top:10px;display:flex;flex-direction:column;gap:6px;font-size:14px">
+      <div style="display:flex;justify-content:space-between">
+        <span style="color:var(--text-secondary)">Subtotal</span>
+        <span>₹{{ cart_total }}</span>
+      </div>
+
+      {% if coupon_data and coupon_data.valid %}
+        <div style="display:flex;justify-content:space-between;color:var(--primary);font-weight:600">
+          <span>Coupon Discount ({{ coupon_data.code }})</span>
+          <span>-₹{{ coupon_discount }}</span>
+        </div>
+      {% endif %}
+
+      <div style="display:flex;justify-content:space-between">
+        <span style="color:var(--text-secondary)">Delivery Charge</span>
+        <span style="color:var(--primary);font-weight:600">FREE</span>
+      </div>
+
+      <div style="border-top:1px solid var(--border);margin:4px 0"></div>
+
+      <div style="display:flex;justify-content:space-between;font-size:17px;font-weight:700">
+        <span>Total Payable</span>
+        <span style="color:var(--primary-dark)">₹{{ payable_total }}</span>
+      </div>
+    </div>
+  </div>
 
   <!-- Checkout Form -->
-  <form method="post" action="{% url 'orders_customer:checkout' %}" class="card">
+  <form action="{% url 'orders_customer:checkout' %}" method="POST" id="checkoutForm" style="display:flex;flex-direction:column;gap:18px">
     {% csrf_token %}
-    <div class="card-body">
-      <h3 class="text-lg text-bold mb-4">Delivery Details</h3>
 
-      <div class="form-group">
-        <label for="contact_name" class="form-label">Contact Name *</label>
-        <input type="text" id="contact_name" name="contact_name" class="form-input" required value="{{ form_data.contact_name|default:'' }}" placeholder="Jane Doe">
+    <!-- Delivery Address Card -->
+    <div class="customer-card" style="padding:18px;background:#fff;display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <b style="font-size:16px;display:flex;align-items:center;gap:6px">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--primary)">
+            <path d="M12 21s7-6.2 7-11.5a7 7 0 0 0-14 0C5 14.8 12 21 12 21z"></path>
+            <circle cx="12" cy="9.5" r="2.5"></circle>
+          </svg>
+          <span>Delivery Address</span>
+        </b>
       </div>
 
-      <div class="form-group">
-        <label for="contact_phone" class="form-label">Phone Number *</label>
-        <input type="tel" id="contact_phone" name="contact_phone" class="form-input" required value="{{ form_data.contact_phone|default:'' }}" placeholder="+1 (555) 019-2831">
-      </div>
+      {% if saved_addresses %}
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <span style="font-size:13px;font-weight:700;color:var(--text-secondary)">Select Saved Address:</span>
+          {% for addr in saved_addresses %}
+            <label style="padding:10px 14px;border-radius:12px;border:1.5px solid {% if addr.is_default %}var(--primary){% else %}var(--border){% endif %};background:{% if addr.is_default %}var(--primary-pill){% else %}#fff{% endif %};display:flex;align-items:flex-start;gap:10px;cursor:pointer">
+              <input type="radio" name="address_id" value="{{ addr.pk }}" {% if addr.is_default %}checked{% endif %} onchange="toggleCustomAddress(false)" style="margin-top:4px">
+              <div style="flex:1;display:flex;flex-direction:column;gap:2px;font-size:13px">
+                <b style="color:var(--text)">{{ addr.title }} {% if addr.is_default %}(Default){% endif %}</b>
+                <span>{{ addr.address }}, {{ addr.city }}</span>
+                {% if addr.recipient_name %}<span style="color:var(--text-muted)">{{ addr.recipient_name }} · {{ addr.phone }}</span>{% endif %}
+              </div>
+            </label>
+          {% endfor %}
+          <label style="padding:10px 14px;border-radius:12px;border:1.5px solid var(--border);display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px;font-weight:600">
+            <input type="radio" name="address_id" value="" onchange="toggleCustomAddress(true)">
+            <span>Deliver to a new / different address</span>
+          </label>
+        </div>
+      {% endif %}
 
-      <div class="form-group mb-4" style="background-color: var(--rdh-surface-container-low); padding: var(--space-4); border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
-        <label class="form-label icon-text mb-2">{% include "partials/icon.html" with name="map-pin" %} Delivery Location (Required) *</label>
-        <p class="text-xs text-muted mb-3">Please share your GPS location OR enter your street address below.</p>
-        
-        <div class="mb-3">
-          <button type="button" id="btn-geolocate" class="btn btn-secondary icon-text justify-center" style="width: 100%;">
-            {% include "partials/icon.html" with name="map-pin" %} <span>Use my current location</span>
+      <div id="customAddressSection" style="{% if saved_addresses %}display:none;{% endif %}display:flex;flex-direction:column;gap:12px">
+        <div>
+          <label for="address" style="display:block;font-size:13px;font-weight:700;margin-bottom:4px">House / Flat / Street Address *</label>
+          <textarea id="address" name="address" rows="2" placeholder="e.g. Flat 402, Green Acres, Road No. 36, Jubilee Hills" style="width:100%;border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;font:400 14px 'DM Sans',sans-serif;background:var(--bg)">{{ form_data.address|default:'' }}</textarea>
+        </div>
+
+        <!-- GPS Geolocation Option -->
+        <div style="background:var(--primary-pill);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:6px">
+          <button type="button" id="btn-geolocate" onclick="getLocation()" style="min-height:40px;border-radius:8px;border:1.5px solid var(--primary);background:#fff;color:var(--primary-dark);font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;gap:6px">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2v20M2 12h20"></path><circle cx="12" cy="12" r="7"></circle></svg>
+            <span>Use My Current GPS Location</span>
           </button>
-          
           <input type="hidden" id="lat" name="lat" value="{{ form_data.lat|default:'' }}">
           <input type="hidden" id="lng" name="lng" value="{{ form_data.lng|default:'' }}">
-          
-          <div id="location-status" class="text-sm mt-2 font-medium" style="color: var(--text-secondary);">
-            Location needed — share location or enter address
-          </div>
-          <div id="location-preview" class="text-xs mt-1" style="display: none;"></div>
-          <div class="text-xs text-muted mt-1">
-            Note: Location needs HTTPS in production (works on localhost for testing).
-          </div>
+          <span id="geoStatus" style="font-size:12px;color:var(--text-muted);text-align:center">GPS location optional if street address is provided.</span>
         </div>
 
-        <div class="form-group mb-0">
-          <label for="address" class="form-label">Street Address (Fallback)</label>
-          <input type="text" id="address" name="address" class="form-input" value="{{ form_data.address|default:'' }}" placeholder="123 Maple St, Apt 4B">
-          <span class="text-xs text-muted">Required if GPS location is not used.</span>
+        {% if delivery_customer %}
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500;cursor:pointer">
+            <input type="checkbox" name="save_address" value="1" checked>
+            <span>Save this address to my account for future orders</span>
+          </label>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Contact Details Card -->
+    <div class="customer-card" style="padding:18px;background:#fff;display:flex;flex-direction:column;gap:12px">
+      <b style="font-size:16px">Contact Information</b>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div>
+          <label for="contact_name" style="display:block;font-size:13px;font-weight:700;margin-bottom:4px">Your Name *</label>
+          <input type="text" id="contact_name" name="contact_name" required value="{{ form_data.contact_name|default:'' }}" placeholder="Full Name" style="width:100%;min-height:44px;border:1.5px solid var(--border);border-radius:10px;padding:0 12px;font:400 14px 'DM Sans',sans-serif">
         </div>
-      </div>
-
-      <div class="form-group">
-        <label for="instructions" class="form-label">Delivery / Kitchen Instructions</label>
-        <input type="text" id="instructions" name="instructions" class="form-input" value="{{ form_data.instructions|default:'' }}" placeholder="Ring doorbell, leave by front door">
-      </div>
-
-      <div class="mt-6 text-right">
-        <button type="submit" id="btn-submit-order" class="btn btn-primary btn-block btn-lg">
-          Place Delivery Order (Cash on Delivery)
-        </button>
-        <div id="submit-error" class="text-xs mt-2 text-center" style="color: var(--color-danger); display: none;">
-          Please share your location or enter an address to place order.
+        <div>
+          <label for="contact_phone" style="display:block;font-size:13px;font-weight:700;margin-bottom:4px">Phone Number *</label>
+          <input type="tel" id="contact_phone" name="contact_phone" required value="{{ form_data.contact_phone|default:'' }}" placeholder="10-digit mobile" style="width:100%;min-height:44px;border:1.5px solid var(--border);border-radius:10px;padding:0 12px;font:400 14px 'DM Sans',sans-serif">
         </div>
       </div>
     </div>
+
+    <!-- Delivery Slot Selection (Phase 12) -->
+    <div class="customer-card" style="padding:18px;background:#fff;display:flex;flex-direction:column;gap:10px">
+      <b style="font-size:16px">Delivery Slot</b>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <label style="padding:10px 14px;border-radius:12px;border:1.5px solid var(--primary);background:var(--primary-pill);display:flex;align-items:center;gap:10px;cursor:pointer">
+          <input type="radio" name="delivery_slot" value="Standard Delivery (30-45 mins)" checked>
+          <div style="display:flex;flex-direction:column;font-size:13px">
+            <b>⚡ Express Supermarket Delivery (30-45 mins)</b>
+            <span style="color:var(--text-muted)">Dispatched immediately from nearest store</span>
+          </div>
+        </label>
+        <label style="padding:10px 14px;border-radius:12px;border:1.5px solid var(--border);display:flex;align-items:center;gap:10px;cursor:pointer">
+          <input type="radio" name="delivery_slot" value="Today Evening (5:00 PM - 8:00 PM)">
+          <div style="display:flex;flex-direction:column;font-size:13px">
+            <b>🌅 Today Evening Slot (5:00 PM - 8:00 PM)</b>
+            <span style="color:var(--text-muted)">Convenient after-work drop-off</span>
+          </div>
+        </label>
+        <label style="padding:10px 14px;border-radius:12px;border:1.5px solid var(--border);display:flex;align-items:center;gap:10px;cursor:pointer">
+          <input type="radio" name="delivery_slot" value="Tomorrow Morning (7:00 AM - 10:00 AM)">
+          <div style="display:flex;flex-direction:column;font-size:13px">
+            <b>☀️ Tomorrow Morning Slot (7:00 AM - 10:00 AM)</b>
+            <span style="color:var(--text-muted)">Fresh morning milk and produce</span>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <!-- Payment Method Selection -->
+    <div class="customer-card" style="padding:18px;background:#fff;display:flex;flex-direction:column;gap:10px">
+      <b style="font-size:16px">Payment Method</b>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <label style="padding:12px 14px;border-radius:12px;border:1.5px solid var(--primary);background:var(--primary-pill);display:flex;align-items:center;gap:10px;cursor:pointer">
+          <input type="radio" name="payment_method" value="Cash on Delivery (COD)" checked>
+          <div style="display:flex;flex-direction:column;font-size:13px">
+            <b>💵 Cash on Delivery (COD)</b>
+            <span style="color:var(--text-muted)">Pay cash or UPI directly when your groceries arrive</span>
+          </div>
+        </label>
+        <label style="padding:12px 14px;border-radius:12px;border:1.5px solid var(--border);display:flex;align-items:center;gap:10px;cursor:pointer">
+          <input type="radio" name="payment_method" value="UPI / QR on Delivery">
+          <div style="display:flex;flex-direction:column;font-size:13px">
+            <b>📱 UPI / QR Code on Delivery</b>
+            <span style="color:var(--text-muted)">Scan driver QR code via PhonePe, GPay or Paytm</span>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <!-- Delivery Instructions -->
+    <div class="customer-card" style="padding:16px 18px;background:#fff;display:flex;flex-direction:column;gap:6px">
+      <label for="instructions" style="font-size:14px;font-weight:700">Delivery Notes (Optional)</label>
+      <input type="text" id="instructions" name="instructions" placeholder="e.g. Leave with security / Ring doorbell" value="{{ form_data.instructions|default:'' }}" style="width:100%;min-height:44px;border:1.5px solid var(--border);border-radius:10px;padding:0 12px;font:400 14px 'DM Sans',sans-serif">
+    </div>
+
+    <!-- Sticky Place Order Button -->
+    <div style="padding:10px 0 24px">
+      <button type="submit" 
+              id="btnPlaceOrder"
+              style="width:100%;min-height:54px;border-radius:14px;background:var(--primary);color:#fff;font-weight:700;font-size:17px;border:0;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 4px 16px rgba(23,107,69,0.35);transition:background 0.15s ease">
+        <span>Place Order · ₹{{ payable_total }}</span>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 12h14M12 5l7 7-7 7"></path>
+        </svg>
+      </button>
+      <p style="margin:8px 0 0;font-size:12px;text-align:center;color:var(--text-muted)">By placing your order, you agree to FreshMart terms of delivery.</p>
+    </div>
   </form>
 </div>
-<script src="{% static 'js/geolocate.js' %}" defer></script>
+
+<script>
+  function toggleCustomAddress(show) {
+    const section = document.getElementById('customAddressSection');
+    if (section) {
+      section.style.display = show ? 'flex' : 'none';
+      if (show) {
+        const addrInput = document.getElementById('address');
+        if (addrInput) addrInput.focus();
+      }
+    }
+  }
+
+  function getLocation() {
+    const status = document.getElementById('geoStatus');
+    if (!navigator.geolocation) {
+      if (status) status.textContent = 'Geolocation not supported by your browser.';
+      return;
+    }
+    if (status) status.textContent = 'Acquiring GPS location...';
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        document.getElementById('lat').value = pos.coords.latitude.toFixed(6);
+        document.getElementById('lng').value = pos.coords.longitude.toFixed(6);
+        if (status) status.textContent = `📍 GPS Location captured: ${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`;
+      },
+      err => {
+        if (status) status.textContent = 'Unable to retrieve GPS. Please type your street address above.';
+      },
+      { timeout: 8000 }
+    );
+  }
+</script>
 {% endblock %}

@@ -1,153 +1,214 @@
-{% load static %}<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  {# --- Brand strings kept together for easy editing --- #}
-  {% with brand=BRAND_SHORT|default:"FM" store_name=BRAND_NAME|default:"FreshMart" phone_display=BRAND_PHONE|default:"6281238410" phone_intl=BRAND_PHONE_INTL|default:"916281238410" email=BRAND_EMAIL|default:"support@freshmart.com" %}
-  <title>{{ store_name }} — {{ BRAND_TAGLINE|default:"Fresh groceries, delivered fast" }}</title>
-  <link rel="stylesheet" href="{% static 'css/design-tokens.css' %}">
-  <script defer src="{% static 'js/ui.js' %}"></script>
-</head>
-<body class="rdh-page">
+{% extends "orders/customer/base.html" %}
+{% load static %}
 
-  <!-- Fixed top nav -->
-  <nav class="rdh-nav">
-    <a href="#top" class="rdh-nav__brand">{{ brand }}</a>
-    <div class="rdh-nav__links">
-      <a href="#story">About Us</a>
-      <a href="#menu">Products</a>
-      <a href="#setting">Why {{ store_name }}</a>
-      <a href="#visit">Visit</a>
-      <a href="{% url 'contact' %}">Contact</a>
-      <a href="{% url 'orders_customer:menu' %}">Shop Online</a>
-    </div>
-  </nav>
+{% block title %}FreshMart Online Supermarket — Fresh Groceries Delivered Fast{% endblock %}
 
-  <!-- Hero -->
-  <header class="rdh-hero" id="top">
-    <div class="rdh-hero__glow" aria-hidden="true"></div>
-    <div class="rdh-hero__inner">
-      <img src="{% static 'images/logo.png' %}" alt="{{ store_name }} Logo" class="rdh-hero__logo">
-      <h1 class="rdh-hero__wordmark">{{ brand }}</h1>
-      <p class="rdh-hero__tagline">{{ store_name }} · {{ BRAND_TAGLINE|default:"Fresh groceries, delivered fast" }}</p>
-      <div class="rdh-hero__actions">
-        <a href="{% url 'orders_customer:menu' %}" class="btn btn-primary glow-hover">Shop Groceries</a>
-        <a href="#visit" class="btn btn-outline">Find Store</a>
-      </div>
-    </div>
-  </header>
+{% block content %}
+<!-- Hero Promotional Banner -->
+<section style="background:#E8F4EC;border-radius:20px;padding:24px 20px;display:flex;flex-direction:column;gap:14px;position:relative;overflow:hidden">
+  <div style="display:flex;flex-direction:column;gap:6px;z-index:2">
+    <span style="font-size:12px;font-weight:700;color:var(--primary);letter-spacing:0.05em;text-transform:uppercase">Direct From Farm</span>
+    <h1 style="margin:0;font-size:28px;line-height:1.15;color:#104C32;font-weight:700">Fresh groceries, delivered to your door.</h1>
+    <p style="margin:0;font-size:15px;line-height:1.4;color:#4F5A52">Shop your everyday essentials, fruits, vegetables and staples from one convenient place.</p>
+  </div>
 
-  <main>
-    <!-- The Story -->
-    <section class="rdh-section" id="story">
-      <div class="reveal">
-        <p class="rdh-eyebrow">Freshness Everyday</p>
-        <h2 class="headline-lg">From Local Farms Directly to Your Doorstep</h2>
-        <p class="rdh-lead mt-4">
-          {{ store_name }} brings the farm-fresh market experience straight to your home.
-          From crisp seasonal vegetables and handpicked organic fruits to dairy essentials,
-          pure cold-pressed oils, and pantry staples, we source directly from trusted local growers
-          and certified producers every single morning.
-        </p>
-        <p class="rdh-lead mt-4">
-          No stale stock, no compromises. Enjoy guaranteed quality, transparent everyday pricing,
-          unbeatable daily offers, and lightning-fast delivery across the city — making daily
-          grocery shopping effortless and wholesome.
-        </p>
-      </div>
-    </section>
+  <div class="ph" style="height:140px;background:#fff;border-radius:14px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-sm)">
+    <img src="{% static 'images/exterior.jpeg' %}" alt="Fresh Produce" onerror="this.src='/static/images/exterior.jpeg'" style="width:100%;height:100%;object-fit:cover">
+  </div>
 
-    <hr class="divider-gold" style="max-width: var(--container-max); margin-left: auto; margin-right: auto;">
+  <div style="display:flex;gap:10px;z-index:2">
+    <a href="{% url 'orders_customer:menu' %}" style="flex:1;min-height:48px;border-radius:12px;background:#176B45;color:#fff;font-weight:700;font-size:15px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(23,107,69,0.25)">Shop Now</a>
+    <a href="{% url 'orders_customer:menu' %}" style="flex:1;min-height:48px;border-radius:12px;background:#fff;color:#104C32;border:1.5px solid #176B45;font-weight:700;font-size:15px;display:flex;align-items:center;justify-content:center">All Categories</a>
+  </div>
+</section>
 
-    <!-- Menu Highlights / Featured Groceries -->
-    <section class="rdh-section" id="menu">
-      <div class="reveal">
-        <p class="rdh-eyebrow">Featured Products</p>
-        <h2 class="headline-lg">Today's Fresh Picks &amp; Daily Essentials</h2>
-      </div>
-      <div class="rdh-menu-grid reveal">
-        {% if highlights %}
-          {% for item in highlights %}
-            <div class="rdh-dish">
-              <div>
-                <div class="rdh-dish__name">{{ item.name }}</div>
-                {% if item.description %}<div class="rdh-dish__desc">{{ item.description }}</div>{% endif %}
-              </div>
-              <div class="rdh-dish__price">₹{{ item.price }}</div>
-            </div>
-          {% endfor %}
-        {% else %}
-          {% for dish in sample_dishes %}
-            <div class="rdh-dish">
-              <div>
-                <div class="rdh-dish__name">{{ dish.name }}</div>
-                <div class="rdh-dish__desc">{{ dish.description }}</div>
-              </div>
-              <div class="rdh-dish__price">₹{{ dish.price }}</div>
-            </div>
-          {% endfor %}
-        {% endif %}
-      </div>
-      <div class="reveal mt-6">
-        <a href="{% url 'orders_customer:menu' %}" class="btn btn-primary glow-hover">Explore All Products</a>
-      </div>
-    </section>
+<!-- Shop by Category Section -->
+<section>
+  <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px">
+    <h2 style="margin:0;font-size:20px;font-weight:700;color:var(--text)">Shop by category</h2>
+    <a href="{% url 'orders_customer:menu' %}" style="min-height:44px;display:flex;align-items:center;font-size:14px;font-weight:700;color:#176B45">See all &rarr;</a>
+  </div>
 
-    <hr class="divider-gold" style="max-width: var(--container-max); margin-left: auto; margin-right: auto;">
+  <div class="noscroll" style="display:flex;gap:14px;overflow-x:auto;margin:0 -16px;padding:0 16px 4px">
+    {% for cat in categories %}
+      <a href="{% url 'orders_customer:menu' %}?category={{ cat.name|urlencode }}" 
+         style="flex:0 0 92px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;text-decoration:none">
+        <div class="ph" style="width:84px;height:84px;border-radius:42px;box-shadow:var(--shadow-sm);border:1.5px solid #E5E9E3">
+          {% if cat.image %}
+            <img src="{{ cat.image.url }}" alt="{{ cat.name }}">
+          {% else %}
+            <img src="{{ cat.header_image_url }}" alt="{{ cat.name }}">
+          {% endif %}
+        </div>
+        <span style="font-size:13px;font-weight:600;line-height:1.2;color:var(--text);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">{{ cat.name }}</span>
+      </a>
+    {% empty %}
+      <p style="font-size:14px;color:var(--text-muted);padding:10px 0">Loading categories...</p>
+    {% endfor %}
+  </div>
+</section>
 
-    <!-- The Setting / Why Us -->
-    <section class="rdh-section" id="setting">
-      <div class="reveal">
-        <p class="rdh-eyebrow">Why Shop With Us</p>
-        <h2 class="headline-lg">Quality Checked, Handpicked &amp; Delivered Fast</h2>
-        <p class="rdh-lead mt-4">
-          Every item passes strict freshness checks before packing. Enjoy temperature-controlled
-          storage, free doorstep delivery on orders above ₹499, easy returns, and instant
-          order tracking in real time.
-        </p>
-      </div>
-    </section>
+<!-- Best Sellers Products Grid / Rail -->
+<section>
+  <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px">
+    <h2 style="margin:0;font-size:20px;font-weight:700;color:var(--text)">Best sellers</h2>
+    <a href="{% url 'orders_customer:menu' %}?sort=relevance" style="min-height:44px;display:flex;align-items:center;font-size:14px;font-weight:700;color:#176B45">View all &rarr;</a>
+  </div>
 
-    <hr class="divider-gold" style="max-width: var(--container-max); margin-left: auto; margin-right: auto;">
-
-    <!-- Get in touch / Visit -->
-    <section class="rdh-section" id="visit">
-      <div class="reveal">
-        <p class="rdh-eyebrow">Visit Our Store</p>
-        <h2 class="headline-lg">Shop In Person or Order Online</h2>
-      </div>
-      <div class="rdh-contact-grid reveal">
-        <a class="rdh-contact-card glow-hover" href="tel:+{{ phone_intl }}">
-          <div class="rdh-contact-card__label">Call / WhatsApp</div>
-          <div class="rdh-contact-card__value">{{ phone_display }}</div>
+  <div class="noscroll" style="display:flex;gap:12px;overflow-x:auto;margin:0 -16px;padding:0 16px 6px">
+    {% for item in best_sellers %}
+      <div class="customer-card" style="flex:0 0 164px;padding:12px;display:flex;flex-direction:column;gap:6px">
+        <a href="{% url 'orders_customer:product_detail' item.pk %}" style="display:flex;flex-direction:column;gap:6px">
+          <div class="ph" style="height:112px;border-radius:10px">
+            {% if item.image %}
+              <img src="{{ item.image.url }}" alt="{{ item.name }}">
+            {% else %}
+              <img src="/static/images/exterior.jpeg" alt="{{ item.name }}">
+            {% endif %}
+            {% if item.offer_percent > 0 %}
+              <span style="position:absolute;top:6px;left:6px;background:var(--danger);color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:6px">{{ item.offer_percent }}% OFF</span>
+            {% endif %}
+          </div>
+          <div style="font-weight:700;font-size:14px;margin-top:2px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="{{ item.name }}">{{ item.name }}</div>
+          <div style="font-size:12px;color:var(--text-muted)">1 {{ item.get_unit_display }}</div>
         </a>
-        <a class="rdh-contact-card glow-hover" href="mailto:{{ email }}">
-          <div class="rdh-contact-card__label">Customer Support</div>
-          <div class="rdh-contact-card__value">{{ email }}</div>
-        </a>
-        <div class="rdh-contact-card">
-          <div class="rdh-contact-card__label">Store Hours</div>
-          <div class="rdh-contact-card__value">7 AM – 10 PM Daily</div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:auto;padding-top:4px">
+          <div>
+            <span style="font-weight:700;font-size:16px;color:var(--primary-dark)">₹{{ item.effective_price }}</span>
+            {% if item.offer_percent > 0 %}
+              <span style="font-size:12px;color:var(--text-muted);text-decoration:line-through;margin-left:2px">₹{{ item.price }}</span>
+            {% endif %}
+          </div>
+
+          <!-- Add to Cart or Stepper -->
+          {% if not item.is_orderable %}
+            <span style="font-size:11px;font-weight:700;color:var(--danger)">Sold out</span>
+          {% else %}
+            <form action="{% url 'orders_customer:cart_add' %}" method="POST" style="margin:0" hx-post="{% url 'orders_customer:cart_add' %}" hx-swap="none">
+              {% csrf_token %}
+              <input type="hidden" name="menu_item_id" value="{{ item.pk }}">
+              <input type="hidden" name="quantity" value="1">
+              <button type="submit" class="btn-add">Add</button>
+            </form>
+          {% endif %}
         </div>
       </div>
-    </section>
-  </main>
+    {% empty %}
+      {% for dish in sample_dishes %}
+        <div class="customer-card" style="flex:0 0 164px;padding:12px;display:flex;flex-direction:column;gap:6px">
+          <div class="ph" style="height:112px;border-radius:10px">
+            <img src="/static/images/exterior.jpeg" alt="{{ dish.name }}">
+          </div>
+          <div style="font-weight:700;font-size:14px;margin-top:2px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ dish.name }}</div>
+          <div style="font-size:12px;color:var(--text-muted)">1 Pack</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:auto">
+            <span style="font-weight:700;font-size:16px;color:var(--primary-dark)">₹{{ dish.price }}</span>
+            <a href="{% url 'orders_customer:menu' %}" class="btn-add">Shop</a>
+          </div>
+        </div>
+      {% endfor %}
+    {% endfor %}
+  </div>
+</section>
 
-  <!-- Footer -->
-  <footer class="rdh-footer">
-    <div class="rdh-footer__brand">{{ brand }}</div>
-    <div>{{ store_name }} — {{ BRAND_TAGLINE|default:"Fresh groceries, delivered fast" }}</div>
-    <div class="mt-2">© {{ store_name }}. All rights reserved.</div>
-  </footer>
+<!-- Featured Grocery Highlights Section -->
+{% if highlights %}
+<section>
+  <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px">
+    <h2 style="margin:0;font-size:20px;font-weight:700;color:var(--text)">Featured groceries</h2>
+    <a href="{% url 'orders_customer:menu' %}" style="min-height:44px;display:flex;align-items:center;font-size:14px;font-weight:700;color:#176B45">See all &rarr;</a>
+  </div>
 
-  <!-- WhatsApp FAB -->
-  <a class="wa-fab" href="https://wa.me/{{ phone_intl }}" target="_blank" rel="noopener" aria-label="Chat on WhatsApp">
-    <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <path fill="currentColor" d="M16.04 4C9.9 4 4.92 8.98 4.92 15.12c0 2.03.55 3.94 1.5 5.58L4.5 27l6.46-1.88a11.1 11.1 0 0 0 5.08 1.24h.01c6.14 0 11.12-4.98 11.12-11.12S22.18 4 16.04 4Zm0 20.31h-.01a9.2 9.2 0 0 1-4.68-1.28l-.34-.2-3.83 1.11 1.02-3.73-.22-.38a9.14 9.14 0 0 1-1.4-4.88c0-5.06 4.12-9.18 9.19-9.18 2.45 0 4.76.96 6.49 2.7a9.12 9.12 0 0 1 2.69 6.49c0 5.07-4.12 9.19-9.18 9.19Zm5.04-6.88c-.28-.14-1.63-.8-1.89-.9-.25-.09-.43-.14-.62.14-.18.28-.71.9-.87 1.08-.16.18-.32.2-.6.07-.28-.14-1.17-.43-2.22-1.37-.82-.73-1.38-1.63-1.54-1.91-.16-.28-.02-.43.12-.57.13-.13.28-.32.42-.48.14-.16.18-.28.28-.46.09-.18.05-.35-.02-.49-.07-.14-.62-1.5-.85-2.05-.22-.54-.45-.46-.62-.47l-.53-.01c-.18 0-.48.07-.73.35-.25.28-.96.94-.96 2.3 0 1.35.98 2.66 1.12 2.84.14.18 1.93 2.95 4.68 4.14.65.28 1.16.45 1.56.58.65.21 1.25.18 1.72.11.52-.08 1.63-.67 1.86-1.31.23-.65.23-1.2.16-1.31-.07-.11-.25-.18-.53-.32Z"/>
-    </svg>
-  </a>
+  <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px">
+    {% for item in highlights %}
+      <div class="customer-card" style="padding:12px;display:flex;flex-direction:column;gap:6px">
+        <a href="{% url 'orders_customer:product_detail' item.pk %}" style="display:flex;flex-direction:column;gap:4px">
+          <div class="ph" style="height:112px;border-radius:10px">
+            {% if item.image %}
+              <img src="{{ item.image.url }}" alt="{{ item.name }}">
+            {% else %}
+              <img src="/static/images/exterior.jpeg" alt="{{ item.name }}">
+            {% endif %}
+            {% if item.offer_percent > 0 %}
+              <span style="position:absolute;top:6px;left:6px;background:var(--danger);color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:6px">{{ item.offer_percent }}% OFF</span>
+            {% endif %}
+          </div>
+          <div style="font-weight:700;font-size:14px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="{{ item.name }}">{{ item.name }}</div>
+          <div style="font-size:12px;color:var(--text-muted)">{{ item.get_unit_display }}</div>
+        </a>
 
-  {% endwith %}
-</body>
-</html>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:auto;padding-top:4px">
+          <div>
+            <span style="font-weight:700;font-size:16px;color:var(--primary-dark)">₹{{ item.effective_price }}</span>
+            {% if item.offer_percent > 0 %}
+              <span style="font-size:11px;color:var(--text-muted);text-decoration:line-through">₹{{ item.price }}</span>
+            {% endif %}
+          </div>
+
+          {% if not item.is_orderable %}
+            <span style="font-size:11px;font-weight:700;color:var(--danger)">Sold out</span>
+          {% else %}
+            <form action="{% url 'orders_customer:cart_add' %}" method="POST" style="margin:0" hx-post="{% url 'orders_customer:cart_add' %}" hx-swap="none">
+              {% csrf_token %}
+              <input type="hidden" name="menu_item_id" value="{{ item.pk }}">
+              <input type="hidden" name="quantity" value="1">
+              <button type="submit" class="btn-add">Add</button>
+            </form>
+          {% endif %}
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<!-- Swecha AI Shopping Assistant Callout Card -->
+<section>
+  <div style="background:#104C32;color:#fff;border-radius:20px;padding:24px 20px;display:flex;flex-direction:column;gap:12px;box-shadow:var(--shadow-md)">
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:16px;background:rgba(255,255,255,0.15);font-size:16px">✨</span>
+      <span style="font-weight:700;font-size:20px;line-height:1.2">Need help with your shopping list?</span>
+    </div>
+    <span style="font-size:14px;line-height:1.45;opacity:.92">Ask our AI assistant <strong>Swecha</strong> to find products, compare pack sizes, and plan within your budget.</span>
+    <div style="display:flex;gap:10px;margin-top:4px;flex-wrap:wrap">
+      <a href="{% url 'swecha:assistant' %}" style="align-self:flex-start;min-height:46px;padding:0 20px;border-radius:12px;background:#F4B942;color:#171A17;font-weight:700;font-size:15px;display:inline-flex;align-items:center;gap:6px;box-shadow:0 2px 8px rgba(0,0,0,0.18)">
+        <span>Ask Our AI Assistant</span>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 12h14M12 5l7 7-7 7"></path>
+        </svg>
+      </a>
+      <button type="button" onclick="toggleSwechaDrawer()" style="align-self:flex-start;min-height:46px;padding:0 16px;border-radius:12px;background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3);font-weight:700;font-size:14px;display:inline-flex;align-items:center">
+        Quick Chat
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- FreshMart Quality Guarantee Bar -->
+<section class="customer-card" style="padding:16px 20px;display:grid;grid-template-columns:1fr 1fr;gap:16px;background:#fff">
+  <div style="display:flex;gap:10px;align-items:center">
+    <div style="width:40px;height:40px;border-radius:20px;background:var(--primary-pill);color:var(--primary);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">🚀</div>
+    <div style="display:flex;flex-direction:column;line-height:1.2">
+      <b style="font-size:14px">Fast Delivery</b>
+      <span style="font-size:12px;color:var(--text-muted)">Direct to your doorstep</span>
+    </div>
+  </div>
+  <div style="display:flex;gap:10px;align-items:center">
+    <div style="width:40px;height:40px;border-radius:20px;background:var(--primary-pill);color:var(--primary);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">🌿</div>
+    <div style="display:flex;flex-direction:column;line-height:1.2">
+      <b style="font-size:14px">100% Farm Fresh</b>
+      <span style="font-size:12px;color:var(--text-muted)">Quality guaranteed daily</span>
+    </div>
+  </div>
+</section>
+
+<!-- Supermarket Footer Links -->
+<footer style="display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:center;font-size:13px;color:var(--text-secondary);padding:10px 0 20px;border-top:1px solid var(--border)">
+  <a href="{% url 'contact' %}" style="min-height:44px;display:flex;align-items:center">About FreshMart</a>
+  <a href="{% url 'contact' %}" style="min-height:44px;display:flex;align-items:center">Contact Support</a>
+  <a href="{% url 'orders_customer:my_orders' %}" style="min-height:44px;display:flex;align-items:center">Track Order</a>
+  <a href="{% url 'orders_customer:cart' %}" style="min-height:44px;display:flex;align-items:center">Shopping Cart</a>
+  <a href="{% url 'orders_customer:menu' %}" style="min-height:44px;display:flex;align-items:center">All Products</a>
+</footer>
+{% endblock %}

@@ -1,0 +1,99 @@
+{% extends "orders/customer/base.html" %}
+{% load static %}
+
+{% block title %}Saved Addresses — FreshMart Supermarket{% endblock %}
+
+{% block content %}
+<div style="max-width:680px;margin:0 auto;width:100%;display:flex;flex-direction:column;gap:16px">
+  <!-- Back Header -->
+  <div style="display:flex;align-items:center;justify-content:space-between">
+    <a href="{% url 'orders_customer:settings' %}" style="display:inline-flex;align-items:center;gap:6px;min-height:44px;color:var(--primary);font-weight:700;font-size:14px">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M15 18l-6-6 6-6"></path>
+      </svg>
+      <span>Settings</span>
+    </a>
+    <h1 style="margin:0;font-size:19px;font-weight:700">Delivery Addresses</h1>
+  </div>
+
+  <!-- Saved Addresses List -->
+  <div style="display:flex;flex-direction:column;gap:10px">
+    {% for addr in addresses %}
+      <div class="customer-card" style="padding:16px;background:#fff;display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div style="display:flex;align-items:center;gap:8px">
+            <b style="font-size:15px;color:var(--text)">{{ addr.title }}</b>
+            {% if addr.is_default %}
+              <span style="background:var(--primary-pill);color:var(--primary-dark);font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px">Default</span>
+            {% endif %}
+          </div>
+          <div style="display:flex;gap:6px">
+            {% if not addr.is_default %}
+              <form action="{% url 'orders_customer:address_set_default' addr.pk %}" method="POST" style="margin:0">
+                {% csrf_token %}
+                <button type="submit" style="min-height:34px;padding:0 10px;border-radius:8px;border:1px solid var(--border);background:#fff;font-size:12px;font-weight:600;color:var(--text-secondary)">Set Default</button>
+              </form>
+            {% endif %}
+            <form action="{% url 'orders_customer:address_delete' addr.pk %}" method="POST" style="margin:0">
+              {% csrf_token %}
+              <button type="submit" style="min-height:34px;padding:0 10px;border-radius:8px;border:1px solid #F8B4B4;background:#FDE8E8;color:#9B1C1C;font-size:12px;font-weight:600">Delete</button>
+            </form>
+          </div>
+        </div>
+        <p style="margin:0;font-size:14px;color:var(--text);line-height:1.4">{{ addr.address }}, {{ addr.city }}</p>
+        {% if addr.recipient_name or addr.phone %}
+          <span style="font-size:13px;color:var(--text-muted)">{{ addr.recipient_name }} · {{ addr.phone }}</span>
+        {% endif %}
+      </div>
+    {% empty %}
+      <div class="customer-card" style="padding:32px 20px;text-align:center;background:#fff">
+        <p style="margin:0;font-size:14px;color:var(--text-muted)">No saved addresses yet. Add your delivery address below for quick 1-click checkout.</p>
+      </div>
+    {% endfor %}
+  </div>
+
+  <!-- Add New Address Form -->
+  <div class="customer-card" style="padding:20px;background:#fff;display:flex;flex-direction:column;gap:14px">
+    <b style="font-size:16px;border-bottom:1px solid var(--border);padding-bottom:8px">Add New Address</b>
+
+    <form action="{% url 'orders_customer:address_add' %}" method="POST" style="display:flex;flex-direction:column;gap:12px">
+      {% csrf_token %}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div>
+          <label style="display:block;font-size:13px;font-weight:700;margin-bottom:4px">Address Title</label>
+          <input type="text" name="title" placeholder="Home / Office / Other" value="Home" style="width:100%;min-height:44px;border:1.5px solid var(--border);border-radius:10px;padding:0 12px;font:400 14px 'DM Sans',sans-serif">
+        </div>
+        <div>
+          <label style="display:block;font-size:13px;font-weight:700;margin-bottom:4px">City / Area</label>
+          <input type="text" name="city" placeholder="Hyderabad" value="Hyderabad" style="width:100%;min-height:44px;border:1.5px solid var(--border);border-radius:10px;padding:0 12px;font:400 14px 'DM Sans',sans-serif">
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div>
+          <label style="display:block;font-size:13px;font-weight:700;margin-bottom:4px">Recipient Name</label>
+          <input type="text" name="recipient_name" placeholder="Full Name" value="{{ delivery_customer.name|default:'' }}" style="width:100%;min-height:44px;border:1.5px solid var(--border);border-radius:10px;padding:0 12px;font:400 14px 'DM Sans',sans-serif">
+        </div>
+        <div>
+          <label style="display:block;font-size:13px;font-weight:700;margin-bottom:4px">Contact Phone</label>
+          <input type="tel" name="phone" placeholder="Phone Number" value="{{ delivery_customer.phone|default:'' }}" style="width:100%;min-height:44px;border:1.5px solid var(--border);border-radius:10px;padding:0 12px;font:400 14px 'DM Sans',sans-serif">
+        </div>
+      </div>
+
+      <div>
+        <label style="display:block;font-size:13px;font-weight:700;margin-bottom:4px">Street Address *</label>
+        <textarea name="address" required rows="2" placeholder="House/Flat number, Building name, Street, Landmark" style="width:100%;border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;font:400 14px 'DM Sans',sans-serif"></textarea>
+      </div>
+
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+        <input type="checkbox" name="is_default" value="1" {% if not addresses %}checked{% endif %}>
+        <span>Make this my default delivery address</span>
+      </label>
+
+      <button type="submit" class="btn-add" style="min-height:48px;border-radius:12px;font-size:15px;margin-top:4px">
+        Save Address
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}
